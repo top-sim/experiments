@@ -1,0 +1,213 @@
+{
+	"instrument": {
+		"telescope": {
+			"total_arrays": 36,
+			"max_ingest_resources": 5,
+			"pipelines": {
+				"continuum": {
+					"demand": 5
+				}
+			},
+			"observations": [
+				{
+					"name": "emu",
+					"start": 0,
+					"duration": 25,
+					"demand": 36,
+					"workflow": "shadow_Continuum_ChannelSplit_40.json",
+					"type": "continuum",
+					"data_product_rate": 5
+				}
+			]
+		}
+	},
+	"cluster": {
+		"header": {
+			"time": "false",
+			"gen_specs": {
+				"file": "system_spec_40_200-400_1.0",
+				"seed": 20,
+				"range": "[(200, 400)]",
+				"heterogeneity": 1.0,
+				"multiplier": 1
+			}
+		},
+		"system": {
+			"resources": {
+				"cat0_m0": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m1": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m2": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m3": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m4": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m5": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m6": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m7": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m8": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m9": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m10": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m11": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m12": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m13": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m14": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m15": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m16": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m17": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m18": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m19": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m20": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m21": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m22": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m23": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m24": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m25": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m26": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m27": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m28": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m29": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m30": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m31": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m32": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m33": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m34": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m35": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m36": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m37": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m38": {
+					"flops": 33700,
+					"rates": 10
+				},
+				"cat0_m39": {
+					"flops": 33700,
+					"rates": 10
+				}
+			},
+			"bandwidth": 1.0
+		}
+	},
+	"buffer": {
+		"hot": {
+			"capacity": 50,
+			"max_ingest_rate": 5
+		},
+		"cold": {
+			"capacity": 50,
+			"max_data_rate": 5
+		}
+	},
+	"planning": "heft",
+	"scheduling": "fifo"
+}
