@@ -17,16 +17,18 @@ import simpy
 import logging
 
 from topsim.core.simulation import Simulation
+from topsim.core.delay import DelayModel
 from user.telescope import Telescope
 from user.scheduling import FifoAlgorithm
 
 logging.basicConfig(level="DEBUG")
 LOGGER = logging.getLogger(__name__)
 
-EVENT_FILE = 'poster_20cluster.trace'
+EVENT_FILE = 'output/poster_20cluster.trace'
 CONFIG = 'poster_config_heft.json'
 
 env = simpy.Environment()
+dm = DelayModel(0.1, 'normal', DelayModel.DelayDegree.HIGH)
 
 instrument = Telescope
 simulation = Simulation(
@@ -38,5 +40,5 @@ simulation = Simulation(
 )
 
 # LOGGER.info("Simulation Starting")
-simulation.start(1500)
+simulation.start(-1)
 # simulation.resume(10000)

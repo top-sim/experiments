@@ -1,12 +1,12 @@
 # import simpy
 # from core.planner import Planner
 # import config_data
-
-import logging
 import pandas as pd
+import logging
+
 
 from topsim.core.instrument import Instrument, RunStatus
-
+from topsim.core.scheduler import ScheduleStatus
 LOGGER = logging.getLogger(__name__)
 
 
@@ -98,9 +98,11 @@ class Telescope(Instrument):
             raise
         self.scheduler = scheduler
         self.observation_types = None
+        self.finished_observations = []
         self.telescope_status = False
         self.telescope_use = 0
         self.planner = planner
+        self.delayed = False
 
     def run(self):
         """
@@ -131,6 +133,11 @@ class Telescope(Instrument):
         """
 
         while self.has_observations_to_process():
+            # Check if scheduler is delayed
+            if (self.scheduler.schedule_status is ScheduleStatus.DELAYED
+                    and not self.delayed):
+                self.delayed = True
+
             for observation in self.observations:
                 capacity = self.total_arrays - self.telescope_use
                 # IF there is an observation ready for start
@@ -148,9 +155,9 @@ class Telescope(Instrument):
                     ):
                         ret = self.begin_observation(observation)
                         observation.ast = self.env.now
-                        self.env.process(
-                            self.planner.run(observation)
-                        )
+                        # self.env.process(
+                        #     self.planner.run(observation,self.buffer)
+                        # )
                         # yield plan_trigger
                         LOGGER.info(
                             'telescope is now using %s arrays',
@@ -158,7 +165,7 @@ class Telescope(Instrument):
                         )
                         process = self.env.process(
                             self.scheduler.allocate_ingest(
-                                observation, self.pipelines
+                                observation, self.pipelines, self.planner
                             ))
 
                 elif observation.is_finished(
@@ -184,6 +191,7 @@ class Telescope(Instrument):
 
         if self.telescope_use is 0:
             self.telescope_status = False
+        self.finished_observations.append(observation)
         return RunStatus.FINISHED
 
     def run_observation_on_telescope(self, demand):
@@ -257,6 +265,24 @@ class Telescope(Instrument):
             'telescope_arrays_used': self.telescope_use,
             'observations_waiting': self.observations_waiting()
         }
+
+    def is_idle(self):
+        """
+        Check if telescope has current or pending observations
+
+        Returns
+        -------
+        True if there are no pending or current observations
+        """
+        for observation in self.observations:
+            if observation.status != RunStatus.FINISHED:
+                return False
+        if (
+                (not self.telescope_status)
+                and self.telescope_use == 0
+        ):
+            return True
+        return False
 
     def to_df(self):
         df = pd.DataFrame()
