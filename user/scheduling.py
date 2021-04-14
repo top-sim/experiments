@@ -31,7 +31,7 @@ class GreedyAlgorithmFromPlan(Algorithm):
         pass
 
     def __repr__(self):
-        return "FIFOAlgorithm"
+        return "GreedyAlgorithmFromPlan"
 
     def __call__(self, cluster, clock, workflow_plan):
         """
@@ -57,17 +57,16 @@ class GreedyAlgorithmFromPlan(Algorithm):
             # Allocate the first element in the Task list:
             if t.task_status is TaskStatus.UNSCHEDULED and \
                     t.est + workflow_plan.ast <= clock:
-                # Are we delayed
+                # Are we workkflow - delayed?
                 if workflow_plan.ast > workflow_plan.est:
                     workflow_plan.status = WorkflowStatus.DELAYED
                 if not t.pred:
-                    machine = cluster.dmachine[t.machine_id.id]
+                    machine = cluster.dmachine[t.machine.id]
                     workflow_plan.status = WorkflowStatus.SCHEDULED
                     if self.is_machine_occupied(machine):
-                        # Is there another machine of same
+                        # Is there another machine
                         if self.cluster.resources['available']:
                             machine = self.cluster.resources['available'][0]
-                            t.duration = t.flops/machine.cpu
                             return machine, t, workflow_plan.status
                         return None, None, workflow_plan.status
                     return machine, t, workflow_plan.status
@@ -84,7 +83,7 @@ class GreedyAlgorithmFromPlan(Algorithm):
                         # One of the predecessors of 't' is still running
                         continue
                     else:
-                        machine = cluster.dmachine[t.machine_id.id]
+                        machine = cluster.dmachine[t.machine.id]
                         if self.cluster.is_occupied(machine):
                             return None, None, workflow_plan.status
                         return machine, t, workflow_plan.status

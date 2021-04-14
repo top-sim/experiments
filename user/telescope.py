@@ -98,7 +98,6 @@ class Telescope(Instrument):
             raise
         self.scheduler = scheduler
         self.observation_types = None
-        self.finished_observations = []
         self.telescope_status = False
         self.telescope_use = 0
         self.planner = planner
@@ -191,7 +190,6 @@ class Telescope(Instrument):
 
         if self.telescope_use is 0:
             self.telescope_status = False
-        self.finished_observations.append(observation)
         return RunStatus.FINISHED
 
     def run_observation_on_telescope(self, demand):
@@ -290,6 +288,7 @@ class Telescope(Instrument):
         df['observations_finished'] = [self.observations_finished()]
         df['observations_delayed'] = [self._calc_observation_delay()]
         df['telescope_status'] = [self.telescope_status]
+        df['delay_status'] = [self.delayed]
         return df
 
     def _calc_observation_delay(self):

@@ -34,13 +34,8 @@
 	"cluster": {
 		"header": {
 			"time": "false",
-			"gen_specs": {
-				"file": "system_spec_40_200-400_1.0",
-				"seed": 20,
-				"range": "[(200, 400)]",
-				"heterogeneity": 1.0,
-				"multiplier": 1
-			}
+			"generation_specs": {
+				"hard_coded": true
 		},
 		"system": {
 			"resources": {
