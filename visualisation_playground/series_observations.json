@@ -10,17 +10,8 @@
 			},
 			"observations": [
 				{
-					"name": "dingo",
-					"start": 0,
-					"duration": 25,
-					"demand": 36,
-					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_30.json",
-					"type": "continuum",
-					"data_product_rate": 5
-				},
-				{
 					"name": "emu1",
-					"start": 30,
+					"start": 0,
 					"duration": 10,
 					"demand": 18,
 					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_10.json",
@@ -29,21 +20,12 @@
 				},
 				{
 					"name": "emu2",
-					"start": 30,
+					"start": 10,
 					"duration": 10,
 					"demand": 18,
 					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_10.json",
 					"type": "continuum",
 					"data_product_rate": 2
-				},
-				{
-					"name": "wallaby",
-					"start": 40,
-					"duration": 15,
-					"demand": 36,
-					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_30.json",
-					"type": "continuum",
-					"data_product_rate": 5
 				}
 			]
 		}

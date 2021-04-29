@@ -27,25 +27,23 @@ logging.basicConfig(level="DEBUG")
 LOGGER = logging.getLogger(__name__)
 
 
-for config in sorted(os.listdir('visualisation_playground/sim_config')):
-    if '.json' in config:
-        CONFIG = f'visualisation_playground/sim_config/{config}'
+CONFIG = f'visualisation_playground/series_observations.json'
 
-        env = simpy.Environment()
-        dm = DelayModel(0.20, 'normal', DelayModel.DelayDegree.HIGH)
+env = simpy.Environment()
+dm = DelayModel(0.20, 'normal', DelayModel.DelayDegree.HIGH)
 
-        instrument = Telescope
-        timestamp = f'{time.time()}'.split('.')[0]
-        cfg = CONFIG.split('/')[-1]
-        simulation = Simulation(
-            env=env,
-            config=CONFIG,
-            instrument=instrument,
-            algorithm_map={'heft': 'heft', 'fifo': GreedyAlgorithmFromPlan},
-            delay=dm,
-            timestamp=f'visualisation_playground/results/{cfg}-{timestamp}'
-        )
+instrument = Telescope
+timestamp = f'{time.time()}'.split('.')[0]
+cfg = CONFIG.split('/')[-1]
+simulation = Simulation(
+    env=env,
+    config=CONFIG,
+    instrument=instrument,
+    algorithm_map={'heft': 'heft', 'fifo': GreedyAlgorithmFromPlan},
+    delay=dm,
+    timestamp=f'visualisation_playground/results/{cfg}-{timestamp}'
+)
 
-        # LOGGER.info("Simulation Starting")
-        simulation.start(-1)
+# LOGGER.info("Simulation Starting")
+simulation.start(-1)
 # simulation.resume(10000)

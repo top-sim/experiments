@@ -1,8 +1,8 @@
 {
 	"instrument": {
 		"telescope": {
-			"total_arrays": 36,
-			"max_ingest_resources": 10,
+			"total_arrays": 32,
+			"max_ingest_resources": ,
 			"pipelines": {
 				"continuum": {
 					"demand": 5
@@ -10,40 +10,40 @@
 			},
 			"observations": [
 				{
-					"name": "dingo",
+					"name": "hpso01",
 					"start": 0,
-					"duration": 25,
-					"demand": 36,
-					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_30.json",
+					"duration": 60,
+					"demand": 32,
+					"workflow": "",
 					"type": "continuum",
-					"data_product_rate": 5
+					"data_product_rate":
 				},
 				{
-					"name": "emu1",
-					"start": 30,
-					"duration": 10,
-					"demand": 18,
-					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_10.json",
+					"name": "hpso04a",
+					"start": 60,
+					"duration": 30,
+					"demand": 16,
+					"workflow": "workflows/shadow_Continuum_ChannelSplit_10.json",
 					"type": "continuum",
 					"data_product_rate": 3
 				},
 				{
-					"name": "emu2",
-					"start": 30,
-					"duration": 10,
-					"demand": 18,
-					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_10.json",
+					"name": "hpso04a",
+					"start": 60,
+					"duration": 30,
+					"demand": 16,
+					"workflow": "",
 					"type": "continuum",
-					"data_product_rate": 2
+					"data_product_rate":
 				},
 				{
-					"name": "wallaby",
-					"start": 40,
-					"duration": 15,
-					"demand": 36,
-					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_30.json",
+					"name": "hpso01",
+					"start": 0,
+					"duration": 60,
+					"demand": 32,
+					"workflow": "",
 					"type": "continuum",
-					"data_product_rate": 5
+					"data_product_rate":
 				}
 			]
 		}
@@ -147,7 +147,7 @@
 	},
 	"buffer": {
 		"hot": {
-			"capacity": 250,
+			"capacity": 200,
 			"max_ingest_rate": 5
 		},
 		"cold": {

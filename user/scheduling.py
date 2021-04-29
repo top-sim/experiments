@@ -85,6 +85,9 @@ class GreedyAlgorithmFromPlan(Algorithm):
                     else:
                         machine = cluster.dmachine[t.machine.id]
                         if self.cluster.is_occupied(machine):
+                            if self.cluster.resources['available']:
+                                machine = self.cluster.resources['available'][0]
+                                return machine, t, workflow_plan.status
                             return None, None, workflow_plan.status
                         return machine, t, workflow_plan.status
 

@@ -2,7 +2,7 @@
 	"instrument": {
 		"telescope": {
 			"total_arrays": 36,
-			"max_ingest_resources": 10,
+			"max_ingest_resources": 5,
 			"pipelines": {
 				"continuum": {
 					"demand": 5
@@ -14,7 +14,7 @@
 					"start": 0,
 					"duration": 25,
 					"demand": 36,
-					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_30.json",
+					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_40.json",
 					"type": "continuum",
 					"data_product_rate": 5
 				},
@@ -23,7 +23,7 @@
 					"start": 30,
 					"duration": 10,
 					"demand": 18,
-					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_10.json",
+					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_30.json",
 					"type": "continuum",
 					"data_product_rate": 3
 				},
@@ -32,7 +32,7 @@
 					"start": 30,
 					"duration": 10,
 					"demand": 18,
-					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_10.json",
+					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_30.json",
 					"type": "continuum",
 					"data_product_rate": 2
 				},
@@ -41,7 +41,7 @@
 					"start": 40,
 					"duration": 15,
 					"demand": 36,
-					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_30.json",
+					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_40.json",
 					"type": "continuum",
 					"data_product_rate": 5
 				}
