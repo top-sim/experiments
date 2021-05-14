@@ -1,5 +1,6 @@
 # Sim Config
 
+Results are stored in visualisation_playground/jupyter_results
 ## Reading filenames: 
 
 MOS = multi-observation simulation 
