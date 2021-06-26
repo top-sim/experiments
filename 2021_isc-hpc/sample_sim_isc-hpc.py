@@ -27,9 +27,9 @@ sys.path.insert(0, os.path.abspath('../../topsim_pipelines'))
 from topsim.core.simulation import Simulation
 from topsim.core.delay import DelayModel
 from user.telescope import Telescope
-from user.scheduling import GreedyAlgorithmFromPlan
+from user.scheduling import DynamicAlgorithmFromPlan
 
-logging.basicConfig(level="INFO")
+logging.basicConfig(level="DEBUG")
 logger = logging.getLogger()
 
 algorithms = ['heft', 'fcfs']
@@ -42,7 +42,7 @@ for algorithm in algorithms:
     for config in sorted(os.listdir(
             '2021_isc-hpc/config/single_size/40cluster')):
         if '.json' in config:
-            CONFIG = f'2021_isc_hpc/config/single_size/40cluster/{config}'
+            CONFIG = f'2021_isc-hpc/config/single_size/40cluster/{config}'
             env = simpy.Environment()
             instrument = Telescope
             timestamp = f'{time.time()}'.split('.')[0]
@@ -51,7 +51,7 @@ for algorithm in algorithms:
                 config=CONFIG,
                 instrument=instrument,
                 planning=algorithm,
-                scheduling=GreedyAlgorithmFromPlan,
+                scheduling=DynamicAlgorithmFromPlan,
                 delay=None,
                 timestamp={timestamp}
             )
