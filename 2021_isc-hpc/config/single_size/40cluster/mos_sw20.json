@@ -5,19 +5,19 @@
 			"max_ingest_resources": 5,
 			"pipelines": {
 				"dingo": {
-					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_20.json",
+					"workflow": "2021_isc-hpc/config/workflows/shadow_Continuum_ChannelSplit_20.json",
 					"ingest_demand": 5
 				},
 				"emu1": {
-					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_20.json",
+					"workflow": "2021_isc-hpc/config/workflows/shadow_Continuum_ChannelSplit_20.json",
 					"ingest_demand": 5
 				},
 				"emu2": {
-					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_20.json",
+					"workflow": "2021_isc-hpc/config/workflows/shadow_Continuum_ChannelSplit_20.json",
 					"ingest_demand": 5
 				},
 				"wallaby": {
-					"workflow": "visualisation_playground/workflows/shadow_Continuum_ChannelSplit_20.json",
+					"workflow": "2021_isc-hpc/config/workflows/shadow_Continuum_ChannelSplit_20.json",
 					"ingest_demand": 5
 				}
 			},
