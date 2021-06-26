@@ -23,7 +23,10 @@ from topsim.core.task import TaskStatus
 logger = logging.getLogger(__name__)
 
 
-class GreedyAlgorithmFromPlan(Algorithm):
+class DynamicAlgorithmFromPlan(Algorithm):
+    """
+    This plan
+    """
     def __init__(self, threshold=0.8):
         self.threshold = threshold
 
@@ -57,8 +60,7 @@ class GreedyAlgorithmFromPlan(Algorithm):
         temporary_resources = self.cluster.current_available_resources()
         for t in tasks:
             # Allocate the first element in the Task list:
-            if t.task_status is TaskStatus.UNSCHEDULED and \
-                    t.est + workflow_plan.ast <= clock:
+            if t.task_status is TaskStatus.UNSCHEDULED:
                 # Are we workkflow - delayed?
                 if workflow_plan.ast > workflow_plan.est:
                     workflow_plan.status = WorkflowStatus.DELAYED
@@ -67,22 +69,13 @@ class GreedyAlgorithmFromPlan(Algorithm):
                     workflow_plan.status = WorkflowStatus.SCHEDULED
                     if self.is_machine_occupied(
                             machine) or machine not in temporary_resources:
-                        # Is there another machine
-                        if temporary_resources:
-                            machine = temporary_resources[0]
-                            alloc = (machine, t)
-                            allocations.append(alloc)
-                            temporary_resources.remove(machine)
-                            self.alternate += 1
-                            # return machine, t, workflow_plan.status
-                        # return None, None, workflow_plan.status
+                        continue
                     else:
                         alloc = (machine, t)
                         allocations.append(alloc)
                         temporary_resources.remove(machine)
                         self.accurate += 1
 
-                    # return machine, t, workflow_plan.status
                 # The task has predecessors
                 else:
                     # If the set of finished tasks does not contain all of the
@@ -96,18 +89,10 @@ class GreedyAlgorithmFromPlan(Algorithm):
                         # One of the predecessors of 't' is still running
                         continue
                     else:
-                        # A machine may not be occupied, but we may have
-                        # provisionally allocated it within this scheduling run
+
                         if self.cluster.is_occupied(
                                 machine) or machine not in temporary_resources:
-                            if temporary_resources:
-                                machine = temporary_resources[0]
-                                allocations.append((machine, t))
-                                temporary_resources.remove(machine)
-                                self.alternate += 1
-                                # return machine, t, workflow_plan.status
-                            # return None, None, workflow_plan.status
-                        # return machine, t, workflow_plan.status
+                            continue
                         else:
                             allocations.append((machine, t))
                             temporary_resources.remove(machine)
