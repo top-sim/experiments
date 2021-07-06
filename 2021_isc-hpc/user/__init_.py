@@ -1,4 +1,4 @@
-# Copyright (C) 3/2/21 RW Bunney
+# Copyright (C) 22/4/21 RW Bunney
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -12,30 +12,3 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-import simpy
-
-from topsim.core.simulation import Simulation
-from user.telescope import Telescope
-from user.scheduling import FifoAlgorithm
-
-
-EVENT_FILE = 'buffer/config/real_time.trace'
-CONFIG = 'buffer/config/real_time.json'
-
-env = simpy.Environment()
-
-planning_algorithm = 'heft'
-scheduling_algorithm = FifoAlgorithm
-instrument = Telescope
-
-simulation = Simulation(
-    env=env,
-    config=CONFIG,
-    instrument=instrument,
-    algorithm_map={'pheft': 'pheft', 'heft': 'heft', 'fifo': FifoAlgorithm},
-    event_file=EVENT_FILE,
-)
-
-simulation.start(11)
-simulation.resume(10000)
