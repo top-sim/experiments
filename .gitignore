@@ -1,3 +1,5 @@
 temp/*
 /.idea/
+*.ipynb*
+*__pycache__*
 

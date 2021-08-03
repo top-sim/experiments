@@ -141,7 +141,7 @@ class Telescope(Instrument):
                 capacity = self.total_arrays - self.telescope_use
                 # IF there is an observation ready for start
                 if observation.is_ready(self.env.now, capacity):
-                    LOGGER.info(
+                    LOGGER.debug(
                         'Observation %s scheduled for %s',
                         observation.name,
                         self.env.now
