@@ -1,5 +1,4 @@
 temp/*
 /.idea/
-*.ipynb*
 *__pycache__*
-
+*_checkpoints*
