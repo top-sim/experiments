@@ -17,9 +17,9 @@ import copy
 import logging
 import pandas as pd
 
-from topsim.core.algorithm import Algorithm
 from topsim.core.planner import WorkflowStatus
 from topsim.core.task import TaskStatus
+from topsim.algorithms.scheduling import Algorithm
 
 LOGGER = logging.getLogger(__name__)
 

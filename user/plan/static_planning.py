@@ -16,9 +16,9 @@
 import logging
 import copy
 
-from topsim.core.planning import Planning
 from topsim.core.planner import WorkflowPlan, WorkflowStatus
 from topsim.core.task import Task
+from topsim.algorithms.planning import Planning
 
 from shadow.algorithms.heuristic import heft, fcfs, pheft
 from shadow.models.workflow import Workflow, Environment

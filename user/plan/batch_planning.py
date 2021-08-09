@@ -18,9 +18,9 @@ import copy
 import networkx as nx
 
 from topsim.core.task import Task
-from topsim.core.planning import Planning
 from topsim.core.planner import WorkflowStatus, WorkflowPlan
 
+from topsim.algorithms.planning import Planning
 
 class BatchPlanning(Planning):
     """
