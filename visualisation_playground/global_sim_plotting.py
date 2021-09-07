@@ -15,6 +15,7 @@
 
 import os
 import sys
+import json
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -22,6 +23,8 @@ import numpy as np
 from matplotlib.collections import PatchCollection
 from matplotlib.ticker import AutoMinorLocator
 from matplotlib.patches import Rectangle
+
+import networkx as nx
 
 plt.rcParams.update({
     "text.usetex": True,
@@ -46,7 +49,8 @@ def create_standard_axis(ax, minor=True):
     ax.yaxis.set_minor_locator(AutoMinorLocator())
     ax.grid(axis='both', which='major', color='grey')
     if minor:
-        ax.grid(axis='both', which='minor', color='lightgrey', linestyle='dotted')
+        ax.grid(axis='both', which='minor', color='lightgrey',
+                linestyle='dotted')
     # ax.tick_params(
     #     right=True, top=True, which='both', direction='in'
     # )
@@ -76,14 +80,16 @@ def plot_task_runtime(
     """
 
     # select the specific workflow based on the config entry
-    wf_df = df[df['config'] == config]
     if alt_axes:
         fig, ax1, ax2 = alt_axes
+        config = config.lstrip('publications/')
     else:
-        fig, (ax1, ax2) = plt.subplots(figsize=(15,8),
-            nrows=2,ncols=1, sharex=True, gridspec_kw={
-                'hspace':0.1, 'height_ratios':[3,1]}
-        )
+        fig, (ax1, ax2) = plt.subplots(figsize=(15, 8),
+                                       nrows=2, ncols=1, sharex=True,
+                                       gridspec_kw={
+                                           'hspace': 0.1,
+                                           'height_ratios': [3, 1]}
+                                       )
         ax2.set_xlabel('Simulation Time (min)')
         ax1.set_ylabel('No. Running Tasks')
         ax1 = create_standard_axis(ax1)
@@ -96,16 +102,16 @@ def plot_task_runtime(
     else:
         color = 'red'
         alpha = 1.0
-
+    wf_df = df[df['config'] == config]
     x = np.array(wf_df.index)
     y = np.array(wf_df['running_tasks'])
     ax1.plot(x, y, color=color, alpha=alpha)
     ax1.set_ylim(ymin=0)
-    ax1.set_xlim(xmin=0)
+    ax1.set_xlim(xmin=500,xmax=550)
     return fig, ax1, ax2
 
 
-def find_workflow_boundaries(tasks_df, wf_config):
+def find_workflow_boundaries(tasks_sim, wf_config):
     """
     Using the tasks dataframe, find the boundaries of when the observation
     workflow started and finished
@@ -118,8 +124,11 @@ def find_workflow_boundaries(tasks_df, wf_config):
 
     """
 
+    # tasks_df = pd.read_pickle(
+    #     'simulation_output/2021-08-09_global_tasks_batch.pkl')
     tasks_df = pd.read_pickle(
-        'simulation_output/2021-08-09_global_tasks_batch.pkl')
+       tasks_sim
+    )
     tasks_df = tasks_df.reset_index(level=0)
     tasks_df = tasks_df.rename(columns={'index': 'tasks'})
     # remove ingest tasks from consideration
@@ -169,38 +178,88 @@ if __name__ == '__main__':
     os.chdir("/home/rwb/github/thesis_experiments")
     DATA_DIR = 'simulation_output/'
 
-    os.listdir(DATA_DIR)
-    ex_file = '2021-08-09_global_sim_batch.pkl'
+    sims = {
+        '2021-08-09_global_sim_batch.pkl',
+        'publications/2021_isc-hpc/config/single_size/40cluster/mos_sw80.json'
+    }
+    sim = {
+        'error': {
+            'sim': f'{DATA_DIR}/2021-08-09_global_sim_batch.pkl',
+            'tasks': f'{DATA_DIR}/2021-08-09_global_tasks_batch.pkl',
+            'config': '2021_isc-hpc/config/single_size/40cluster/mos_sw10.json'
+        },
+        'updated': {
+            'sim': f"{DATA_DIR}/batch_allocation_experiments/2021-09-07-sim"
+                   f".pkl",
+            'tasks': (
+                f"{DATA_DIR}/batch_allocation_experiments/2021-09-07-tasks.pkl"),
+            'config': 'publications/2021_isc-hpc/config/single_size/40cluster'
+                      '/mos_sw10.json'
+        }
+    }
 
-    batch_df = pd.read_pickle(f'{DATA_DIR}/{ex_file}')
-    ex_wf_config = (
-        '2021_isc-hpc/config/single_size/40cluster/mos_sw60.json'
-    )
-    wf_bd = find_workflow_boundaries(batch_df, ex_wf_config)
+    for version in sim:
+        with open( "publications/2021_isc-hpc/config/workflows/shadow_Continuum_ChannelSplit_80.json", 'r') as jfile:
+            wf = json.load(jfile)
+            graph = nx.readwrite.json_graph.node_link_graph(wf['graph'])
 
-    fig, ax1, ax2 = plot_task_runtime(batch_df, ex_wf_config)
+        os.listdir(DATA_DIR)
+        ex_file = '2021-08-09_global_sim_batch.pkl'
+        # ex_file = "batch_allocation_experiments/2021-09-07-sim.pkl"
+        batch_df = pd.read_pickle(sim[version]['sim'])
+        ex_wf_config = sim[version]['config']
+        wf_bd = find_workflow_boundaries(sim[version]['tasks'], ex_wf_config)
 
-    realloc_file = '2021-07-08_global_sim_greedy_from_plan.pkl'
-    realloc_df = pd.read_pickle(f'{DATA_DIR}/{realloc_file}')
-    realloc_df_fcfs = realloc_df[realloc_df['planning'] == 'fcfs']
-    # plt.show()
-    fig, ax1, ax2 = plot_task_runtime(
-        realloc_df_fcfs, ex_wf_config, (fig, ax1, ax2), color='blue', alpha=0.4)
-    ax1.legend(['Batch', 'FCFS w/ Realloc'])
+        fig, ax1, ax2 = plot_task_runtime(batch_df, ex_wf_config)
 
-    ast = wf_bd['wallaby'][0]
-    aft = wf_bd['wallaby'][1]
-    data_dict = {'obs':[], 'width':[], 'left':[]}
-    for obs in wf_bd:
-        ast, aft = wf_bd[obs]
-        data_dict['obs'].append(obs)
-        data_dict['width'].append(aft-ast)
-        # the x-coordinates of left-hand side of bar, see axes.barh
-        data_dict['left'].append(ast)
+        realloc_file = '2021-07-08_global_sim_greedy_from_plan.pkl'
+        realloc_df = pd.read_pickle(f'{DATA_DIR}/{realloc_file}')
+        realloc_df_fcfs = realloc_df[realloc_df['planning'] == 'fcfs']
+        realloc_wf_wd = find_workflow_boundaries(
+            f'{DATA_DIR}/2021-07-08_global_tasks_greedy_from_plan.pkl',
+            ex_wf_config.lstrip('publications/')
+        )
+        # plt.show()
+        fig, ax1, ax2 = plot_task_runtime(
+            realloc_df_fcfs, ex_wf_config, (fig, ax1, ax2), color='blue', alpha=0.4)
+        ax1.legend(['Batch', 'FCFS w/ Realloc'])
 
-    ax2.barh(data_dict['obs'], data_dict['width'], left=data_dict['left'],
-             color=['teal'], height=0.5)
-    ax2.set_axisbelow(True)
-    fig.align_ylabels()
-    plt.figure(figsize=(16,8))
-    plt.show()
+        ast = wf_bd['wallaby'][0]
+        aft = wf_bd['wallaby'][1]
+        data_dict = {'obs': [], 'width': [], 'left': []}
+        for obs in wf_bd:
+            ast, aft = wf_bd[obs]
+            data_dict['obs'].append(obs)
+            data_dict['width'].append(aft - ast)
+            # the x-coordinates of left-hand side of bar, see axes.barh
+            data_dict['left'].append(ast)
+
+        y = np.arange(len(data_dict['obs']))
+        ax2.barh(y-0.25, data_dict['width'],
+                 left=data_dict['left'],
+                 color=['teal'], height=0.5, label='batch')
+
+        realloc_data_dict = {'obs': [], 'width': [], 'left': []}
+        for obs in data_dict['obs']:
+            ast, aft = realloc_wf_wd[obs]
+            realloc_data_dict['obs'].append(obs)
+            realloc_data_dict['width'].append(aft - ast)
+            # the x-coordinates of left-hand side of bar, see axes.barh
+            realloc_data_dict['left'].append(ast)
+
+        ax2.barh(y+0.25,realloc_data_dict['width'],
+                 left=realloc_data_dict['left'],
+                 color=['orange'], height=0.5, label='realloc')
+
+        labels = data_dict['obs']
+        ax2.set_axisbelow(True)
+        ax2.set_yticks(y)
+        ax2.set_yticklabels(labels)
+
+        # ax2.set(yticklabels=labels)
+
+
+        ax2.legend()
+        fig.align_ylabels()
+        plt.figure(figsize=(16, 8))
+        plt.show()

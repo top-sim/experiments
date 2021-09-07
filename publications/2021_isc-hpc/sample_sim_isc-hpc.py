@@ -40,9 +40,9 @@ global_tasks = pd.DataFrame()
 
 for algorithm in algorithms:
     for config in sorted(os.listdir(
-            '2021_isc-hpc/config/single_size/40cluster')):
+            'publications/2021_isc-hpc/config/single_size/40cluster')):
         if '.json' in config:
-            CONFIG = f'2021_isc-hpc/config/single_size/40cluster/{config}'
+            CONFIG = f'publications/2021_isc-hpc/config/single_size/40cluster/{config}'
             env = simpy.Environment()
             instrument = Telescope
             timestamp = f'{time.time()}'.split('.')[0]

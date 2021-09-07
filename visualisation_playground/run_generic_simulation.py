@@ -17,6 +17,16 @@
 
 import os
 import sys
+import logging
+import datetime
+import simpy
+import pandas as pd
+
+from topsim.core.simulation import Simulation
+from user.schedule.batch_allocation import BatchProcessing
+from user.telescope import Telescope  # Instrument
+from user.plan.batch_planning import BatchPlanning  # Planning
+
 
 def init():
     """
@@ -44,21 +54,46 @@ def concatenate_pickle_file(dir):
     pass
 
 
-def run_simulation(boundaries):
+def run_simulation(cfg, timestamp):
     """
     Given the specified, construct the simulation object and run it
 
     """
-    pass
+    env = simpy.Environment()
+    simulation = Simulation(
+        env=env,
+        config=cfg,
+        instrument=Telescope,
+        planning_algorithm='batch',
+        planning_model=BatchPlanning('batch'),
+        scheduling=BatchProcessing,
+        delay=None,
+        timestamp=timestamp,
+        to_file=True
+    )
+    sim, tasks = simulation.start()
+    return sim, tasks
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level="INFO")
+    logger = logging.getLogger()
+
     sys.path.insert(0, os.path.abspath('../../thesis_experiments'))
     sys.path.insert(0, os.path.abspath('../../topsim_pipelines'))
     sys.path.insert(0, os.path.abspath('../../shadow'))
     os.chdir("/home/rwb/github/thesis_experiments/")
-    wf_config = (
-        '2021_isc-hpc/config/single_size/40cluster/mos_sw80.json'
+    CONFIG = (
+        'publications/2021_isc-hpc/config/single_size/40cluster/mos_sw80.json'
     )
     OUTPUT_DIR = 'simulation_output/batch_allocation_experiments'
-    run_simulation(None)
+
+    STATIC_PLANNING_ALGORITHMS = ['heft', 'fcfs']
+
+    GLOBAL_SIM = pd.DataFrame()
+    GLOBAL_TASKS = pd.DataFrame()
+
+    DATE = datetime.date.today().strftime("%Y-%m-%d")
+    FNAME = f"{OUTPUT_DIR}/{DATE}"
+
+    _sim, _tasks = run_simulation(CONFIG, timestamp=FNAME)

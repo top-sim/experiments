@@ -15,6 +15,7 @@
 
 import copy
 import logging
+import pandas as pd
 
 from topsim.core.task import TaskStatus
 from topsim.core.planner import WorkflowStatus
@@ -44,6 +45,7 @@ class BatchProcessing(Algorithm):
         super().__init__()
         self.max_resources_split = max_resources_split
         self.min_resource_per_workflow = min_resources_per_workflow
+        self.pred = 0
 
     def __repr__(self):
         return "BatchProcessing"
@@ -61,6 +63,7 @@ class BatchProcessing(Algorithm):
             logger.info(f"{workflow_plan.id} attempted to provision @ {clock}.")
             logger.info(f"{cluster.num_provisioned_obs} existing provs.")
         tasks = workflow_plan.tasks
+        self.pred = 0
         if provision:
             temporary_resources = cluster.get_idle_resources(workflow_plan.id)
             for task in tasks:
@@ -79,6 +82,7 @@ class BatchProcessing(Algorithm):
                             # Check if there isn't an overlap between sets
                             if not pred.issubset(finished):
                                 # one of the predecessors is still running
+                                self.pred += 1
                                 continue
                             else:
                                 allocations[task] = m
@@ -87,11 +91,12 @@ class BatchProcessing(Algorithm):
         if len(workflow_plan.tasks) == 0:
             workflow_plan.status = WorkflowStatus.FINISHED
             logger.debug(f'{workflow_plan.id} is finished.')
-            cluster.release_batch_resources(workflow_plan.id)
         return allocations, workflow_plan.status
 
     def to_df(self):
-        pass
+        df = pd.DataFrame()
+        df['predecessors_skipped'] = self.pred
+        return df
 
     def _max_resource_provision(self, cluster):
         """
@@ -121,7 +126,7 @@ class BatchProcessing(Algorithm):
 
         #  TODO do We need to make sure there's enough left for ingest to
         #   occur?
-        max_allowed = int(len(cluster.dmachine) / self.max_resources_split)
+        max_allowed = int(len(cluster) / self.max_resources_split)
         if available == 0:
             return 0
         if available < max_allowed:
@@ -131,7 +136,7 @@ class BatchProcessing(Algorithm):
 
     def _provision_resources(self, cluster, workflow_plan):
         """
-Given the defined max_resources_split, provision resources
+        Given the defined max_resources_split, provision resources
 
         Note:
         This should only be called once, but it's easier to call it at the
@@ -147,17 +152,17 @@ Given the defined max_resources_split, provision resources
             # logger.info(f"{workflow_plan.id} already provisioned.")
             return True
         else:
-            if cluster.num_provisioned_obs >= self.max_resources_split:
-                return False
-            else:
+            if cluster.num_provisioned_obs < self.max_resources_split:
                 provision = self._max_resource_provision(cluster)
                 if provision < self.min_resource_per_workflow:
                     return False
                 else:
                     logger.info(f"{provision} machines for {workflow_plan.id}")
                     logger.info(
-                        f"{len(cluster.num_provisioned_obs)} provisioned"
+                        f"{cluster.num_provisioned_obs} provisioned"
                     )
                     return cluster.provision_batch_resources(
                         provision, workflow_plan.id
                     )
+            else:
+                return False
