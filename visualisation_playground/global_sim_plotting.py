@@ -16,7 +16,7 @@
 import os
 import sys
 import json
-
+import logging
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -32,6 +32,8 @@ plt.rcParams.update({
     "font.size": 16,
     "figure.autolayout": True,
 })
+
+LOGGER = logging.getLogger(__name__)
 
 
 def create_standard_axis(ax, minor=True):
@@ -138,7 +140,7 @@ def find_workflow_boundaries(tasks_sim, wf_config):
     for o in observations:
         focus = tasks_df[tasks_df['observation_id'] == o]
 
-        focus = focus[focus['config'] == wf_config]
+        focus = focus[focus['config'].str.contains(wf_config)]
 
         focus = focus[~focus['tasks'].str.contains('ingest')]
         ast_wf = focus.sort_values(by='ast').iloc[0]['aft']
@@ -180,7 +182,8 @@ if __name__ == '__main__':
 
     sims = {
         '2021-08-09_global_sim_batch.pkl',
-        'publications/2021_isc-hpc/config/single_size/40cluster/mos_sw80.json'
+        '/2021_isc-hpc/config/single_size/40cluster/mos_sw80'
+        '.json'
     }
     sim = {
         'error': {
@@ -193,13 +196,13 @@ if __name__ == '__main__':
                    f".pkl",
             'tasks': (
                 f"{DATA_DIR}/batch_allocation_experiments/2021-09-07-tasks.pkl"),
-            'config': 'publications/2021_isc-hpc/config/single_size/40cluster'
+            'config': '2021_isc-hpc/config/single_size/40cluster'
                       '/mos_sw10.json'
         }
     }
 
     for version in sim:
-        with open( "publications/2021_isc-hpc/config/workflows/shadow_Continuum_ChannelSplit_80.json", 'r') as jfile:
+        with open( "archived_results/2021_isc-hpc/config/workflows/shadow_Continuum_ChannelSplit_80.json", 'r') as jfile:
             wf = json.load(jfile)
             graph = nx.readwrite.json_graph.node_link_graph(wf['graph'])
 
@@ -207,6 +210,10 @@ if __name__ == '__main__':
         ex_file = '2021-08-09_global_sim_batch.pkl'
         # ex_file = "batch_allocation_experiments/2021-09-07-sim.pkl"
         batch_df = pd.read_pickle(sim[version]['sim'])
+        if len(batch_df['config'].str.contains(sim['version']['config'])) == 0:
+            LOGGER.info(f"Skipping {sim[version]['sim']} as "
+                        f"{sim[version]['config']} is not present in "
+                        f"simulation")
         ex_wf_config = sim[version]['config']
         wf_bd = find_workflow_boundaries(sim[version]['tasks'], ex_wf_config)
 
@@ -217,7 +224,7 @@ if __name__ == '__main__':
         realloc_df_fcfs = realloc_df[realloc_df['planning'] == 'fcfs']
         realloc_wf_wd = find_workflow_boundaries(
             f'{DATA_DIR}/2021-07-08_global_tasks_greedy_from_plan.pkl',
-            ex_wf_config.lstrip('publications/')
+            ex_wf_config.lstrip('archived_results/')
         )
         # plt.show()
         fig, ax1, ax2 = plot_task_runtime(
