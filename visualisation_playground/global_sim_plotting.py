@@ -201,6 +201,8 @@ if __name__ == '__main__':
         }
     }
 
+    # TODO check for existence of configuration file to ensure the simulation
+    #  works.
     for version in sim:
         with open( "archived_results/2021_isc-hpc/config/workflows/shadow_Continuum_ChannelSplit_80.json", 'r') as jfile:
             wf = json.load(jfile)
