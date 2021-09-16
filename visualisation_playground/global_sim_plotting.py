@@ -109,7 +109,7 @@ def plot_task_runtime(
     y = np.array(wf_df['running_tasks'])
     ax1.plot(x, y, color=color, alpha=alpha)
     ax1.set_ylim(ymin=0)
-    ax1.set_xlim(xmin=500,xmax=550)
+    ax1.set_xlim(xmin=0)  # , xmax=550)
     return fig, ax1, ax2
 
 
@@ -129,7 +129,7 @@ def find_workflow_boundaries(tasks_sim, wf_config):
     # tasks_df = pd.read_pickle(
     #     'simulation_output/2021-08-09_global_tasks_batch.pkl')
     tasks_df = pd.read_pickle(
-       tasks_sim
+        tasks_sim
     )
     tasks_df = tasks_df.reset_index(level=0)
     tasks_df = tasks_df.rename(columns={'index': 'tasks'})
@@ -176,33 +176,45 @@ def generate_groupby_dataframes(df, grouby_list=None):
         '.json').astype(float)
 
 
+def translate_existing_dataframes(df):
+    """
+    Older data frames have incorrect object types; we can update them to
+    improve their usability
+
+    Parameters
+    ----------
+    df
+
+    Returns
+    -------
+
+    """
+
+
 if __name__ == '__main__':
     os.chdir("/home/rwb/github/thesis_experiments")
-    DATA_DIR = 'simulation_output/'
+    DATA_DIR = 'visualisation_playground/playground_data/'
 
-    sims = {
-        '2021-08-09_global_sim_batch.pkl',
-        '/2021_isc-hpc/config/single_size/40cluster/mos_sw80'
-        '.json'
-    }
+    # Keywords for differentiating simulation output and tasks output
+    SIM_KEYWORD = 'sim'
+    TASKS_KEYWORD = 'tasks'
     sim = {
         'error': {
             'sim': f'{DATA_DIR}/2021-08-09_global_sim_batch.pkl',
             'tasks': f'{DATA_DIR}/2021-08-09_global_tasks_batch.pkl',
-            'config': '2021_isc-hpc/config/single_size/40cluster/mos_sw10.json'
+            'config': 'mos_sw80.json'
         },
         'updated': {
-            'sim': f"{DATA_DIR}/batch_allocation_experiments/2021-09-07-sim"
-                   f".pkl",
-            'tasks': (
-                f"{DATA_DIR}/batch_allocation_experiments/2021-09-07-tasks.pkl"),
-            'config': '2021_isc-hpc/config/single_size/40cluster'
-                      '/mos_sw10.json'
+            'sim': f"{DATA_DIR}/2021-09-07-sim.pkl",
+            'tasks': f"{DATA_DIR}/2021-09-07-tasks.pkl",
+            'config': f'mos_sw80.json'
         }
     }
 
     for version in sim:
-        with open( "archived_results/2021_isc-hpc/config/workflows/shadow_Continuum_ChannelSplit_80.json", 'r') as jfile:
+        with open(
+                "archived_results/2021_isc-hpc/config/workflows/shadow_Continuum_ChannelSplit_80.json",
+                'r') as jfile:
             wf = json.load(jfile)
             graph = nx.readwrite.json_graph.node_link_graph(wf['graph'])
 
@@ -210,7 +222,12 @@ if __name__ == '__main__':
         ex_file = '2021-08-09_global_sim_batch.pkl'
         # ex_file = "batch_allocation_experiments/2021-09-07-sim.pkl"
         batch_df = pd.read_pickle(sim[version]['sim'])
-        if len(batch_df['config'].str.contains(sim['version']['config'])) == 0:
+        objects = [
+            'observation_queue', 'schedule_status', 'delay_offset',
+            'algtime', 'planning', 'scheduling', 'config'
+        ]
+
+        if len(batch_df['config'].str.contains(sim[version]['config'])) == 0:
             LOGGER.info(f"Skipping {sim[version]['sim']} as "
                         f"{sim[version]['config']} is not present in "
                         f"simulation")
@@ -228,7 +245,8 @@ if __name__ == '__main__':
         )
         # plt.show()
         fig, ax1, ax2 = plot_task_runtime(
-            realloc_df_fcfs, ex_wf_config, (fig, ax1, ax2), color='blue', alpha=0.4)
+            realloc_df_fcfs, ex_wf_config, (fig, ax1, ax2), color='blue',
+            alpha=0.4)
         ax1.legend(['Batch', 'FCFS w/ Realloc'])
 
         ast = wf_bd['wallaby'][0]
@@ -242,7 +260,7 @@ if __name__ == '__main__':
             data_dict['left'].append(ast)
 
         y = np.arange(len(data_dict['obs']))
-        ax2.barh(y-0.25, data_dict['width'],
+        ax2.barh(y - 0.25, data_dict['width'],
                  left=data_dict['left'],
                  color=['teal'], height=0.5, label='batch')
 
@@ -254,7 +272,7 @@ if __name__ == '__main__':
             # the x-coordinates of left-hand side of bar, see axes.barh
             realloc_data_dict['left'].append(ast)
 
-        ax2.barh(y+0.25,realloc_data_dict['width'],
+        ax2.barh(y + 0.25, realloc_data_dict['width'],
                  left=realloc_data_dict['left'],
                  color=['orange'], height=0.5, label='realloc')
 
@@ -264,7 +282,6 @@ if __name__ == '__main__':
         ax2.set_yticklabels(labels)
 
         # ax2.set(yticklabels=labels)
-
 
         ax2.legend()
         fig.align_ylabels()
