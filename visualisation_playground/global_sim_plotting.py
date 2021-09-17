@@ -30,7 +30,7 @@ plt.rcParams.update({
     "text.usetex": True,
     "font.family": "serif",
     "font.size": 16,
-    "figure.autolayout": True,
+    # "figure.autolayout": True,
 })
 
 LOGGER = logging.getLogger(__name__)
@@ -53,9 +53,9 @@ def create_standard_axis(ax, minor=True):
     if minor:
         ax.grid(axis='both', which='minor', color='lightgrey',
                 linestyle='dotted')
-    # ax.tick_params(
-    #     right=True, top=True, which='both', direction='in'
-    # )
+    ax.tick_params(
+        right=True, top=True, which='both', direction='in'
+    )
     #
     return ax
 
@@ -78,7 +78,7 @@ def plot_task_runtime(
 
     Returns
     -------
-    plot : The plot
+    fig, ax1, ax2; the two axes required for the plots
     """
 
     # select the specific workflow based on the config entry
@@ -86,34 +86,37 @@ def plot_task_runtime(
         fig, ax1, ax2 = alt_axes
         config = config.lstrip('publications/')
     else:
-        fig, (ax1, ax2) = plt.subplots(figsize=(15, 8),
-                                       nrows=2, ncols=1, sharex=True,
-                                       gridspec_kw={
-                                           'hspace': 0.1,
-                                           'height_ratios': [3, 1]}
-                                       )
+        fig, (ax1, ax2) = plt.subplots(
+            figsize=(15, 8),
+            nrows=2, ncols=1, sharex='all',
+            gridspec_kw={
+                'hspace': 0.1,
+                'height_ratios': [3, 1]
+            }
+        )
         ax2.set_xlabel('Simulation Time (min)')
         ax1.set_ylabel('No. Running Tasks')
         ax1 = create_standard_axis(ax1)
         ax2 = create_standard_axis(ax2, minor=False)
         ax2.set_ylabel('Observation workflow')
 
-    if kwargs:
-        color = kwargs['color']
-        alpha = kwargs['alpha']
-    else:
-        color = 'red'
-        alpha = 1.0
-    wf_df = df[df['config'] == config]
+    wf_df = df[df['config'].str.contains(config)]
     x = np.array(wf_df.index)
     y = np.array(wf_df['running_tasks'])
-    ax1.plot(x, y, color=color, alpha=alpha)
+
+    if not kwargs:
+        alpha = 1.0
+        color = 'red'
+        ax1.plot(x, y, color, alpha)
+    else:
+        ax1.plot(x, y, **kwargs)
+
     ax1.set_ylim(ymin=0)
     ax1.set_xlim(xmin=0)  # , xmax=550)
     return fig, ax1, ax2
 
 
-def find_workflow_boundaries(tasks_sim, wf_config):
+def find_workflow_boundaries(tasks_sim):
     """
     Using the tasks dataframe, find the boundaries of when the observation
     workflow started and finished
@@ -139,8 +142,6 @@ def find_workflow_boundaries(tasks_sim, wf_config):
     wf_boundaries = {}
     for o in observations:
         focus = tasks_df[tasks_df['observation_id'] == o]
-
-        focus = focus[focus['config'].str.contains(wf_config)]
 
         focus = focus[~focus['tasks'].str.contains('ingest')]
         ast_wf = focus.sort_values(by='ast').iloc[0]['aft']
@@ -176,6 +177,39 @@ def generate_groupby_dataframes(df, grouby_list=None):
         '.json').astype(float)
 
 
+def plot_workflow_runtime(tasks_df, axis, wf_config, **kwargs):
+    """
+    For the given axis and boundaries, plot when each workflow was executing
+    on the cluster during the simulation.
+
+    Parameters
+    ----------
+    axes
+    boundaries
+    kwargs
+
+    Returns
+    ------
+
+    """
+    boundaries = find_workflow_boundaries(df, wf_config)
+    for observation in boundaries:
+        ast, aft  = boundaries[observation]
+    data_dict = {'obs': [], 'width': [], 'left': []}
+    for obs in wf_bd:
+        ast, aft = wf_bd[obs]
+        data_dict['obs'].append(obs)
+        data_dict['width'].append(aft - ast)
+        # the x-coordinates of left-hand side of bar, see axes.barh
+        data_dict['left'].append(ast)
+
+    y = np.arange(len(data_dict['obs']))
+    axes.barh(y - 0.25, data_dict['width'],
+             left=data_dict['left'],
+             color=['teal'], hatch='.', height=0.5, label='batch')
+    return
+
+
 def translate_existing_dataframes(df):
     """
     Older data frames have incorrect object types; we can update them to
@@ -191,6 +225,21 @@ def translate_existing_dataframes(df):
     """
 
 
+def extract_individual_simulation_from_hdf5(hdf):
+    """
+    Get individual sim results from HDF5 and return dictionary of the
+    dataframes with identifier
+
+    Parameters
+    ----------
+    hdf
+
+    Returns
+    -------
+
+    """
+
+
 if __name__ == '__main__':
     os.chdir("/home/rwb/github/thesis_experiments")
     DATA_DIR = 'visualisation_playground/playground_data/'
@@ -198,6 +247,7 @@ if __name__ == '__main__':
     # Keywords for differentiating simulation output and tasks output
     SIM_KEYWORD = 'sim'
     TASKS_KEYWORD = 'tasks'
+
     sim = {
         'error': {
             'sim': f'{DATA_DIR}/2021-08-09_global_sim_batch.pkl',
@@ -214,12 +264,6 @@ if __name__ == '__main__':
     # TODO check for existence of configuration file to ensure the simulation
     #  works.
     for version in sim:
-        with open(
-                "archived_results/2021_isc-hpc/config/workflows/shadow_Continuum_ChannelSplit_80.json",
-                'r') as jfile:
-            wf = json.load(jfile)
-            graph = nx.readwrite.json_graph.node_link_graph(wf['graph'])
-
         os.listdir(DATA_DIR)
         ex_file = '2021-08-09_global_sim_batch.pkl'
         # ex_file = "batch_allocation_experiments/2021-09-07-sim.pkl"
@@ -234,20 +278,24 @@ if __name__ == '__main__':
                         f"{sim[version]['config']} is not present in "
                         f"simulation")
         ex_wf_config = sim[version]['config']
-        wf_bd = find_workflow_boundaries(sim[version]['tasks'], ex_wf_config)
 
-        fig, ax1, ax2 = plot_task_runtime(batch_df, ex_wf_config)
+        # TODO SPLIT UP DATAFRAMES BEFORE RUNNING PLOTTING SCRIPTS
+        # THIS WILL REPLICATE THE APPROACH WE TAKE WITH THE HDF5 storeso
+
+        wf_bd = find_workflow_boundaries(sim[version]['tasks'])
+
+        fig, ax1, ax2 = plot_task_runtime(batch_df, ex_wf_config,
+                                          color='teal', alpha=0.8)
 
         realloc_file = '2021-07-08_global_sim_greedy_from_plan.pkl'
         realloc_df = pd.read_pickle(f'{DATA_DIR}/{realloc_file}')
         realloc_df_fcfs = realloc_df[realloc_df['planning'] == 'fcfs']
         realloc_wf_wd = find_workflow_boundaries(
-            f'{DATA_DIR}/2021-07-08_global_tasks_greedy_from_plan.pkl',
-            ex_wf_config.lstrip('archived_results/')
+            f'{DATA_DIR}/2021-07-08_global_tasks_greedy_from_plan.pkl'
         )
         # plt.show()
         fig, ax1, ax2 = plot_task_runtime(
-            realloc_df_fcfs, ex_wf_config, (fig, ax1, ax2), color='blue',
+            realloc_df_fcfs, ex_wf_config, (fig, ax1, ax2), color='purple',
             alpha=0.4)
         ax1.legend(['Batch', 'FCFS w/ Realloc'])
 
@@ -264,7 +312,7 @@ if __name__ == '__main__':
         y = np.arange(len(data_dict['obs']))
         ax2.barh(y - 0.25, data_dict['width'],
                  left=data_dict['left'],
-                 color=['teal'], height=0.5, label='batch')
+                 color=['teal'], hatch='.', height=0.5, label='batch')
 
         realloc_data_dict = {'obs': [], 'width': [], 'left': []}
         for obs in data_dict['obs']:
@@ -276,7 +324,8 @@ if __name__ == '__main__':
 
         ax2.barh(y + 0.25, realloc_data_dict['width'],
                  left=realloc_data_dict['left'],
-                 color=['orange'], height=0.5, label='realloc')
+                 color=['purple'], alpha=0.4, height=0.5, label='realloc',
+                 hatch='\\')
 
         labels = data_dict['obs']
         ax2.set_axisbelow(True)
@@ -287,5 +336,5 @@ if __name__ == '__main__':
 
         ax2.legend()
         fig.align_ylabels()
-        plt.figure(figsize=(16, 8))
+        # plt.savefig(f'plot_{version}.png')
         plt.show()

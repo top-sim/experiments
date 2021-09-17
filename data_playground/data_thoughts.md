@@ -7,4 +7,8 @@ Standard config for the TopSim simulator is to store the relative paths for obse
  In fact, we might as well store all the files, and just separate based on the config directory and scrub out the `.json` for the file paths. Then we can store original file paths and complete config data in tables. 
  
  
+ The current approach is to: 
+    - Store files on the 
+ 
+ 
  
