@@ -302,6 +302,7 @@ if __name__ == '__main__':
         ast = wf_bd['wallaby'][0]
         aft = wf_bd['wallaby'][1]
         data_dict = {'obs': [], 'width': [], 'left': []}
+
         for obs in wf_bd:
             ast, aft = wf_bd[obs]
             data_dict['obs'].append(obs)
