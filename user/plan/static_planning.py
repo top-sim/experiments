@@ -16,9 +16,9 @@
 import logging
 import copy
 
+from topsim.algorithms.planning import Planning
 from topsim.core.planner import WorkflowPlan, WorkflowStatus
 from topsim.core.task import Task
-from topsim.algorithms.planning import Planning
 
 from shadow.algorithms.heuristic import heft, fcfs, pheft
 from shadow.models.workflow import Workflow, Environment
@@ -179,7 +179,7 @@ class SHADOWPlanning(Planning):
         # TODO we have reverted to the entire list of machines; can we
         #  improve this moving forward?
         # TODO entire machines
-        available_resources = list(cluster.dmachine.values())
+        available_resources = cluster.machines
         dictionary = {
             "system": {
                 "resources": None,
