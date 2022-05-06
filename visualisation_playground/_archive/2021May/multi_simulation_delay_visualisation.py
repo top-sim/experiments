@@ -20,8 +20,8 @@ import time
 
 from topsim.core.simulation import Simulation
 from topsim.core.delay import DelayModel
-from user.telescope import Telescope
-from user.scheduling import GreedyAlgorithmFromPlan
+from topsim_user.telescope import Telescope
+from topsim_user.scheduling import GreedyAlgorithmFromPlan
 
 logging.basicConfig(level="DEBUG")
 LOGGER = logging.getLogger(__name__)

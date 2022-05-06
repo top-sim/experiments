@@ -28,7 +28,7 @@ import skaworkflows.workflow.hpso_to_observation as hto
 
 from pathlib import Path
 from skaworkflows.hpconfig.utils.classes import ARCHITECTURE
-from skaworkflows.hpconfig.specs.sdp import SDP_PAR_MODEL
+from skaworkflows.hpconfig.specs.sdp import SDP_PAR_MODEL_LOW
 from skaworkflows.config_generator import create_config, config_to_shadow
 
 BASELINES = ['long', 'mid', 'short']

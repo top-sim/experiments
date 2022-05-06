@@ -49,12 +49,12 @@ from topsim.core.simulation import Simulation
 from topsim.core.delay import DelayModel
 
 # User defined models
-from user.telescope import Telescope  # Instrument
-from user.schedule.dynamic_plan import DynamicAlgorithmFromPlan  # Scheduling
-from user.schedule.greedy import GreedyAlgorithmFromPlan  # Scheduling
-from user.schedule.batch_allocation import BatchProcessing
-from user.plan.batch_planning import BatchPlanning  # Planning
-from user.plan.static_planning import SHADOWPlanning
+from topsim_user.telescope import Telescope  # Instrument
+from topsim_user.schedule.dynamic_plan import DynamicAlgorithmFromPlan  # Scheduling
+from topsim_user.schedule.greedy import GreedyAlgorithmFromPlan  # Scheduling
+from topsim_user.schedule.batch_allocation import BatchProcessing
+from topsim_user.plan.batch_planning import BatchPlanning  # Planning
+from topsim_user.plan.static_planning import SHADOWPlanning
 
 if __name__ == '__main__':
 

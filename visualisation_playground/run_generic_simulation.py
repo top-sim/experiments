@@ -23,9 +23,9 @@ import simpy
 import pandas as pd
 
 from topsim.core.simulation import Simulation
-from user.schedule.batch_allocation import BatchProcessing
-from user.telescope import Telescope  # Instrument
-from user.plan.batch_planning import BatchPlanning  # Planning
+from topsim_user.schedule.batch_allocation import BatchProcessing
+from topsim_user.telescope import Telescope  # Instrument
+from topsim_user.plan.batch_planning import BatchPlanning  # Planning
 
 
 def init():

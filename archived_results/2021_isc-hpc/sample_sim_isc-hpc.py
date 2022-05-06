@@ -26,8 +26,8 @@ sys.path.insert(0, os.path.abspath('../../../topsim_pipelines'))
 
 from topsim.core.simulation import Simulation
 from topsim.core.delay import DelayModel
-from user.telescope import Telescope
-from user.scheduling import DynamicAlgorithmFromPlan
+from topsim_user.telescope import Telescope
+from topsim_user.scheduling import DynamicAlgorithmFromPlan
 
 logging.basicConfig(level="DEBUG")
 logger = logging.getLogger()
