@@ -87,18 +87,18 @@ LOW_CONFIG = "low_sdp_config.json"
 MID_CONFIG = "mid_sdp_config.json"
 
 # Generate configuration with prototype SKA Workflow
-# con_gen.create_config(
-#     telescope_max=LOW_MAX,
-#     hpso_path=LOW_HPSO_PATH,
-#     output_dir=LOW_OUTPUT_DIR,
-#     cfg_name=LOW_CONFIG,
-#     component=LOW_COMPONENT_SIZING,
-#     system=LOW_TOTAL_SIZING,
-#     cluster=SKA_LOW_SDP,
-#     base_graph_paths=WORKFLOW_PATHS,
-#     timestep='seconds',
-#     data=False,
-# )
+con_gen.create_config(
+    telescope_max=LOW_MAX,
+    hpso_path=LOW_HPSO_PATH,
+    output_dir=LOW_OUTPUT_DIR,
+    cfg_name=LOW_CONFIG,
+    component=LOW_COMPONENT_SIZING,
+    system=LOW_TOTAL_SIZING,
+    cluster=SKA_LOW_SDP,
+    base_graph_paths=WORKFLOW_PATHS,
+    timestep='seconds',
+    data=False,
+)
 
 con_gen.create_config(
     telescope_max=MID_MAX,

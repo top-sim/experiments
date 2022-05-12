@@ -1,3 +1,4 @@
+shadow
 git+git://github.com/top-sim/topsim@master#egg=topsim
 pandas
 numpy

@@ -2,3 +2,4 @@ temp/*
 /.idea/
 *__pycache__*
 *_checkpoints*
+/venv/

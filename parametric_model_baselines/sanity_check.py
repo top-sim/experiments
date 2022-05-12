@@ -23,20 +23,121 @@ from pathlib import Path
 
 import skaworkflows.workflow.workflow_analysis as wa
 
+
 from parametric_model_baselines.generate_data import (
     LOW_HPSO_PATH, MID_HPSO_PATH
+)
+
+from parametric_model_baselines.generate_data import (
+    LOW_TOTAL_SIZING, MID_TOTAL_SIZING
 )
 
 # low_base
 
 with LOW_HPSO_PATH.open('r') as f:
-    hpso_data = json.load(f)
+    hpso_dict = json.load(f)
 
 low_base_dir = Path("parametric_model_baselines/low_base")
 low_base_workflows_dir = low_base_dir / "workflows"
 config = low_base_dir / "low_sdp_config.json"
 
-for file in low_base_workflows_dir:
-    continue
+hpso_list = hpso_dict['items']
+print(f" HPSO | Expected | Actual")
+for file in low_base_workflows_dir.iterdir():
+    componenents = file.name.split("_")
+    hpso_id = componenents[0]
+    hpso_data = hpso_list[0]
+    for observation in hpso_list:
+        if hpso_id == observation["hpso"]:
+            hpso_data = observation
+            break
+    expected = wa.calculate_expected_flops(
+        hpso_id,
+        hpso_data["workflows"],
+        hpso_data["duration"],
+        LOW_TOTAL_SIZING,
+        hpso_data["baseline"]
+    )
 
-MID_HPSO_PATH = Path("parametric_model_baselines/maximal_mid_imaging.json")
+    actual = wa.calculate_total_flops(file)
+
+    print(f"{hpso_id}| {expected} | {actual}")
+
+low_par_dir = Path("parametric_model_baselines/low_parallel")
+low_par_workflows_dir = low_par_dir / "workflows"
+config = low_base_dir / "low_sdp_config.json"
+
+hpso_list = hpso_dict['items']
+print(f" HPSO | Expected | Actual")
+for file in low_par_workflows_dir.iterdir():
+    componenents = file.name.split("_")
+    hpso_id = componenents[0]
+    hpso_data = hpso_list[0]
+    for observation in hpso_list:
+        if hpso_id == observation["hpso"]:
+            hpso_data = observation
+            break
+    expected = wa.calculate_expected_flops(
+        hpso_id,
+        hpso_data["workflows"],
+        hpso_data["duration"],
+        LOW_TOTAL_SIZING,
+        hpso_data["baseline"]
+    )
+
+    actual = wa.calculate_total_flops(file)
+
+    print(f"{hpso_id}| {expected} | {actual}")
+
+with MID_HPSO_PATH.open('r') as f:
+    hpso_dict = json.load(f)
+
+mid_base_dir = Path("parametric_model_baselines/mid_base")
+mid_base_workflows_dir = mid_base_dir / "workflows"
+config = mid_base_dir / "mid_sdp_config.json"
+
+hpso_list = hpso_dict['items']
+
+for file in mid_base_workflows_dir.iterdir():
+    componenents = file.name.split("_")
+    hpso_id = componenents[0]
+    hpso_data = hpso_list[0]
+    for observation in hpso_list:
+        if hpso_id == observation["hpso"]:
+            hpso_data = observation
+            break
+    expected = wa.calculate_expected_flops(
+        hpso_id,
+        hpso_data["workflows"],
+        hpso_data["duration"],
+        MID_TOTAL_SIZING,
+        hpso_data["baseline"]
+    )
+
+    actual = wa.calculate_total_flops(file)
+
+    print(f"{hpso_id}| {expected} | {actual}")
+
+
+mid_par_dir = Path("parametric_model_baselines/mid_par")
+mid_par_workflows_dir = mid_par_dir / "workflows"
+hpso_list = hpso_dict['items']
+for file in mid_base_workflows_dir.iterdir():
+    componenents = file.name.split("_")
+    hpso_id = componenents[0]
+    hpso_data = hpso_list[0]
+    for observation in hpso_list:
+        if hpso_id == observation["hpso"]:
+            hpso_data = observation
+            break
+    expected = wa.calculate_expected_flops(
+        hpso_id,
+        hpso_data["workflows"],
+        hpso_data["duration"],
+        MID_TOTAL_SIZING,
+        hpso_data["baseline"]
+    )
+
+    actual = wa.calculate_total_flops(file)
+
+    print(f"{hpso_id}| {expected} | {actual}")

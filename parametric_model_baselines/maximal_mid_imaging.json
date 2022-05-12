@@ -8,7 +8,7 @@
 			"workflows": [
 				"ICAL", "DPrepA", "DPrepB", "DPrepC"
 			],
-			"channels": 786,
+			"channels": 512,
 			"baseline": 35000.0
 		},
 		{
@@ -19,7 +19,7 @@
 			"workflows": [
 				"ICAL", "DPrepA", "DPrepB", "DPrepC"
 			],
-			"channels": 786,
+			"channels": 512,
 			"baseline": 15000.0
 		},
 		{
@@ -30,7 +30,7 @@
 			"workflows": [
 				"ICAL", "DPrepA", "DPrepB"
 			],
-			"channels": 786,
+			"channels": 512,
 			"baseline": 150000.0
 		},
 		{
@@ -41,7 +41,7 @@
 			"workflows": [
 				"ICAL", "DPrepB"
 			],
-			"channels": 786,
+			"channels": 512,
 			"baseline": 20000.0
 		}
 
