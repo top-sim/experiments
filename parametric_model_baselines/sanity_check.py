@@ -39,7 +39,7 @@ with LOW_HPSO_PATH.open('r') as f:
 
 low_base_dir = Path("parametric_model_baselines/low_base")
 low_base_workflows_dir = low_base_dir / "workflows"
-config = low_base_dir / "low_sdp_config.json"
+config = low_base_dir / "low_sdp_config_512nodes.json"
 
 hpso_list = hpso_dict['items']
 print(f" HPSO | Expected | Actual")
@@ -65,7 +65,7 @@ for file in low_base_workflows_dir.iterdir():
 
 low_par_dir = Path("parametric_model_baselines/low_parallel")
 low_par_workflows_dir = low_par_dir / "workflows"
-config = low_base_dir / "low_sdp_config.json"
+config = low_base_dir / "low_sdp_config_512nodes.json"
 
 hpso_list = hpso_dict['items']
 print(f" HPSO | Expected | Actual")
@@ -94,7 +94,7 @@ with MID_HPSO_PATH.open('r') as f:
 
 mid_base_dir = Path("parametric_model_baselines/mid_base")
 mid_base_workflows_dir = mid_base_dir / "workflows"
-config = mid_base_dir / "mid_sdp_config.json"
+config = mid_base_dir / "mid_sdp_config_512nodes.json"
 
 hpso_list = hpso_dict['items']
 

@@ -41,7 +41,7 @@ class BatchProcessing(Algorithm):
 
     """
 
-    def __init__(self, max_resources_split=2, min_resources_per_workflow=3):
+    def __init__(self, max_resources_split=1, min_resources_per_workflow=3):
         super().__init__()
         self.max_resources_split = max_resources_split
         self.min_resource_per_workflow = min_resources_per_workflow

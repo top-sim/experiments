@@ -14,6 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
+import pathlib
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -22,95 +23,81 @@ from matplotlib.collections import PatchCollection
 from matplotlib.ticker import AutoMinorLocator
 from matplotlib.patches import Rectangle
 
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "serif",
-    "font.size": 16,
-    # "figure.autolayout": True,
-})
+plt.rcParams.update(
+    {"text.usetex": True, "font.family": "serif", "font.size": 16,
+     # "figure.autolayout": True,
+     })
 
-results_896 = pd.read_csv('parametric_model_baselines/2022_05_10_output.csv')
-results_512 = pd.read_csv(
-    'parametric_model_baselines/2022_05_11_512channels_output.csv'
-)
+sns.set_palette("colorblind")
 
-# Drop the method=workflow, graph=parallel from results_512 and replace with
-# results_896 data
-# results_512 = results_512.drop(
-#     results_512[
-#         (results_512['model'] == 'workflow')
-#         & (results_512['graph'] == 'parallel')
-#         ].index
-# )
-# results_896_subset = results_896[
-#     (results_896['model'] == 'workflow')
-#     & (results_896['graph'] == 'parallel')
-# ]
-results_512.loc[
-    (results_512['model'] == 'parametric')
-    & (results_512['graph'] == 'parallel'), 'time'
-] = results_512[
-        (results_512['model'] == 'parametric')
-        & (results_512['graph'] == 'parallel')
-    ]['time'] / (512 / 896)
+def collate_results():
 
-# Updating the types because we are manipulating parametric to our advantage
-# Parametric values are the same regardless of parallel/base, so we can use
-# one set as an alternative selection of data
-# TODO Update this to be an extra column that we control based on a
-#  combination of model/graph
-results_512.loc[
-    (results_512['model'] == 'parametric')
-    & (results_512['graph'] == 'parallel'), 'graph'
-] = 'parametric_compute_adjusted'
-results_512.loc[
-    (results_512['model'] == 'parametric')
-    & (results_512['graph'] == 'parametric_compute_adjusted'), 'model'
-] = 'parametric_compute_adjusted'
 
-results_512.loc[
-    results_512['model'] == 'parametric', 'graph'
-] = 'parametric'
-g = sns.catplot(y='time', x='hpso', hue='graph', kind='bar', data=results_512)
-g.set(yscale="log")
-plt.show()
+    initial = pd.read_csv('parametric_model_baselines/2022_05_10_output.csv')
+    initial['experiment'] = 'initial'
+    reduced_scatter = pd.read_csv(
+        'parametric_model_baselines/2022_05_11_512channels_output''.csv')
+    reduced_scatter['experiment'] = 'reduced_scatter'
+    reduced_nodes = pd.read_csv(
+        'parametric_model_baselines/2022_05_31_output_512nodes.csv')
+    reduced_nodes['experiment'] = 'reduced_nodes'
 
-# with open("parametric_model_baselines/low_base/workflows_896channels"
-#           "/hpso01_time-18000_channels-896_tel-512_no_data.json") as f:
-#     jdict = json.load(f)
+    results = pd.DataFrame()
 
-# ngraph = nx.readwrite.json_graph.node_link_graph(jdict['graph'])
-# task_dict = {}
-# for n in ngraph.nodes:
-#     name = n.split("_")[1]
-#     if name in task_dict:
-#         continue
-#     else:
-#         task_dict[name] = ngraph.nodes[n]['comp']
+# name, max_compute
+telescopes = [('low-adjusted', 896), ('mid-adjusted', 786)]
+
+adjusted = False
+# Calculate relative parametric time (i.e. if the parametric model was
+# performed on N channels only.
+
+def separate_data():
+    """
+    For each set of data, we want to keep specific information
+
+
+    """
+    return data
+
+
+if adjusted:
+    for t in telescopes:
+        tel, max_comp = t
+        results.loc[
+            (results['model'] == 'parametric')
+            & (results['graph'] == 'parallel')
+            & (results['telescope'] == tel), 'time'
+        ] = results[
+            (results['model'] == 'parametric') & (
+                results[
+                    'graph'] == 'parallel') & (
+                results[
+                    'telescope'] == tel)][
+        'time'] / (
+            512 / max_comp)
 #
-# node_compute = 10726000000000.0
-#
-# ngraph2 = nx.readwrite.json_graph.node_link_graph(jdict['graph'])
-# task_dict2 = {}
-# for n in ngraph2.nodes:
-#     name = n.split("_")[1]
-#     if name in task_dict2:
-#         continue
-#     else:
-#         task_dict2[name] = ngraph2.nodes[n]['comp']
-#
-# task_dict['channels'] = 896
-# task_dict2['channels'] = 512
-# task_dict['nodes']=len(ngraph)
-# task_dict2['nodes']=len(ngraph2)
-# data=([[n,task_dict[n],task_dict['channels'],task_dict['nodes']] for n in task_dict])
-# data + [[n,task_dict2[n],task_dict2['channels'],task_dict2['nodes']] for n in task_dict2]
-# {data[n].append(int(task_dict[n])) for n in task_dict}
-# {data[n].append(int(task_dict2[n])) for n in task_dict}
-# g = sns.catplot(x='task', y='time/node(s)', hue='graph', data=df)
-# grouped_df = results.groupby(['planning', 'delay', 'config']).size().astype(
-#         float
-#     ).reset_index(name='time').sort_values(by=['planning'])
-#     grouped_df['config'] = grouped_df['config'].str.replace(
-#         '2021_isc-hpc/config/single_size/40cluster/mos_sw', '').str.strip(
-#         '.json').astype(float)
+    # Updating the types because we are manipulating parametric to our advantage
+    # Parametric values are the same regardless of parallel/base, so we can use
+    # one set as an alternative selection of data
+    results.loc[
+        (results['model'] == 'parametric') & (results['graph'] == 'parallel'), [
+            'graph', 'model']] = 'parametric_compute_adjusted'
+
+results.loc[results['model'] == 'parametric', 'graph'] = 'parametric'
+
+
+hatches = ['-', 'x', '\\']  # , '\\', '*', 'o']
+
+# Loop over the bars
+
+xaxis = set(results['hpso'])
+
+initial_parametric = initial[initial['model'] =='parametric'][['hpso','time']]
+
+g = sns.barplot(y='time', x='hpso', hue='graph', data=results)
+# g.set(yscale="log")
+for i, thisbar in enumerate(g.patches):
+    # Set a different hatch for each bar
+    thisbar.set_hatch(hatches[i % 3])
+
+# plt.savefig(f'{str(curr_results).strip(curr_results.suffix)}_barplot.png')

@@ -59,10 +59,9 @@ def run_mulitple():
     finish = time.time()
     print(f"{finish-start=}")
 
-
 def run_par_runner(tup, queue):
     wf, env, f, graph, telescope,position = tup
-    # workflow = Workflow(wf)
+    workflow = Workflow(wf)
     hpso = f.split("_")[0]
     par_res = calculate_parametric_runtime_estimates(PAR_MODEL_SIZING,
                                                      telescope,
@@ -73,14 +72,14 @@ def run_par_runner(tup, queue):
     )
     queue.put(res_str)
 
-    # workflow.add_environment(env)
-    # heft_res = heft(workflow, position).makespan
-    #
-    # res_str_heft = (
-    #     f"{hpso},workflow,{heft_res},"
-    #     f"{graph},{telescope}\n"
-    # )
-    # queue.put(res_str_heft)
+    workflow.add_environment(env)
+    heft_res = heft(workflow, position).makespan
+
+    res_str_heft = (
+        f"{hpso},workflow,{heft_res},"
+        f"{graph},{telescope}\n"
+    )
+    queue.put(res_str_heft)
 
 
 
@@ -90,9 +89,9 @@ def listener(queue, output: Path):
     with output.open('w') as f:
         while True:
             msg = queue.get()
-            print(msg)
+            # print(msg)
             if str(msg) == 'Finish':
-                print(msg)
+                # print(msg)
                 break
             f.write(str(msg))
             f.flush()
@@ -100,11 +99,12 @@ def listener(queue, output: Path):
 
 if __name__ == '__main__':
     low_base_dir = Path("parametric_model_baselines/low_base")
-    low_base_workflows_dir = low_base_dir / "workflows_896channels"
-    low_config_shadow = config_to_shadow(low_base_dir / "low_sdp_config.json",
+    low_base_workflows_dir = low_base_dir / "workflows"
+    low_config_shadow = config_to_shadow(low_base_dir /
+                                         "low_sdp_config_512nodes.json",
                                          'shadow_')
     low_par_dir = Path("parametric_model_baselines/low_parallel")
-    low_par_workflows_dir = low_par_dir / "workflows_896channels"
+    low_par_workflows_dir = low_par_dir / "workflows"
 
     low_wfs = []
     low_env = Environment(low_config_shadow)
@@ -117,15 +117,14 @@ if __name__ == '__main__':
         nenv = deepcopy(low_env)
         low_wfs.append((f, nenv, f.name, 'parallel', 'low-adjusted', count))
         count+=1
-    #
 
     mid_base_dir = Path("parametric_model_baselines/mid_base")
-    mid_base_workflows_dir = mid_base_dir / "workflows_896channels"
+    mid_base_workflows_dir = mid_base_dir / "workflows"
     mid_config_shadow = config_to_shadow(
-        mid_base_dir / "mid_sdp_config.json", 'shadow_'
+        mid_base_dir / "mid_sdp_config_512nodes.json", 'shadow_'
     )
     mid_par_dir = Path("parametric_model_baselines/mid_parallel")
-    mid_par_workflows_dir = mid_par_dir / "workflows_896channels"
+    mid_par_workflows_dir = mid_par_dir / "workflows"
 
     mid_env = Environment(mid_config_shadow)
     mid_wfs = []
@@ -146,7 +145,7 @@ if __name__ == '__main__':
     params = list(zip(wfs, [queue for x in range(len(wfs))]))
     for thruple in params:
         print(thruple)  # help determine which order should be in file
-    with Pool(processes=4) as pool:
+    with Pool(processes=6) as pool:
         lstn = pool.apply_async(listener, (queue, output))
         result = pool.starmap(run_par_runner, params)
 

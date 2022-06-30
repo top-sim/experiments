@@ -35,7 +35,7 @@ LOGGER = logging.getLogger(__name__)
 RUN_PATH = Path.cwd()
 FOLDER_PATH = Path(f'skaworkflows_tests')
 
-cfg_path = FOLDER_PATH / 'config.json'
+cfg_path =   Path('skaworkflows_tests/low_parallel/low_sdp_config.json')
 
 if not cfg_path.exists():
     LOGGER.info(f"Exiting simulation, simulation config does not exist")
@@ -50,11 +50,11 @@ from topsim.core.delay import DelayModel
 
 # User defined models
 from topsim_user.telescope import Telescope  # Instrument
-from topsim_user.schedule.dynamic_plan import DynamicAlgorithmFromPlan  # Scheduling
+# from topsim_user.schedule.dynamic_plan import DynamicAlgorithmFromPlan  # Scheduling
 from topsim_user.schedule.greedy import GreedyAlgorithmFromPlan  # Scheduling
 from topsim_user.schedule.batch_allocation import BatchProcessing
 from topsim_user.plan.batch_planning import BatchPlanning  # Planning
-from topsim_user.plan.static_planning import SHADOWPlanning
+# from topsim_user.plan.static_planning import SHADOWPlanning
 
 if __name__ == '__main__':
 
@@ -66,9 +66,9 @@ if __name__ == '__main__':
         env=env,
         config=cfg_path,
         instrument=instrument,
-        planning_algorithm='heft',
-        planning_model=SHADOWPlanning('heft'),
-        scheduling=DynamicAlgorithmFromPlan,
+        planning_algorithm='batch',
+        planning_model=BatchPlanning('batch'),
+        scheduling=BatchProcessing,
         delay=None,
         timestamp='skaworkflows_test',
         to_file=True,

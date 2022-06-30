@@ -60,6 +60,7 @@ MID_COMPONENT_SIZING = Path(
 )
 
 SKA_LOW_SDP = SDP_PAR_MODEL_LOW()
+SKA_LOW_SDP.set_nodes(512)
 SKA_MID_SDP = SDP_PAR_MODEL_MID()
 
 # Output directories
