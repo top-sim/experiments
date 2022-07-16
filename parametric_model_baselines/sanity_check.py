@@ -25,7 +25,7 @@ import skaworkflows.workflow.workflow_analysis as wa
 
 
 from parametric_model_baselines.generate_data import (
-    LOW_HPSO_PATH, MID_HPSO_PATH
+    LOW_HPSO_PATHS, MID_HPSO_PATHS
 )
 
 from parametric_model_baselines.generate_data import (
@@ -34,110 +34,79 @@ from parametric_model_baselines.generate_data import (
 
 # low_base
 
-with LOW_HPSO_PATH.open('r') as f:
-    hpso_dict = json.load(f)
-
+# with LOW_HPSO_PATH.open('r') as f:
+#     hpso_dict = json.load(f)
+# for path in LOW_HPSO_PATHS
 low_base_dir = Path("parametric_model_baselines/low_base")
 low_base_workflows_dir = low_base_dir / "workflows"
 config = low_base_dir / "low_sdp_config_512nodes.json"
 
-hpso_list = hpso_dict['items']
-print(f" HPSO | Expected | Actual")
-for file in low_base_workflows_dir.iterdir():
-    componenents = file.name.split("_")
-    hpso_id = componenents[0]
-    hpso_data = hpso_list[0]
-    for observation in hpso_list:
-        if hpso_id == observation["hpso"]:
-            hpso_data = observation
-            break
-    expected = wa.calculate_expected_flops(
-        hpso_id,
-        hpso_data["workflows"],
-        hpso_data["duration"],
-        LOW_TOTAL_SIZING,
-        hpso_data["baseline"]
-    )
+BASE_DIR = Path(f"parametric_model_baselines")
 
-    actual = wa.calculate_total_flops(file)
+config_iterations = [896, 512]
+channel_iterations = [896, 512]
+data_iterations = [False, True]
+graph_iterations = ['prototype', 'scatter']
+for data in data_iterations:
+    for config in config_iterations:
+        for channel in channel_iterations:
+            if config == 512 and channel == 896:
+                # We are not interested in this experiment
+                    continue
+            low_hpso_str = next(
+                x for x in LOW_HPSO_PATHS if f'{channel}' in x
+            )
+            mid_hpso_str = next(
+                x for x in MID_HPSO_PATHS if f'{channel}' in x
+            )
+            with Path(low_hpso_str).open() as f:
+                hpso_low_dict = json.load(f)
+            with Path(mid_hpso_str).open() as f:
+                hpso_mid_dict = json.load(f)
+            for graph in graph_iterations:
+                low_path_str = (f'{BASE_DIR}/low_{graph}/c{config}/n{channel}')
+                mid_path_str = (f'{BASE_DIR}/mid_{graph}/c{config}/n{channel}')
 
-    print(f"{hpso_id}| {expected} | {actual}")
+                hpso_list = hpso_low_dict['items']
+                print(f" HPSO | Expected | Actual")
+                for file in (Path(low_path_str) / 'workflows').iterdir():
+                    componenents = file.name.split("_")
+                    hpso_id = componenents[0]
+                    hpso_data = hpso_list[0]
+                    for observation in hpso_list:
+                        if hpso_id == observation["hpso"]:
+                            hpso_data = observation
+                            break
+                    expected = wa.calculate_expected_flops(
+                        hpso_id,
+                        hpso_data["workflows"],
+                        hpso_data["duration"],
+                        LOW_TOTAL_SIZING,
+                        hpso_data["baseline"]
+                    )
 
-low_par_dir = Path("parametric_model_baselines/low_parallel")
-low_par_workflows_dir = low_par_dir / "workflows"
-config = low_base_dir / "low_sdp_config_512nodes.json"
+                    actual = wa.calculate_total_flops(file)
+                    print(f"String {low_path_str}")
+                    print(f"{hpso_id}| {expected} | {actual}")
+                hpso_list = hpso_mid_dict['items']
+                for file in (Path(mid_path_str)/ 'workflows').iterdir():
+                    componenents = file.name.split("_")
+                    hpso_id = componenents[0]
+                    hpso_data = hpso_list[0]
+                    for observation in hpso_list:
+                        if hpso_id == observation["hpso"]:
+                            hpso_data = observation
+                            break
+                    expected = wa.calculate_expected_flops(
+                        hpso_id,
+                        hpso_data["workflows"],
+                        hpso_data["duration"],
+                        MID_TOTAL_SIZING,
+                        hpso_data["baseline"]
+                    )
 
-hpso_list = hpso_dict['items']
-print(f" HPSO | Expected | Actual")
-for file in low_par_workflows_dir.iterdir():
-    componenents = file.name.split("_")
-    hpso_id = componenents[0]
-    hpso_data = hpso_list[0]
-    for observation in hpso_list:
-        if hpso_id == observation["hpso"]:
-            hpso_data = observation
-            break
-    expected = wa.calculate_expected_flops(
-        hpso_id,
-        hpso_data["workflows"],
-        hpso_data["duration"],
-        LOW_TOTAL_SIZING,
-        hpso_data["baseline"]
-    )
+                    actual = wa.calculate_total_flops(file)
 
-    actual = wa.calculate_total_flops(file)
-
-    print(f"{hpso_id}| {expected} | {actual}")
-
-with MID_HPSO_PATH.open('r') as f:
-    hpso_dict = json.load(f)
-
-mid_base_dir = Path("parametric_model_baselines/mid_base")
-mid_base_workflows_dir = mid_base_dir / "workflows"
-config = mid_base_dir / "mid_sdp_config_512nodes.json"
-
-hpso_list = hpso_dict['items']
-
-for file in mid_base_workflows_dir.iterdir():
-    componenents = file.name.split("_")
-    hpso_id = componenents[0]
-    hpso_data = hpso_list[0]
-    for observation in hpso_list:
-        if hpso_id == observation["hpso"]:
-            hpso_data = observation
-            break
-    expected = wa.calculate_expected_flops(
-        hpso_id,
-        hpso_data["workflows"],
-        hpso_data["duration"],
-        MID_TOTAL_SIZING,
-        hpso_data["baseline"]
-    )
-
-    actual = wa.calculate_total_flops(file)
-
-    print(f"{hpso_id}| {expected} | {actual}")
+                    print(f"{hpso_id}| {expected} | {actual}")
 
 
-mid_par_dir = Path("parametric_model_baselines/mid_par")
-mid_par_workflows_dir = mid_par_dir / "workflows"
-hpso_list = hpso_dict['items']
-for file in mid_base_workflows_dir.iterdir():
-    componenents = file.name.split("_")
-    hpso_id = componenents[0]
-    hpso_data = hpso_list[0]
-    for observation in hpso_list:
-        if hpso_id == observation["hpso"]:
-            hpso_data = observation
-            break
-    expected = wa.calculate_expected_flops(
-        hpso_id,
-        hpso_data["workflows"],
-        hpso_data["duration"],
-        MID_TOTAL_SIZING,
-        hpso_data["baseline"]
-    )
-
-    actual = wa.calculate_total_flops(file)
-
-    print(f"{hpso_id}| {expected} | {actual}")

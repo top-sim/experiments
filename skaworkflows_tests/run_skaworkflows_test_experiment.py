@@ -29,13 +29,13 @@ from skaworkflows.config_generator import create_config
 from skaworkflows.hpconfig.specs.sdp import SDP_LOW_CDR
 from skaworkflows import common
 
-logging.basicConfig(level="DEBUG")
+logging.basicConfig(level="INFO")
 LOGGER = logging.getLogger(__name__)
 
 RUN_PATH = Path.cwd()
 FOLDER_PATH = Path(f'skaworkflows_tests')
 
-cfg_path =   Path('skaworkflows_tests/low_parallel/low_sdp_config.json')
+cfg_path =  Path('skaworkflows_tests/low_parallel/low_sdp_config.json')
 
 if not cfg_path.exists():
     LOGGER.info(f"Exiting simulation, simulation config does not exist")
@@ -72,7 +72,8 @@ if __name__ == '__main__':
         delay=None,
         timestamp='skaworkflows_test',
         to_file=True,
-        hdf5_path=f'{RUN_PATH}/{FOLDER_PATH}/results.h5'
+        hdf5_path=f'{RUN_PATH}/{FOLDER_PATH}/results.h5',
+
         # hdf5_path='',
         # delimiters=f'test/'
     )

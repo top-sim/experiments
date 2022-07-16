@@ -4547,5 +4547,5 @@
       "max_data_rate": 894687500000
     }
   },
-  "timestep": "seconds"
+  "timestep": "minutes"
 }

@@ -10,6 +10,10 @@ This experiment aims to demonstrate how our workflow-based scheduling model diff
 * `run_shadow.py` iterates through each directory and schedules accordingly
 * `compare.py` produces plots that map the `skaworkflows.parametric_runner` results to the `run_shadow.py` results
  
+ ## Graph terminology
+ 
+ * `base` refers to the prototype continuum imaging pipeline that we are using as the basis for the workflows. This reflects the approximate structure of an SKA workflow. 
+ * `parallel` refers to the parametric-equivalent graph. This is a parallel scatter across all nodes, and then completely sequential for each 'line' of the scatter. 
  
  ## Results (No data on nodes) 
  

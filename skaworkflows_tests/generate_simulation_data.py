@@ -90,13 +90,13 @@ LOW_CONFIG = "low_sdp_config.json"
 # )
 
 
-PARALLEL_WORKFLOW_PATHS = {
-    "ICAL": PARALLEL_BASE_GRAPH,
-    "DPrepA": PARALLEL_BASE_GRAPH,
-    "DPrepB": PARALLEL_BASE_GRAPH,
-    "DPrepC": PARALLEL_BASE_GRAPH,
-    "DPrepD": PARALLEL_BASE_GRAPH,
-}
+# PARALLEL_WORKFLOW_PATHS = {
+#     "ICAL": PARALLEL_BASE_GRAPH,
+#     "DPrepA": PARALLEL_BASE_GRAPH,
+#     "DPrepB": PARALLEL_BASE_GRAPH,
+#     "DPrepC": PARALLEL_BASE_GRAPH,
+#     "DPrepD": PARALLEL_BASE_GRAPH,
+# }
 
 
 # Generate configuration with SDP equivalent base graph (entirely parallel)

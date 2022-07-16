@@ -63,11 +63,19 @@ class BatchProcessing(Algorithm):
             logger.info(f"{workflow_plan.id} attempted to provision @ {clock}.")
             logger.info(f"{cluster.num_provisioned_obs} existing provs.")
         tasks = workflow_plan.tasks
+        # max_possible = len(cluster.get_available_resources())
         self.pred = 0
         if provision:
             temporary_resources = cluster.get_idle_resources(workflow_plan.id)
+            count = 0
+            print(f"{len(temporary_resources)=} vs {len(allocations)=}")
             for task in tasks:
+                # If we have exhausted all possible allocations for this
+                # timestep, there no need to iterat
+                if len(allocations) >= len(temporary_resources):
+                    break
                 if len(temporary_resources) > 0 and task not in allocations:
+                    count += 1
                     if task.task_status is TaskStatus.UNSCHEDULED:
                         # Pick the next available machine
                         m = temporary_resources[0]
@@ -77,8 +85,7 @@ class BatchProcessing(Algorithm):
                         else:
                             pred = set(task.pred)
                             finished = set(
-                                t.id for t in cluster.get_finished_tasks()
-                            )
+                                t.id for t in cluster.get_finished_tasks())
                             # Check if there isn't an overlap between sets
                             if not pred.issubset(finished):
                                 # one of the predecessors is still running
@@ -91,6 +98,8 @@ class BatchProcessing(Algorithm):
         if len(workflow_plan.tasks) == 0:
             workflow_plan.status = WorkflowStatus.FINISHED
             logger.debug(f'{workflow_plan.id} is finished.')
+
+        print(f"{count=} vs {len(tasks)=}")
         return allocations, workflow_plan.status
 
     def to_df(self):
@@ -158,11 +167,8 @@ class BatchProcessing(Algorithm):
                     return False
                 else:
                     logger.info(f"{provision} machines for {workflow_plan.id}")
-                    logger.info(
-                        f"{cluster.num_provisioned_obs} provisioned"
-                    )
-                    return cluster.provision_batch_resources(
-                        provision, workflow_plan.id
-                    )
+                    logger.info(f"{cluster.num_provisioned_obs} provisioned")
+                    return cluster.provision_batch_resources(provision,
+                        workflow_plan.id)
             else:
                 return False
