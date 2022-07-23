@@ -37,10 +37,6 @@ from parametric_model_baselines.generate_data import (
 # with LOW_HPSO_PATH.open('r') as f:
 #     hpso_dict = json.load(f)
 # for path in LOW_HPSO_PATHS
-low_base_dir = Path("parametric_model_baselines/low_base")
-low_base_workflows_dir = low_base_dir / "workflows"
-config = low_base_dir / "low_sdp_config_512nodes.json"
-
 BASE_DIR = Path(f"parametric_model_baselines")
 
 config_iterations = [896, 512]

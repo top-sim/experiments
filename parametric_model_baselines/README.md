@@ -1,5 +1,10 @@
 # Experiment summary
 
+## Todo: 
+
+- [] Update mid-adjusted generated data to use 786 channels/compute nodes
+- [] Update the sanity checks and run_comparisons for this too, as it should improve schedule time. 
+
 This experiment aims to demonstrate how our workflow-based scheduling model differs from the `sdp-par-model`, specifically with respect to how offline/batch-processing is calculated. 
 
 ## Scripts

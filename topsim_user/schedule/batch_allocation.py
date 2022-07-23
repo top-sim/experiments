@@ -50,7 +50,7 @@ class BatchProcessing(Algorithm):
     def __repr__(self):
         return "BatchProcessing"
 
-    def run(self, cluster, clock, workflow_plan, existing_schedule):
+    def run(self, cluster, clock, workflow_plan, existing_schedule,):
         """
         Generate a list of allocations for the current timestep using the
         existing schedule as a basis.

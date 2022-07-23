@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import time
+from datetime import date
 from copy import deepcopy
 from pathlib import Path
 from multiprocessing import Pool, Manager
@@ -26,14 +26,13 @@ from skaworkflows.config_generator import config_to_shadow
 from skaworkflows.parametric_runner import \
     calculate_parametric_runtime_estimates
 
-from parametric_model_baselines.generate_data import (
-    LOW_OUTPUT_DIR, LOW_OUTPUT_DIR_PAR, MID_OUTPUT_DIR, MID_OUTPUT_DIR_PAR,
-    LOW_TOTAL_SIZING, MID_TOTAL_SIZING
-)
+from parametric_model_baselines.generate_data import (LOW_HPSO_PATHS,
+                                                      MID_HPSO_PATHS)
 
-PAR_MODEL_SIZING = Path(
-    "../sdp-par-model/2021-06-02_LongBaseline_HPSOs.csv"
-)
+from parametric_model_baselines.generate_data import (LOW_TOTAL_SIZING,
+                                                      MID_TOTAL_SIZING)
+
+PAR_MODEL_SIZING = Path("../sdp-par-model/2021-06-02_LongBaseline_HPSOs.csv")
 
 
 def run_workflow(workflow, environment):
@@ -41,52 +40,67 @@ def run_workflow(workflow, environment):
     return heft(workflow)
 
 
-def run_mulitple():
-    env = Environment("/home/rwb/github/thesis_experiments/"
-                      "notebooks/sdp_comparison/output/shadow_config.json")
-    # files = list(wf_path.iterdir())
-    wfs = [
-        Workflow("/home/rwb/github/thesis_experiments/skaworkflows_tests"
-                 "/workflows/hpso01_time-3600_channels-256_tel-512.json") for i
-        in range(3)
-    ]
-    environs = [deepcopy(env) for i in range(3)]
-
-    params = list(zip(wfs, environs))
-    start = time.time()
-    with Pool(processes=4) as pool:
-        result = pool.starmap(run_workflow, params)
-    finish = time.time()
-    print(f"{finish-start=}")
-
-def run_par_runner(tup, queue):
-    wf, env, f, graph, telescope,position = tup
+def run_shadow(tup, queue, test=False):
+    if test:
+        print(f"{tup}")
+        return None
+    wf, env, f, graph, telescope, position, nodes, channels = tup
+    if "no_data" in wf.name:
+        data = False
+    else:
+        data = True
     workflow = Workflow(wf)
     hpso = f.split("_")[0]
-    par_res = calculate_parametric_runtime_estimates(PAR_MODEL_SIZING,
-                                                     telescope,
-                                                     [hpso])
-    res_str = (
-        f"{hpso},parametric,{par_res[hpso]['time']},"
-        f"{graph},{telescope}\n"
-    )
-    queue.put(res_str)
 
     workflow.add_environment(env)
-    heft_res = heft(workflow, position).makespan
+    print("Running FCFS")
+    heft_res = fcfs(workflow, position).makespan
+    # heft_res = None
+    res_str_fcfs = (f"{hpso},workflow,{heft_res},"
+                    f"{graph},{telescope},{nodes},{channels},{data}\n")
+    print(res_str_fcfs)
+    queue.put(res_str_fcfs)
 
-    res_str_heft = (
-        f"{hpso},workflow,{heft_res},"
-        f"{graph},{telescope}\n"
-    )
-    queue.put(res_str_heft)
 
+def run_parametric(tup, queue, test=False):
+    """
+    Calculate the runtime estimates from the parametric model
+    We only need one of these values for each workflow, so skip
+    one of the graph types.
+
+    Parameters
+    ----------
+    tup : tuple containing relevant workflows and information for this instance
+    test : True if we are verifying the data in this function; false if we
+    are running this for real.
+
+    Returns
+    -------
+
+    """
+    if test:
+        print(f"{tup}")
+        return None
+
+    wf, env, f, graph, telescope, position, nodes, channels = tup
+    if graph == 'scatter':
+        return None
+    if "no_data" in wf.name:
+        data = False
+    else:
+        data = True
+    hpso = f.split("_")[0]
+    par_res = calculate_parametric_runtime_estimates(PAR_MODEL_SIZING,
+        telescope, [hpso])
+    res_str = (f"{hpso},parametric,{par_res[hpso]['time']},"
+               f"{graph},{telescope},{nodes},{channels},{data}\n")
+    queue.put(res_str)
 
 
 def listener(queue, output: Path):
     """Listen for messages on the queue and write updates to the XML log."""
 
-    with output.open('w') as f:
+    with output.open('a') as f:
         while True:
             msg = queue.get()
             # print(msg)
@@ -98,61 +112,87 @@ def listener(queue, output: Path):
 
 
 if __name__ == '__main__':
-    low_base_dir = Path("parametric_model_baselines/low_base")
-    low_base_workflows_dir = low_base_dir / "workflows"
-    low_config_shadow = config_to_shadow(low_base_dir /
-                                         "low_sdp_config_512nodes.json",
-                                         'shadow_')
-    low_par_dir = Path("parametric_model_baselines/low_parallel")
-    low_par_workflows_dir = low_par_dir / "workflows"
+    BASE_DIR = Path(f"parametric_model_baselines")
 
-    low_wfs = []
-    low_env = Environment(low_config_shadow)
-    count=0
-    for i,f in enumerate(low_base_workflows_dir.iterdir()):
-        nenv = deepcopy(low_env)
-        low_wfs.append((f, nenv, f.name, 'base', 'low-adjusted',count))
-        count += 1
-    for i,f in enumerate(low_par_workflows_dir.iterdir()):
-        nenv = deepcopy(low_env)
-        low_wfs.append((f, nenv, f.name, 'parallel', 'low-adjusted', count))
-        count+=1
+    config_iterations = [896, 512]
+    channel_iterations = [896, 512]
+    data_iterations = [False, True]
+    graph_iterations = ['prototype', 'scatter']
+    wfs = []
+    wfs_dict = {}
+    # mid_wfs = []
+    count = 0
+    for data in data_iterations:
+        for config in config_iterations:
+            for channel in channel_iterations:
+                if config == 512 and channel == 896:
+                    # We are not interested in this experiment
+                    continue
+                low_hpso_str = next(
+                    x for x in LOW_HPSO_PATHS if f'{channel}' in x)
+                mid_hpso_str = next(
+                    x for x in MID_HPSO_PATHS if f'{channel}' in x)
+                # Set up paths to the respective directory
+                for graph in graph_iterations:
+                    low_path_str = (
+                        f'{BASE_DIR}/low_{graph}/c{config}/n{channel}')
+                    mid_path_str = (
+                        f'{BASE_DIR}/mid_{graph}/c{config}/n{channel}')
+                    low_config_shadow = config_to_shadow(
+                        Path(f'{low_path_str}/low_sdp_config_n{config}'),
+                        'shadow_')
+                    mid_config_shadow = config_to_shadow(
+                        Path(f'{mid_path_str}/mid_sdp_config_n{config}'),
+                        'shadow_')
 
-    mid_base_dir = Path("parametric_model_baselines/mid_base")
-    mid_base_workflows_dir = mid_base_dir / "workflows"
-    mid_config_shadow = config_to_shadow(
-        mid_base_dir / "mid_sdp_config_512nodes.json", 'shadow_'
-    )
-    mid_par_dir = Path("parametric_model_baselines/mid_parallel")
-    mid_par_workflows_dir = mid_par_dir / "workflows"
+                    low_env = Environment(low_config_shadow)
+                    mid_env = Environment(mid_config_shadow)
+                    for f in (Path(low_path_str) / 'workflows').iterdir():
+                        nenv = deepcopy(low_env)
+                        wfstr = (
+                            f"{f.name}{graph}low-adjusted{config}"
+                            f"{channel}")
+                        if wfstr in wfs_dict:
+                            continue
+                        else:
+                            wfs_dict[wfstr] = (
+                            f, nenv, f.name, graph, 'low-adjusted', count,
+                            config, channel)
 
-    mid_env = Environment(mid_config_shadow)
-    mid_wfs = []
-    for f in mid_base_workflows_dir.iterdir():
-        nenv = deepcopy(mid_env)
-        mid_wfs.append((f, nenv, f.name, 'base', 'mid-adjusted',count))
-        count+=1
-    for f in mid_par_workflows_dir.iterdir():
-        nenv = deepcopy(mid_env)
-        mid_wfs.append((f, nenv, f.name, 'parallel', 'mid-adjusted',count))
-        count+=1
+                        wfs.append(
+                            (f, nenv, f.name, graph, 'low-adjusted', count,
+                             config, channel))
+                        count += 1
+                    for f in (Path(mid_path_str) / 'workflows').iterdir():
+                        nenv = deepcopy(mid_env)
+                        wfstr = (
+                            f"{f.name}{graph}mid-adjusted{config}"
+                            f"{channel}")
+                        if wfstr in wfs_dict:
+                            continue
+                        else:
+                            wfs_dict[wfstr] = (
+                            f, nenv, f.name, graph, 'mid-adjusted', count,
+                            config, channel)
+                        wfs.append((f, nenv, f.name, graph, 'mid-adjusted',
+                                    count, config, channel))
+                        count += 1
 
-    # Parametric params
     manager = Manager()
     queue = manager.Queue()
-    output = Path("parametric_model_baselines/output.txt")
-    wfs = low_wfs + mid_wfs
-    params = list(zip(wfs, [queue for x in range(len(wfs))]))
-    for thruple in params:
-        print(thruple)  # help determine which order should be in file
+
+    output = Path(
+        f"parametric_model_baselines/results_{date.today().isoformat()}.csv")
+    print(output)
+    # wfs = low_wfs + mid_wfs
+    params = set(zip(wfs, [queue for x in range(len(wfs))]))
+    # for thruple in params:
+    #     print(thruple)  # help determine which order should be in file
     with Pool(processes=6) as pool:
         lstn = pool.apply_async(listener, (queue, output))
-        result = pool.starmap(run_par_runner, params)
+        result = pool.starmap(run_parametric, params)
+    with Pool(processes=6) as pool:
+        lstn = pool.apply_async(listener, (queue, output))
+        result = pool.starmap(run_shadow, params)
 
         queue.put('Finish')
-    # for pair in low_wfs:
-    #     wf, fname = pair
-    #     hpso = fname.split("_")[0]
-    #     res = calculate_parametric_runtime_estimates(PAR_MODEL_LOW_SIZING,
-    #                                                  low_scenario, [hpso])
-    #     print(res[hpso]['time'])
