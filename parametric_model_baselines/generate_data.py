@@ -42,7 +42,7 @@ LOW_HPSO_PATHS = [
 ]
 MID_HPSO_PATHS = [
     "parametric_model_baselines/maximal_mid_imaging_512channels.json",
-    "parametric_model_baselines/maximal_mid_imaging_896channels.json"
+    "parametric_model_baselines/maximal_mid_imaging_786channels.json"
 ]
 
 # Maximum telescope stations
@@ -107,14 +107,11 @@ MID_CONFIG = Path("mid_sdp_config")
 SKA_LOW_SDP = SDP_PAR_MODEL_LOW()
 SKA_MID_SDP = SDP_PAR_MODEL_MID()
 
-config_iterations = [896, 512]
-channel_iterations = [896, 512]
 data_iterations = [False, True]
 graph_iterations = ['prototype', 'scatter']
 # Telescope = LOW
 
-if __name__ == '__main__':
-
+def generate_low(config_iterations, channel_iterations):
     LOGGER.info("config,channel,graph,data")
     for data in data_iterations:
         for config in config_iterations:
@@ -125,54 +122,62 @@ if __name__ == '__main__':
                     continue
 
                 low_hpso_str = next(
-                    x for x in LOW_HPSO_PATHS if f'{channel}' in x
-                )
+                    x for x in LOW_HPSO_PATHS if f'{channel}' in x)
                 mid_hpso_str = next(
-                    x for x in MID_HPSO_PATHS if f'{channel}' in x
-                )
+                    x for x in MID_HPSO_PATHS if f'{channel}' in x)
                 for graph in graph_iterations:
                     if graph == 'prototype':
                         base_graph_paths = PROTOTYPE_WORKFLOW_PATHS
                     else:
                         base_graph_paths = SCATTER_WORKFLOW_PATHS
                     low_path_str = (
-                        f'{BASE_DIR}/low_{graph}/c{config}/n{channel}'
-                    )
-                    mid_path_str = (
-                        f'{BASE_DIR}/mid_{graph}/c{config}/n{channel}'
-                    )
-                        # Generate configuration with prototype SKA Workflow
-                    LOGGER.info(
-                        "%s,%s,%s,%s,%s,%s,%s,%s",
-                        low_hpso_str, mid_hpso_str,
-                        config, channel, graph, data,
-                        low_path_str, mid_path_str,
-                    )
-                    con_gen.create_config(
-                        telescope_max=LOW_MAX,
+                        f'{BASE_DIR}/low_{graph}/c{config}/n{channel}')
+                    # Generate configuration with prototype SKA Workflow
+                    LOGGER.info("%s,%s,%s,%s,%s,%s,%s,%s", low_hpso_str,
+                        mid_hpso_str, config, channel, graph, data,
+                        low_path_str)
+                    con_gen.create_config(telescope_max=LOW_MAX,
                         hpso_path=Path(low_hpso_str),
                         output_dir=Path(low_path_str),
                         cfg_name=f'{LOW_CONFIG}_n{config}',
-                        component=LOW_COMPONENT_SIZING,
-                        system=LOW_TOTAL_SIZING,
-                        cluster=SKA_LOW_SDP,
-                        base_graph_paths=base_graph_paths,
-                        timestep='seconds',
-                        data=data
-                    )
-                    con_gen.create_config(
-                        telescope_max=MID_MAX,
+                        component=LOW_COMPONENT_SIZING, system=LOW_TOTAL_SIZING,
+                        cluster=SKA_LOW_SDP, base_graph_paths=base_graph_paths,
+                        timestep='seconds', data=data)
+
+def generate_mid(config_iterations, channel_iterations):
+    LOGGER.info("config,channel,graph,data")
+    for data in data_iterations:
+        for config in config_iterations:
+            SKA_MID_SDP.set_nodes(config)
+            for channel in channel_iterations:
+                if config == 512 and channel == 786:
+                    # We are not interested in this experiment
+                    continue
+                mid_hpso_str = next(
+                    x for x in MID_HPSO_PATHS if f'{channel}' in x)
+                for graph in graph_iterations:
+                    if graph == 'prototype':
+                        base_graph_paths = PROTOTYPE_WORKFLOW_PATHS
+                    else:
+                        base_graph_paths = SCATTER_WORKFLOW_PATHS
+                    mid_path_str = (
+                        f'{BASE_DIR}/mid_{graph}/c{config}/n{channel}')
+                    con_gen.create_config(telescope_max=MID_MAX,
                         hpso_path=Path(mid_hpso_str),
                         output_dir=Path(mid_path_str),
                         cfg_name=f'{MID_CONFIG}_n{config}',
-                        component=MID_COMPONENT_SIZING,
-                        system=MID_TOTAL_SIZING,
-                        cluster=SKA_MID_SDP,
-                        base_graph_paths=base_graph_paths,
-                        timestep='seconds',
-                        data=data,
-                    )
+                        component=MID_COMPONENT_SIZING, system=MID_TOTAL_SIZING,
+                        cluster=SKA_MID_SDP, base_graph_paths=base_graph_paths,
+                        timestep='seconds', data=data, )
 
+
+if __name__ == '__main__':
+    # low_config_iterations = [896, 512]
+    # low_channel_iterations = [896, 512]
+    # generate_low(low_config_iterations, low_channel_iterations)
+    mid_config_iterations = [786, 512]
+    mid_channel_iterations = [786, 512]
+    generate_mid(mid_config_iterations, mid_channel_iterations)
 #
 #
 # # Generate configuration with SDP equivalent base graph (entirely parallel)

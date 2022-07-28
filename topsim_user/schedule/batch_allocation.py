@@ -15,7 +15,7 @@
 
 import copy
 import logging
-import pandas as pd
+import networkx as nx
 
 from topsim.core.task import TaskStatus
 from topsim.core.planner import WorkflowStatus
@@ -45,12 +45,11 @@ class BatchProcessing(Algorithm):
         super().__init__()
         self.max_resources_split = max_resources_split
         self.min_resource_per_workflow = min_resources_per_workflow
-        self.pred = 0
 
     def __repr__(self):
         return "BatchProcessing"
 
-    def run(self, cluster, clock, workflow_plan, existing_schedule,):
+    def run(self, cluster, clock, workflow_plan, existing_schedule, task_pool):
         """
         Generate a list of allocations for the current timestep using the
         existing schedule as a basis.
@@ -62,50 +61,71 @@ class BatchProcessing(Algorithm):
         if clock % 100 == 0 and not provision:
             logger.info(f"{workflow_plan.id} attempted to provision @ {clock}.")
             logger.info(f"{cluster.num_provisioned_obs} existing provs.")
-        tasks = workflow_plan.tasks
-        # max_possible = len(cluster.get_available_resources())
-        self.pred = 0
+        # tasks = workflow_plan.tasks
+        if not task_pool:
+            for task in workflow_plan.tasks:
+                # id = int(task.id.split('_')[-1])
+                if not list(workflow_plan.graph.predecessors(task)):
+                    task_pool.add(task)
+        removed = set()
+        added = set()
         if provision:
             temporary_resources = cluster.get_idle_resources(workflow_plan.id)
-            count = 0
-            print(f"{len(temporary_resources)=} vs {len(allocations)=}")
-            for task in tasks:
+            # The starting number of temporary resources is the maximum
+            # number of (greedy) allocations we can make
+            max_allocations_iteration = len(temporary_resources)
+            for task in task_pool:
                 # If we have exhausted all possible allocations for this
-                # timestep, there no need to iterat
-                if len(allocations) >= len(temporary_resources):
+                # timest ep, there no need to iterat
+                if len(allocations) >= max_allocations_iteration:
                     break
                 if len(temporary_resources) > 0 and task not in allocations:
-                    count += 1
                     if task.task_status is TaskStatus.UNSCHEDULED:
+                        # id = int(task.id.split('_')[-1])
                         # Pick the next available machine
                         m = temporary_resources[0]
-                        if not task.pred:
+                        # If there are no predecessors, we can schedule
+                        # without issue
+                        if not list(workflow_plan.graph.predecessors(task)):
+                            # if not task.pred:
+                            tduration = int(task.flops / m.cpu)
                             allocations[task] = m
                             temporary_resources.remove(m)
+                            removed.add(task)
+                            added.update(workflow_plan.graph.successors(task))
                         else:
-                            pred = set(task.pred)
-                            finished = set(
-                                t.id for t in cluster.get_finished_tasks())
-                            # Check if there isn't an overlap between sets
-                            if not pred.issubset(finished):
-                                # one of the predecessors is still running
-                                self.pred += 1
+                            pred = list(workflow_plan.graph.predecessors(task))
+                            count = 0
+                            for p in pred:
+                                if cluster.is_task_finished(p):
+                                    count += 1
+                            if count < len(list(pred)):
                                 continue
+                            #
+                            # pred = set(task.pred)
+                            # finished = set(
+                            #     t.id for t in cluster.get_finished_tasks()
+                            # )
+                            # # Check if there isn't an overlap between sets
+                            # if not pred.issubset(finished):
+                            #     # one of the predecessors is still running
+                            #     continue
                             else:
                                 allocations[task] = m
                                 temporary_resources.remove(m)
-
+                                removed.add(task)
+                                added.update(
+                                    workflow_plan.graph.successors(task))
+        task_pool -= removed
+        task_pool.update(added)
         if len(workflow_plan.tasks) == 0:
             workflow_plan.status = WorkflowStatus.FINISHED
             logger.debug(f'{workflow_plan.id} is finished.')
-
-        print(f"{count=} vs {len(tasks)=}")
+            cluster.release_batch_resources(workflow_plan.id)
         return allocations, workflow_plan.status
 
     def to_df(self):
-        df = pd.DataFrame()
-        df['predecessors_skipped'] = self.pred
-        return df
+        pass
 
     def _max_resource_provision(self, cluster):
         """
