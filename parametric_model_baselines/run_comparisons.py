@@ -16,6 +16,7 @@
 
 from datetime import date
 from copy import deepcopy
+import multiprocessing
 from pathlib import Path
 from multiprocessing import Pool, Manager
 from shadow.models.workflow import Workflow
@@ -26,8 +27,8 @@ from skaworkflows.config_generator import config_to_shadow
 from skaworkflows.parametric_runner import \
     calculate_parametric_runtime_estimates
 
-from parametric_model_baselines.generate_data import (LOW_HPSO_PATHS,
-                                                      MID_HPSO_PATHS)
+from parametric_model_baselines.generate_data import (
+    LOW_HPSO_PATHS, MID_HPSO_PATHS)
 
 from parametric_model_baselines.generate_data import (LOW_TOTAL_SIZING,
                                                       MID_TOTAL_SIZING)
@@ -44,7 +45,7 @@ def run_shadow(tup, queue, test=False):
     if test:
         print(f"{tup}")
         return None
-    wf, env, f, graph, telescope, position, nodes, channels = tup
+    wf, env, f, graph, telescope, position, nodes, channels, lock = tup
     if "no_data" in wf.name:
         data = False
     else:
@@ -59,10 +60,15 @@ def run_shadow(tup, queue, test=False):
     res_str_fcfs = (f"{hpso},workflow,{fcfs_res},"
                     f"{graph},{telescope},{nodes},{channels},{data}\n")
     print(res_str_fcfs)
-    queue.put(res_str_fcfs)
+    lock.acquire()
+    with output.open('a') as f:
+        f.write(str(res_str_fcfs))
+    lock.release()
+
+    # queue.put(res_str_fcfs)
 
 
-def run_parametric(tup, queue, test=True):
+def run_parametric(tup, queue, test=False):
     """
     Calculate the runtime estimates from the parametric model
     We only need one of these values for each workflow, so skip
@@ -82,7 +88,7 @@ def run_parametric(tup, queue, test=True):
         # print(f"{tup}")
         return None
 
-    wf, env, f, graph, telescope, position, nodes, channels = tup
+    wf, env, f, graph, telescope, position, nodes, channels, lock = tup
     if graph == 'scatter':
         return None
     if "no_data" in wf.name:
@@ -92,9 +98,14 @@ def run_parametric(tup, queue, test=True):
     hpso = f.split("_")[0]
     par_res = calculate_parametric_runtime_estimates(PAR_MODEL_SIZING,
         telescope, [hpso])
-    res_str = (f"{position}{hpso},parametric,{par_res[hpso]['time']},"
+    res_str = (f"{hpso},parametric,{par_res[hpso]['time']},"
                f"{graph},{telescope},{nodes},{channels},{data}\n")
-    queue.put(res_str)
+        # queue.put(res_str)
+    lock.acquire()
+    with output.open('a') as f:
+        f.write(str(res_str))
+    lock.release()
+
 
 
 def listener(queue, output: Path):
@@ -103,14 +114,13 @@ def listener(queue, output: Path):
     with output.open('a') as f:
         while True:
             msg = queue.get()
-            # print(msg)
             if str(msg) == 'Finish':
                 # print(msg)
                 break
             f.write(str(msg))
             f.flush()
 
-def low_setup(config_iterations, channel_iterations, wfdict):
+def low_setup(config_iterations, channel_iterations, wfdict, lock):
     data_iterations = [False, True]
     graph_iterations = ['prototype', 'scatter']
     count = 0
@@ -140,11 +150,11 @@ def low_setup(config_iterations, channel_iterations, wfdict):
                         else:
                             wfdict[wfstr] = (
                             f, nenv, f.name, graph, 'low-adjusted', count,
-                            config, channel)
+                            config, channel,lock)
                         count += 1
     return wfdict
 
-def mid_setup(config_iterations, channel_iterations,wfdict):
+def mid_setup(config_iterations, channel_iterations,wfdict,lock):
     data_iterations = [False, True]
     graph_iterations = ['prototype', 'scatter']
     count = 0
@@ -175,7 +185,7 @@ def mid_setup(config_iterations, channel_iterations,wfdict):
                         else:
                             wfdict[wfstr] = (
                             f, nenv, f.name, graph, 'mid-adjusted', count,
-                            config, channel)
+                            config, channel,lock)
                         count += 1
 
     return wfdict
@@ -184,19 +194,21 @@ def mid_setup(config_iterations, channel_iterations,wfdict):
 if __name__ == '__main__':
     BASE_DIR = Path(f"parametric_model_baselines")
     wfs_dict = {}
-    # low_config_iterations = [896, 512]
-    # low_channel_iterations = [896, 512]
-    # wfs_dict = setup_low(low_config_iterations, low_channel_iterations,
-    # wfs_dict)
-    mid_config_iterations = [786, 512]
-    mid_channel_iterations = [786, 512]
-    wfs_dict = mid_setup(mid_config_iterations, mid_channel_iterations, wfs_dict)
+    low_config_iterations = [896, 512]
+    low_channel_iterations = [896, 512]
     manager = Manager()
     queue = manager.Queue()
+    lock = manager.Lock()
 
+    wfs_dict = low_setup(low_config_iterations, low_channel_iterations, wfs_dict, lock)
+    mid_config_iterations = [786, 512]
+    mid_channel_iterations = [786, 512]
+    wfs_dict = mid_setup(mid_config_iterations, mid_channel_iterations, wfs_dict, lock)
     output = Path(
-        f"parametric_model_baselines/results_{date.today().isoformat()}.csv")
+        f"parametric_model_baselines/results_{date.today().isoformat()}_locktest.csv")
     print(output)
+    # for key in wfs_dict:
+    #     wfs_dict[key]
     # wfs = low_wfs + mid_wfs
     params = set(zip(wfs_dict.values(), [queue for x in range(len(wfs_dict))]))
     for x in params:

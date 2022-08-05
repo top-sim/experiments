@@ -31,7 +31,7 @@ plt.rcParams.update(
 sns.set_palette("colorblind")
 
 
-def collate_results():
+def collate_results(files):
     """
     Eac
 
@@ -44,7 +44,7 @@ def collate_results():
 
     """
 
-    initial = pd.read_csv('parametric_model_baselines/2022_05_10_output.csv')
+    initial = pd.read_csv('parametric_model_baselines/results_2022_07_22.csv')
     initial['experiment'] = 'initial'
     reduced_scatter = pd.read_csv(
         'parametric_model_baselines/2022_05_11_512channels_output''.csv')
@@ -92,14 +92,23 @@ def separate_data(results):
     that the base model is machine stealing; this is demonstrated by
     restricting the nodes to the same as the scatter, leading to an equalised
 
+    Hence the data we are working along is the following:
+
+    * Initial; Nodes/Channels = 896; data = false, 
+    parametric + workflow, graph= prototype + scatter 
+    (parametric only has prototype, as it does not use the workflow (should be 'no graph')
+    
     """
+
+        
+
     hpsos = set(results['hpso'])
     yaxis = {}
     xaxis = {}
 
     return results
 
-def denerate_plots():
+def generate_plots():
     if adjusted:
         for t in telescopes:
             tel, max_comp = t
