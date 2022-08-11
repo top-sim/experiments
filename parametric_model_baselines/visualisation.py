@@ -30,39 +30,6 @@ plt.rcParams.update(
 
 sns.set_palette("colorblind")
 
-
-def collate_results(files):
-    """
-    Eac
-
-    Returns
-    -------
-    results : `pd.DataFrame`
-
-    A concatenated dataframe containing each individual simulated schedule,
-    idenfied by the 'experiment' column
-
-    """
-
-    initial = pd.read_csv('parametric_model_baselines/results_2022_07_22.csv')
-    initial['experiment'] = 'initial'
-    reduced_scatter = pd.read_csv(
-        'parametric_model_baselines/2022_05_11_512channels_output''.csv')
-    reduced_scatter['experiment'] = 'reduced_scatter'
-    reduced_nodes = pd.read_csv(
-        'parametric_model_baselines/2022_05_31_output_512nodes.csv')
-    reduced_nodes['experiment'] = 'reduced_nodes'
-
-    # If the model is 'parametric', the 'graph' value is irrelevant,
-    # so we have duplicate data. Remove parametric data when the graph is
-    # parallel to simplify analysis (we will try and remove the duplication
-    # in the data production scripts moving forward).
-
-    results = pd.concat([initial, reduced_scatter, reduced_nodes])
-
-    return
-
-
 # name, max_compute
 telescopes = [('low-adjusted', 896), ('mid-adjusted', 786)]
 
@@ -96,11 +63,10 @@ def separate_data(results):
 
     * Initial; Nodes/Channels = 896; data = false, 
     parametric + workflow, graph= prototype + scatter 
-    (parametric only has prototype, as it does not use the workflow (should be 'no graph')
+    (parametric only has prototype, as it does not use the workflow (should
+    be 'no graph')
     
     """
-
-        
 
     hpsos = set(results['hpso'])
     yaxis = {}
@@ -108,28 +74,70 @@ def separate_data(results):
 
     return results
 
+
+def plot_parametric_data(df):
+    """
+    There are two types of parametric data; 
+        - Complete SDP: these are results associated with running on the
+        maximum
+        number of machines for that telescope
+        - Adjusted: these are results calculated based on the number of machines
+        that are ()
+
+    Parameters
+    ----------
+    df :
+        Data frame
+
+    Returns
+    --------
+    plot
+        Matplotlib plot object
+    """
+
+    par_plot = None
+    parametric_df = df[df['simulation_type'] == 'parametric']
+    return par_plot
+
+def plot_workflow_data(df, graph="prototype", data=False):
+    """
+    We have 3 types of workflow data
+    Parameters
+    ----------
+    data
+
+    Returns
+    -------
+
+    """
+
+
 def generate_plots():
     if adjusted:
         for t in telescopes:
             tel, max_comp = t
             results.loc[(results['model'] == 'parametric') & (
-                        results['graph'] == 'parallel') & (
-            results['telescope'] == tel), 'time'] = results[
-                        (results[
-                         'model'] == 'parametric') & (
-                                results[
-                                    'graph'] == 'parallel') & (
-                                results[
-                                    'telescope'] == tel)][
-                        'time'] / (
-                            512 / max_comp)
+                    results['graph'] == 'parallel') & (
+                                results['telescope'] == tel), 'time'] = results[
+                                                                            (
+                                                                                    results[
+                                                                                        'model'] == 'parametric') & (
+                                                                                    results[
+                                                                                        'graph'] == 'parallel') & (
+                                                                                    results[
+                                                                                        'telescope'] == tel)][
+                                                                            'time'] / (
+                                                                                512 / max_comp)
         #
-        # Updating the types because we are manipulating parametric to our advantage
-        # Parametric values are the same regardless of parallel/base, so we can use
+        # Updating the types because we are manipulating parametric to our
+        # advantage
+        # Parametric values are the same regardless of parallel/base,
+        # so we can use
         # one set as an alternative selection of data
-        results.loc[
-            (results['model'] == 'parametric') & (results['graph'] == 'parallel'), [
-                'graph', 'model']] = 'parametric_compute_adjusted'
+        results.loc[(results['model'] == 'parametric') & (
+                results['graph'] == 'parallel'), ['graph',
+                                                  'model']] = \
+            'parametric_compute_adjusted'
 
     results.loc[results['model'] == 'parametric', 'graph'] = 'parametric'
 
@@ -139,7 +147,8 @@ def generate_plots():
 
     xaxis = set(results['hpso'])
 
-    initial_parametric = initial[initial['model'] == 'parametric'][['hpso', 'time']]
+    initial_parametric = initial[initial['model'] == 'parametric'][
+        ['hpso', 'time']]
 
     g = sns.barplot(y='time', x='hpso', hue='graph', data=results)
     # g.set(yscale="log")
@@ -147,9 +156,13 @@ def generate_plots():
         # Set a different hatch for each bar
         thisbar.set_hatch(hatches[i % 3])
 
+
 # plt.savefig(f'{str(curr_results).strip(curr_results.suffix)}_barplot.png')
 
 
 if __name__ == '__main__':
-    results = collate_results()
-    adj_results = separate_data(results)
+    column_names = ['hpso', 'simulation_type', 'time', 'graph', 'telescope',
+                    'nodes', 'channels', 'data']
+    df_path = 'parametric_model_baselines/results_2022-07-22.csv'
+    df = pd.read_csv(df_path, header=False, names=column_names)
+    plot = plot_parametric_data(df_path)

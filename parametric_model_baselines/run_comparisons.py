@@ -16,7 +16,6 @@
 
 from datetime import date
 from copy import deepcopy
-import multiprocessing
 from pathlib import Path
 from multiprocessing import Pool, Manager
 from shadow.models.workflow import Workflow
@@ -51,21 +50,20 @@ def run_shadow(tup, queue, test=False):
     else:
         data = True
     workflow = Workflow(wf)
-    hpso = f.split("_")[0]
+    hpso = f.split("_")[0]   
 
     workflow.add_environment(env)
     print(f"Running FCFS {position}")
     fcfs_res = fcfs(workflow, position).makespan
     # heft_res = None
     res_str_fcfs = (f"{hpso},workflow,{fcfs_res},"
-                    f"{graph},{telescope},{nodes},{channels},{data}\n")
+                    f"{graph},{telescope},{nodes},{channels},{data}")
     print(res_str_fcfs)
     lock.acquire()
     with output.open('a') as f:
-        f.write(str(res_str_fcfs))
+        f.write(f"{str(res_str_fcfs)}\n")
+        f.flush()
     lock.release()
-
-    # queue.put(res_str_fcfs)
 
 
 def run_parametric(tup, queue, test=False):
@@ -85,7 +83,6 @@ def run_parametric(tup, queue, test=False):
 
     """
     if test:
-        # print(f"{tup}")
         return None
 
     wf, env, f, graph, telescope, position, nodes, channels, lock = tup
@@ -96,16 +93,27 @@ def run_parametric(tup, queue, test=False):
     else:
         data = True
     hpso = f.split("_")[0]
-    par_res = calculate_parametric_runtime_estimates(PAR_MODEL_SIZING,
-        telescope, [hpso])
-    res_str = (f"{hpso},parametric,{par_res[hpso]['time']},"
-               f"{graph},{telescope},{nodes},{channels},{data}\n")
-        # queue.put(res_str)
+    par_res = calculate_parametric_runtime_estimates(
+        PAR_MODEL_SIZING, telescope, [hpso]
+    )
+    res_str = (
+        f"{hpso},parametric,{par_res[hpso]['time']},"
+        f"{graph},{telescope},{nodes},{channels},{data}"
+    )
+    print(res_str)
     lock.acquire()
     with output.open('a') as f:
-        f.write(str(res_str))
+        f.write(f"{str(res_str)}\n")
+        f.flush()
     lock.release()
 
+
+def run_test(tup, queue, test=True):
+    wf, env, f, graph, telescope, position, nodes, channels, lock = tup
+    lock.acquire()
+    with output.open('a') as f:
+        f.write(f"{str(position)}\n")
+    lock.release()
 
 
 def listener(queue, output: Path):
@@ -119,6 +127,7 @@ def listener(queue, output: Path):
                 break
             f.write(str(msg))
             f.flush()
+
 
 def low_setup(config_iterations, channel_iterations, wfdict, lock):
     data_iterations = [False, True]
@@ -135,21 +144,24 @@ def low_setup(config_iterations, channel_iterations, wfdict, lock):
                 # Set up paths to the respective directory
                 for graph in graph_iterations:
                     low_path_str = (
-                        f'{BASE_DIR}/low_{graph}/c{config}/n{channel}')
+                        f'{BASE_DIR}/low_{graph}/c{config}/n{channel}'
+                    )
                     low_config_shadow = config_to_shadow(
                         Path(f'{low_path_str}/low_sdp_config_n{config}'),
-                        'shadow_')
+                        'shadow_'
+                    )
                     low_env = Environment(low_config_shadow)
                     for f in (Path(low_path_str) / 'workflows').iterdir():
                         nenv = deepcopy(low_env)
                         wfstr = (
                             f"{f.name}{graph}low-adjusted{config}"
-                            f"{channel}")
+                            f"{channel}"
+                        )
                         if wfstr in wfdict:
                             continue
                         else:
                             wfdict[wfstr] = (
-                            f, nenv, f.name, graph, 'low-adjusted', count,
+                                f, nenv, f.name, graph, 'low-adjusted', count,
                             config, channel,lock)
                         count += 1
     return wfdict
@@ -206,20 +218,8 @@ if __name__ == '__main__':
     wfs_dict = mid_setup(mid_config_iterations, mid_channel_iterations, wfs_dict, lock)
     output = Path(
         f"parametric_model_baselines/results_{date.today().isoformat()}_locktest.csv")
-    print(output)
-    # for key in wfs_dict:
-    #     wfs_dict[key]
-    # wfs = low_wfs + mid_wfs
     params = set(zip(wfs_dict.values(), [queue for x in range(len(wfs_dict))]))
-    for x in params:
-        print(x)
-    # for thruple in params:
-    #     print(thruple)  # help determine which order should be in file
-    with Pool(processes=6) as pool:
-        lstn = pool.apply_async(listener, (queue, output))
+    with Pool(processes=3) as pool:
         result = pool.starmap(run_parametric, params)
-    with Pool(processes=6) as pool:
-        lstn = pool.apply_async(listener, (queue, output))
+    with Pool(processes=3) as pool:
         result = pool.starmap(run_shadow, params)
-
-        queue.put('Finish')
