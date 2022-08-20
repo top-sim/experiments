@@ -217,7 +217,7 @@ if __name__ == '__main__':
     mid_channel_iterations = [786, 512]
     wfs_dict = mid_setup(mid_config_iterations, mid_channel_iterations, wfs_dict, lock)
     output = Path(
-        f"parametric_model_baselines/results_{date.today().isoformat()}_locktest.csv")
+        f"parametric_model_baselines/results_{date.today().isoformat()}.csv")
     params = set(zip(wfs_dict.values(), [queue for x in range(len(wfs_dict))]))
     with Pool(processes=3) as pool:
         result = pool.starmap(run_parametric, params)

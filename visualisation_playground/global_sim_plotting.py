@@ -49,7 +49,8 @@ def create_standard_axis(ax, minor=True):
 
     ax.xaxis.set_minor_locator(AutoMinorLocator())
     ax.yaxis.set_minor_locator(AutoMinorLocator())
-    ax.grid(axis='both', which='major', color='grey')
+    ax.set_axisbelow(True)
+    ax.grid(axis='both', which='major', color='grey', zorder=0)
     if minor:
         ax.grid(axis='both', which='minor', color='lightgrey',
                 linestyle='dotted')
