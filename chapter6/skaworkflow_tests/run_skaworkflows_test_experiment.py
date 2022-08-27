@@ -16,9 +16,9 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('../../thesis_experiments'))
-sys.path.insert(0, os.path.abspath('../../skaworkflows'))
-sys.path.insert(0, os.path.abspath('../../shadow'))
+sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath('../../../skaworkflows'))
+sys.path.insert(0, os.path.abspath('../../../shadow'))
 
 import logging
 import simpy
@@ -41,9 +41,9 @@ cfg_path = Path('skaworkflow_tests/low_parallel/low_sdp_config.json')
 if not cfg_path.exists():
     LOGGER.info(f"Exiting simulation, simulation config does not exist")
 
-sys.path.insert(0, os.path.abspath('../../thesis_experiments'))
-sys.path.insert(0, os.path.abspath('../../topsim_pipelines'))
-sys.path.insert(0, os.path.abspath('../../shadow'))
+sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath('../../../topsim_pipelines'))
+sys.path.insert(0, os.path.abspath('../../../shadow'))
 
 # Framework defined models
 from topsim.core.simulation import Simulation

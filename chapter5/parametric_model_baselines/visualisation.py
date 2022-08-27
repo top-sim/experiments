@@ -86,25 +86,19 @@ def create_standard_barplot_axis(ax, minor=True):
     Saves us having to reference/create an arbitrary
 
     Returns
-    -------
+    -------)
     axis
     """
 
-    # ax.yaxis.set_major_locator(ticker.MultipleLocator(10000))
-    # # ax.xaxis.set_minor_locator(AutoMinorLocator())
     ax.yaxis.set_minor_locator(AutoMinorLocator())
-    # ax.yaxis.set_major_formatter(FormatStrFormatter("%.0e"))
-    # ax.grid(axis='both', which='major', color='grey')
     if minor:
         ax.grid(axis='both', which='minor', color='lightgrey',
                 linestyle='dotted')
     ax.tick_params(right=True, top=True, which='both', direction='in')
-    # ax.tick_params(axis='x', labelrotation=45.0)
-
     return ax
 
 
-def plot_parametric_data(df, data=False, max_only=True):
+def plot_data(df, data=False, logarithmic=True, max_only=True):
     """
     There are two types of parametric data; 
         - Complete SDP: these are results associated with running on the
@@ -131,22 +125,22 @@ def plot_parametric_data(df, data=False, max_only=True):
         Matplotlib pyplot object
     """
 
-    par_plot = None
-
     parametric_df = df[
         (df['simulation_type'] == 'parametric') & (df['data'] == data) & (
                 df['graph'] == 'prototype')].sort_values(by='hpso',
                                                          key=natsort_keygen())
 
+    parametric_df['time'] = parametric_df['time'] # /1000
     workflow_scatter_df = df[
         (df['simulation_type'] == 'workflow') & (df['data'] == data) & (
                 df['graph'] == 'scatter')].sort_values(by='hpso',
                                                        key=natsort_keygen())
-
+    workflow_scatter_df['time'] = workflow_scatter_df['time'] #  / 1000
     workflow_prototype_df = df[
         (df['simulation_type'] == 'workflow') & (df['data'] == data) & (
                 df['graph'] == 'prototype')].sort_values(by='hpso',
                                                          key=natsort_keygen())
+    workflow_prototype_df['time'] = workflow_prototype_df['time']#  / 1000
 
     dfs = {'par': parametric_df, 'scatter': workflow_scatter_df,
            'proto': workflow_prototype_df}
@@ -160,45 +154,56 @@ def plot_parametric_data(df, data=False, max_only=True):
                 max_df['nodes'] == 786) & (max_df['channels'] == 786))
         dfs[d] = max_df[max_bool]
 
-    fig, axs = plt.subplots(ncols=3, nrows=2, figsize=(9, 6))
+    fig, axs = plt.subplots(ncols=3, nrows=2, figsize=(16, 10), gridspec_kw={
+        "hspace":0.6},layout="tight")
+
+    fig.supxlabel('HPSO' , y=0.025)
+    fig.supylabel('Scheduled makespan (s)' , x=0.05)
 
     x = np.arange(0, 2 * len(dfs['par']['hpso']), step=2)
     axs[0][0] = create_standard_barplot_axis(axs[0][0], False)
-    axs[0][0].bar(x, dfs['par']['time'], color="lightblue", zorder=1,
-        edgecolor='black', width=0.8, log=True)
+    axs[0][0].bar(x, dfs['par']['time'] , color="lightblue", zorder=1,
+                  edgecolor='black', width=1.8, log=logarithmic, label='Parametric')
     axs[0][0].set_xticks(x, dfs['par']['hpso'])
-    axs[0][0].set_ylabel(ylabel='', labelpad=10)
     axs[0][0].set_title('Parametric estimates\n (896 channels)')
+    axs[0][0].set_xlabel(xlabel='(a)')
 
+    # Scatter
     axs[0][1] = create_standard_barplot_axis(axs[0][1], False)
-    axs[0][1].bar(x - 0.2, dfs['par']['time'], color="lightblue", zorder=1,
-        edgecolor='black', width=0.4, log=True, alpha=0.5)
-    axs[0][1].bar(x + 0.2, dfs['scatter']['time'], color='pink', zorder=1,
-        edgecolor='black', width=0.4, log=True)
+    axs[0][1].bar(x - 0.45, dfs['par']['time'] , color="lightblue",
+                  zorder=1, edgecolor='black', width=0.9, log=logarithmic, alpha=0.5, label='Parametric')
+    axs[0][1].bar(x + 0.45, dfs['scatter']['time'] , color='pink', zorder=1,
+                  edgecolor='black', width=0.9, log=logarithmic, label='Workflow, Scatter')
     axs[0][1].set_xticks(x, dfs['par']['hpso'])
-    axs[0][1].set_ylabel(ylabel='', labelpad=10)
+    # axs[0][1].set_ylabel(ylabel='', labelpad=10)
+    axs[0][1].set_xlabel(xlabel='(b)')
     axs[0][1].set_title('+ Scheduled scatter workflow \n (896 channels)')
 
+    # Prototype
     axs[0][2] = create_standard_barplot_axis(axs[0][2], False)
-    axs[0][2].bar(x - 0.3, dfs['par']['time'], color="lightblue", zorder=1,
-        edgecolor='black', width=0.3, log=True, alpha=0.5)
-    axs[0][2].bar(x, dfs['scatter']['time'], color='pink', zorder=1,
-        edgecolor='black', width=0.3, log=True, alpha=0.8)
-    axs[0][2].bar(x + 0.3, dfs['proto']['time'], color='orange', zorder=1,
-        edgecolor='black', width=0.3, log=True)
+    axs[0][2].bar(x - 0.6, dfs['par']['time'] , color="lightblue", zorder=1,
+                  edgecolor='black', width=0.6, log=logarithmic, alpha=0.5, label="Parametric")
+    axs[0][2].bar(x, dfs['scatter']['time'] , color='pink', zorder=1,
+                  edgecolor='black', width=0.6, log=logarithmic, alpha=0.8, label="Workflow, Scatter")
+    axs[0][2].bar(x + 0.6, dfs['proto']['time'] , color='orange', zorder=1,
+                  edgecolor='black', width=0.6, log=logarithmic, label="Workflow, Protoype")
     axs[0][2].set_xticks(x, dfs['par']['hpso'])
-    axs[0][2].set_ylabel(ylabel='', labelpad=10)
+    axs[0][2].set_xlabel(xlabel='(c)')
     axs[0][2].set_title('+ Scheduled prototype workflow \n (896 channels)')
 
-    fig.supxlabel('HPSO')  # ,y=0.1)
-    fig.supylabel('Runtime (s)')  # ,x=0.02)
+    # Generate bar legend
+    handles, labels = axs[0][2].get_legend_handles_labels()
+    lgd = axs[0][2].legend(handles, labels, loc='upper center',bbox_to_anchor=(-0.7, -0.15))
 
     # 512 channels with parametric adjustement
+    dfs = {'par': parametric_df, 'scatter': workflow_scatter_df,
+           'proto': workflow_prototype_df}
+
     for d in dfs:
-        if d == 'par': # we will use + adjust this, as 512 values don't
-            # really exist
-            continue
         max_df = dfs[d][(dfs[d]['nodes'] == 896) | (dfs[d]['nodes'] == 786)]
+        # if d == 'par': # we will use + adjust this, as 512 values don't
+        #     dfs[d] = max_df
+        #     continue
 
         # Maximum number of channels
         max_bool = ((max_df['nodes'] == 896) & (max_df['channels'] == 512) | (
@@ -208,57 +213,79 @@ def plot_parametric_data(df, data=False, max_only=True):
     x = np.arange(0, 2 * len(dfs['par']['hpso']), step=2)
 
     axs[1][0] = create_standard_barplot_axis(axs[1][0], False)
-    axs[1][0].bar(x, dfs['par']['time'], color="lightblue", zorder=1,
-        edgecolor='black', width=0.8, log=True)
+    axs[1][0].bar(x - 0.6, dfs['par']['time'] , color="lightgrey", zorder=1,
+                  edgecolor='black', width=0.6, alpha=0.8, log=logarithmic,label='Non-adjusted Parametric')
     axs[1][0].set_xticks(x, dfs['par']['hpso'])
-    axs[1][0].set_ylabel(ylabel='', labelpad=10)
-    axs[1][0].set_title('Parametric estimates\n (896 channels)')
 
-    (512 / 786)
+    dfs['par'].loc[df['telescope'] == 'low-adjusted', 'time'] = (
+            dfs['par']['time']/(512/896)
+    )
+    dfs['par'].loc[df['telescope'] == 'mid-adjusted', 'time'] = (
+            dfs['par']['time'] / (512 / 786))
+    axs[1][0].bar(x, dfs['par']['time'] ,
+                  color="lightblue", zorder=1, edgecolor='black', width=0.6,
+                  log=logarithmic)
+    axs[1][0].bar(x + 0.6, dfs['scatter']['time'] , color='pink', zorder=1,
+                  edgecolor='black', width=0.6, log=logarithmic)
+    axs[1][0].set_xticks(x, dfs['par']['hpso'])
+    axs[1][0].set_xlabel(xlabel='(c)')
+    axs[1][0].legend(loc='upper left')
+    axs[1][0].set_title('Adjusted parametric estimates\n '
+                        '+ Scheduled scatter workflow\n '
+                        '(512 channels, 896 nodes)')
+
+    # Second row, where we introduce the variable scatters
+    axs[1][1] = create_standard_barplot_axis(axs[1][1], False)
+    axs[1][1].bar(x-0.4, dfs['par']['time'], color="lightblue",
+                  zorder=1, edgecolor='black', width=0.4, log=logarithmic)
+    axs[1][1].bar(x, dfs['scatter']['time'], color='pink', zorder=1,
+                  edgecolor='black', width=0.4, log=logarithmic)
+    axs[1][1].bar(x + 0.4, dfs['proto']['time'], color='orange', zorder=1,
+                  edgecolor='black', width=0.4, log=logarithmic)
+
+    axs[1][1].set_xticks(x, dfs['par']['hpso'])
+    axs[1][1].set_xlabel(xlabel='(d)')
+    # axs[1][1].set_ylabel(ylabel='', labelpad=10)
+    axs[1][1].set_title('+ Scheduled prototype estimates\n '
+                        '(512 channels, 896 nodes)')
+
+    # Calculate percentage speed improvement of more parallel prototype workflow.
+    # This produces 0.6-3.1% speed improvement
+    #[0.03086936 0.02958504 0.02958504 0.01541825 0.01940492 0.00592531 0.01103956]
+    print(1.0-np.array(dfs['proto']['time'])/ np.array(dfs['scatter']['time']))
 
     # 512 channels with 512 nodes, confirming the parallelism assumptions
     # about the prototype workflow generated by previous plots
+    # Demonstrate prototype 512 node execution as equiv. to scatter on 896
+    dfs = {'par': parametric_df, 'scatter': workflow_scatter_df, 'proto':workflow_prototype_df}
 
-    # fig.suptitle('Tmp title')
-    # fig.marg
-    # plt.margins(5)
-    # ax2.bar(mid_x, mid_max['time'], color="lightblue", zorder=1,
-    #         edgecolor='black', width=0.4,log=True)
+    for d in dfs:
+        max_df = dfs[d][(dfs[d]['nodes'] == 512) | (dfs[d]['nodes'] == 512)]
 
-    # ax2.set_xticks(mid_x, mid_max['hpso'])
-    # ax1.set(ylim=(0,45000))
-    # ax1.ticklabel_format(style='sci', scilimits=(4,4), axis='y')
-    # ax2.set(ylim=(1,80000))
-    # low_512channel_bool = (low_df['nodes'] == 896) & (low_df['channels'] ==
-    # 512)
-    # low_512channel = low_df[low_512channel_bool]
-    # mid_512channel_bool = (mid_df['nodes'] == 786) & (mid_df['channels'] ==
-    # 512)
-    # mid_512channel = mid_df[mid_512channel_bool]
-    """
-    x = np.arange(len(low_512channel['hpso']))
-    # Follow this approach moving forward
-    # steps tomorrow - show initial run (above) in one row in a color (maybe
-    # blue)
-    # Next row is going to be the initial run (above, grey color) next to the
-    # 'expected' runtime for the adjusted parametric model.
-    # we can use this approach moving forward with some minor adjustments. 
-    axs[2] = create_standard_barplot_axis(ax3, False)
-    ax3.bar(x - 0.2, low_512channel['time'] * (512 / 786), color="pink",
-            zorder=1, edgecolor='black', label='512 channels', width=0.4)  # ,
-    # log=True)
-    ax3.bar(x + 0.2, low_max['time'], color="lightgrey", zorder=1,
-            edgecolor='black', width=0.4, label='Max channels')
-    ax3.set_xticks(x, low_512channel['hpso'])
-    # ax4.bar(mid_512channel['hpso'], mid_512channel['time'], color="lightgrey",
-    #         zorder=1, edgecolor='black')  # , log=True)
-    """
-    # fig.tight_layout()
-    # ax.bar()
-    # ax1.xticks(rotation=45, ha="right")
-    plt.show()
+        max_bool = ((max_df['nodes'] == 512) & (max_df['channels'] == 512) | (
+                max_df['nodes'] == 512) & (max_df['channels'] == 512))
+        dfs[d] = max_df[max_bool]
 
-    return par_plot
+    axs[1][2] = create_standard_barplot_axis(axs[1][2], False)
+    dfs['par'].loc[df['telescope'] == 'low-adjusted', 'time'] = (
+            dfs['par']['time']/(512/896)
+    )
+    dfs['par'].loc[df['telescope'] == 'mid-adjusted', 'time'] = (
+            dfs['par']['time'] / (512 / 786))
+
+    axs[1][2].bar(x-0.4, dfs['par']['time'] , color="lightblue", zorder=1,
+                  edgecolor='black', width=0.4, log=logarithmic)
+    axs[1][2].bar(x, dfs['scatter']['time'] , color='pink', zorder=1,
+                  edgecolor='black', width=0.4, log=logarithmic)
+    axs[1][2].bar(x + 0.4, dfs['proto']['time'] , color='orange', zorder=1,
+                  edgecolor='black', width=0.4, log=logarithmic)
+
+    axs[1][2].set_xticks(x, dfs['par']['hpso'])
+    axs[1][2].set_title('Scheduled prototype estimates,\n'
+                        'Reduced nodes\n'
+                        ' (512 channels, 512 nodes)')
+    plt.savefig("chapter5/parametric_model_baselines/plot_parametric_baseline_comparisons_nodata.eps")
+    plt.savefig("chapter5/parametric_model_baselines/plot_parametric_baseline_comparisons_nodata.png",dpi=150)
 
 
 def plot_workflow_data(df, graph="prototype", data=False):
@@ -325,8 +352,8 @@ def generate_plots():
 if __name__ == '__main__':
     column_names = ['hpso', 'simulation_type', 'time', 'graph', 'telescope',
                     'nodes', 'channels', 'data']
-    df_path = 'parametric_model_baselines/results_2022-08-11_locktest.csv'
+    df_path = 'chapter5/parametric_model_baselines/results_2022-08-11_locktest.csv'
     df = pd.read_csv(df_path, header=None, names=column_names)
     df = df.drop_duplicates()
     df['hpso'] = df['hpso'].str.strip('hpso0')
-    plot = plot_parametric_data(df)
+    plot = plot_data(df)

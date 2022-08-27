@@ -26,11 +26,8 @@ from skaworkflows.config_generator import config_to_shadow
 from skaworkflows.parametric_runner import \
     calculate_parametric_runtime_estimates
 
-from parametric_model_baselines.generate_data import (
+from chapter5.parametric_model_baselines.generate_data import (
     LOW_HPSO_PATHS, MID_HPSO_PATHS)
-
-from parametric_model_baselines.generate_data import (LOW_TOTAL_SIZING,
-                                                      MID_TOTAL_SIZING)
 
 PAR_MODEL_SIZING = Path("../sdp-par-model/2021-06-02_LongBaseline_HPSOs.csv")
 
@@ -204,7 +201,7 @@ def mid_setup(config_iterations, channel_iterations,wfdict,lock):
 
 
 if __name__ == '__main__':
-    BASE_DIR = Path(f"parametric_model_baselines")
+    BASE_DIR = Path(f"chapter5/parametric_model_baselines")
     wfs_dict = {}
     low_config_iterations = [896, 512]
     low_channel_iterations = [896, 512]
@@ -217,7 +214,7 @@ if __name__ == '__main__':
     mid_channel_iterations = [786, 512]
     wfs_dict = mid_setup(mid_config_iterations, mid_channel_iterations, wfs_dict, lock)
     output = Path(
-        f"parametric_model_baselines/results_{date.today().isoformat()}.csv")
+        f"chapter5/parametric_model_baselines/results_{date.today().isoformat()}.csv")
     params = set(zip(wfs_dict.values(), [queue for x in range(len(wfs_dict))]))
     with Pool(processes=3) as pool:
         result = pool.starmap(run_parametric, params)

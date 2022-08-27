@@ -24,11 +24,11 @@ from pathlib import Path
 import skaworkflows.workflow.workflow_analysis as wa
 
 
-from parametric_model_baselines.generate_data import (
+from chapter5.parametric_model_baselines.generate_data import (
     LOW_HPSO_PATHS, MID_HPSO_PATHS
 )
 
-from parametric_model_baselines.generate_data import (
+from chapter5.parametric_model_baselines.generate_data import (
     LOW_TOTAL_SIZING, MID_TOTAL_SIZING
 )
 
@@ -37,7 +37,7 @@ from parametric_model_baselines.generate_data import (
 # with LOW_HPSO_PATH.open('r') as f:
 #     hpso_dict = json.load(f)
 # for path in LOW_HPSO_PATHS
-BASE_DIR = Path(f"parametric_model_baselines")
+BASE_DIR = Path(f"chapter5/parametric_model_baselines")
 
 config_iterations = [896, 512]
 channel_iterations = [896, 512]

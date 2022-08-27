@@ -37,12 +37,12 @@ LOGGER = logging.getLogger(__name__)
 
 # Imaging HPSOs
 LOW_HPSO_PATHS = [
-    "parametric_model_baselines/maximal_low_imaging_512channels.json",
-    "parametric_model_baselines/maximal_low_imaging_896channels.json"
+    "chapter5/parametric_model_baselines/maximal_low_imaging_512channels.json",
+    "chapter5/parametric_model_baselines/maximal_low_imaging_896channels.json"
 ]
 MID_HPSO_PATHS = [
-    "parametric_model_baselines/maximal_mid_imaging_512channels.json",
-    "parametric_model_baselines/maximal_mid_imaging_786channels.json"
+    "chapter5/parametric_model_baselines/maximal_mid_imaging_512channels.json",
+    "chapter5/parametric_model_baselines/maximal_mid_imaging_786channels.json"
 ]
 
 # Maximum telescope stations
@@ -71,13 +71,13 @@ MID_COMPONENT_SIZING = Path(
 )
 
 # Output directories
-# LOW_OUTPUT_DIR = Path(f"parametric_model_baselines/low_base")
-# MID_OUTPUT_DIR = Path(f"parametric_model_baselines/mid_base")
+# LOW_OUTPUT_DIR = Path(f"chapter5/parametric_model_baselines/low_base")
+# MID_OUTPUT_DIR = Path(f"chapter5/parametric_model_baselines/mid_base")
 #
-# LOW_OUTPUT_DIR_PAR = Path(f"parametric_model_baselines/low_parallel")
-# MID_OUTPUT_DIR_PAR = Path(f"parametric_model_baselines/mid_parallel")
+# LOW_OUTPUT_DIR_PAR = Path(f"chapter5/parametric_model_baselines/low_parallel")
+# MID_OUTPUT_DIR_PAR = Path(f"chapter5/parametric_model_baselines/mid_parallel")
 
-BASE_DIR = Path(f"parametric_model_baselines")
+BASE_DIR = Path(f"chapter5/parametric_model_baselines")
 
 PROTOTYPE_BASE_GRAPH = Path("../skaworkflows/skaworkflows/data/hpsos/dprepa.graph")
 SCATTER_BASE_GRAPH = Path(
