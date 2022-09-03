@@ -79,25 +79,25 @@ MID_COMPONENT_SIZING = Path(
 
 BASE_DIR = Path(f"chapter5/parametric_model_baselines")
 
-PROTOTYPE_BASE_GRAPH = Path("../skaworkflows/skaworkflows/data/hpsos/dprepa.graph")
+"prototype" = Path("../skaworkflows/skaworkflows/data/hpsos/dprepa.graph")
 SCATTER_BASE_GRAPH = Path(
     "../skaworkflows/skaworkflows/data/hpsos/dprepa_parallel.graph"
 )
 
 PROTOTYPE_WORKFLOW_PATHS = {
-    "ICAL": PROTOTYPE_BASE_GRAPH,
-    "DPrepA": PROTOTYPE_BASE_GRAPH,
-    "DPrepB": PROTOTYPE_BASE_GRAPH,
-    "DPrepC": PROTOTYPE_BASE_GRAPH,
-    "DPrepD": PROTOTYPE_BASE_GRAPH
+    "ICAL": "prototype",
+    "DPrepA": "prototype",
+    "DPrepB": "prototype",
+    "DPrepC": "prototype",
+    "DPrepD": "prototype"
 }
 
 SCATTER_WORKFLOW_PATHS = {
-    "ICAL": SCATTER_BASE_GRAPH,
-    "DPrepA": SCATTER_BASE_GRAPH,
-    "DPrepB": SCATTER_BASE_GRAPH,
-    "DPrepC": SCATTER_BASE_GRAPH,
-    "DPrepD": SCATTER_BASE_GRAPH,
+    "ICAL": "scatter",
+    "DPrepA": "scatter",
+    "DPrepB": "scatter",
+    "DPrepC": "scatter",
+    "DPrepD": "scatter"
 }
 
 LOW_CONFIG = Path("low_sdp_config")

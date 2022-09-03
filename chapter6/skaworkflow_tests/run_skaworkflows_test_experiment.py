@@ -51,18 +51,14 @@ from topsim.core.delay import DelayModel
 
 # User defined models
 from topsim_user.telescope import Telescope  # Instrument
-# from topsim_user.schedule.dynamic_plan import DynamicAlgorithmFromPlan  # Scheduling
-from topsim_user.schedule.greedy import GreedyAlgorithmFromPlan  # Scheduling
 from topsim_user.schedule.batch_allocation import BatchProcessing
 from topsim_user.plan.batch_planning import BatchPlanning  # Planning
-# from topsim_user.plan.static_planning import SHADOWPlanning
 
 if __name__ == '__main__':
 
     LOGGER.info(f"Running experiment from {RUN_PATH}/{FOLDER_PATH}")
     env = simpy.Environment()
     instrument = Telescope
-    # timestamp = f'{time.time()}'.split('.')[0]
     simulation = Simulation(
         env=env,
         config=cfg_path,
@@ -75,9 +71,6 @@ if __name__ == '__main__':
         to_file=True,
         hdf5_path=f'{RUN_PATH}/{FOLDER_PATH}/results_'
                   f'{date.today().isoformat()}.h5',
-
-        # hdf5_path='',
-        # delimiters=f'test/'
     )
     simulation.start()
 LOGGER.info(f"Experiment finished, exiting script...")

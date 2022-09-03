@@ -1,23 +1,23 @@
 {
   "instrument": {
     "telescope": {
-      "max_ingest_resources": 31,
-      "total_arrays": 512,
+      "max_ingest_resources": 81,
+      "total_arrays": 197,
       "pipelines": {
         "hpso22_2": {
-          "ingest_demand": 31,
+          "ingest_demand": 81,
           "workflow": "workflows/hpso22_time-28800_channels-512_tel-197.json"
         },
         "hpso15_1": {
-          "ingest_demand": 5,
+          "ingest_demand": 12,
           "workflow": "workflows/hpso15_time-15840_channels-512_tel-197.json"
         },
         "hpso13_0": {
-          "ingest_demand": 7,
+          "ingest_demand": 19,
           "workflow": "workflows/hpso13_time-28800_channels-512_tel-197.json"
         },
         "hpso32_3": {
-          "ingest_demand": 7,
+          "ingest_demand": 17,
           "workflow": "workflows/hpso32_time-7920.0_channels-512_tel-197.json"
         }
       },
@@ -28,7 +28,7 @@
           "duration": 28800,
           "instrument_demand": 197,
           "type": "hpso22",
-          "data_product_rate": 168612907885.71426
+          "data_product_rate": 438222379885.71423
         },
         {
           "name": "hpso15_1",
@@ -36,7 +36,7 @@
           "duration": 15840,
           "instrument_demand": 197,
           "type": "hpso15",
-          "data_product_rate": 23180888662.946095
+          "data_product_rate": 60246776626.5401
         },
         {
           "name": "hpso13_0",
@@ -44,7 +44,7 @@
           "duration": 28800,
           "instrument_demand": 197,
           "type": "hpso13",
-          "data_product_rate": 37852467568.06027
+          "data_product_rate": 98377986775.87239
         },
         {
           "name": "hpso32_3",
@@ -52,7 +52,7 @@
           "duration": 7920.0,
           "instrument_demand": 197,
           "type": "hpso32",
-          "data_product_rate": 33725852506.97908
+          "data_product_rate": 87652977073.97609
         }
       ]
     }
