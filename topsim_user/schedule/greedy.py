@@ -19,12 +19,12 @@ import pandas as pd
 
 from topsim.core.planner import WorkflowStatus
 from topsim.core.task import TaskStatus
-from topsim.algorithms.scheduling import Algorithm
+from topsim.algorithms.scheduling import Scheduling
 
 LOGGER = logging.getLogger(__name__)
 
 
-class GreedyAlgorithmFromPlan(Algorithm):
+class GreedyAlgorithmFromPlan(Scheduling):
     """
     Algorithm that Greedily re-allocates a schedule based on run-time
     resource availability.

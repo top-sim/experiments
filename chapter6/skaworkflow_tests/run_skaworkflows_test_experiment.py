@@ -15,6 +15,7 @@
 
 import os
 import sys
+import time
 
 sys.path.insert(0, os.path.abspath('../..'))
 sys.path.insert(0, os.path.abspath('../../../skaworkflows'))
@@ -34,9 +35,10 @@ logging.basicConfig(level="INFO")
 LOGGER = logging.getLogger(__name__)
 
 RUN_PATH = Path.cwd()
-FOLDER_PATH = Path(f'skaworkflow_tests')
+FOLDER_PATH = Path(f'chapter6/skaworkflow_tests')
 
-cfg_path = Path('skaworkflow_tests/low_parallel/low_sdp_config.json')
+cfg_path = Path(
+    'chapter6/skaworkflow_tests/low_parallel/low_sdp_config_dual.json')
 
 if not cfg_path.exists():
     LOGGER.info(f"Exiting simulation, simulation config does not exist")
@@ -55,22 +57,21 @@ from topsim_user.schedule.batch_allocation import BatchProcessing
 from topsim_user.plan.batch_planning import BatchPlanning  # Planning
 
 if __name__ == '__main__':
-
+    st = time.time()
     LOGGER.info(f"Running experiment from {RUN_PATH}/{FOLDER_PATH}")
     env = simpy.Environment()
     instrument = Telescope
-    simulation = Simulation(
-        env=env,
-        config=cfg_path,
-        instrument=instrument,
-        planning_algorithm='batch',
-        planning_model=BatchPlanning('batch'),
-        scheduling=BatchProcessing,
-        delay=None,
-        timestamp='skaworkflow_test',
-        to_file=True,
+    simulation = Simulation(env=env, config=cfg_path, instrument=instrument,
+        planning_algorithm='batch', planning_model=BatchPlanning('batch'),
+        scheduling=BatchProcessing(min_resources_per_workflow=1,
+                                   resource_split={'hpso01_0': (820, 896),
+                                                   'hpso01_1':(820, 896)},
+                                   max_resource_partitions=2),
+     delay=None, timestamp=None, to_file=True,
         hdf5_path=f'{RUN_PATH}/{FOLDER_PATH}/results_'
-                  f'{date.today().isoformat()}.h5',
-    )
+                  f'{date.today().isoformat()}.h5', )
     simulation.start()
+    ft = time.time()
+    LOGGER.info(f"Experiment took {(ft-st)/60} minutes to run")
+
 LOGGER.info(f"Experiment finished, exiting script...")

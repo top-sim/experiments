@@ -18,12 +18,12 @@ import pandas as pd
 
 from topsim.core.planner import WorkflowStatus
 from topsim.core.task import TaskStatus
-from topsim.algorithms.scheduling import Algorithm
+from topsim.algorithms.scheduling import Scheduling
 
 logger = logging.getLogger(__name__)
 
 
-class DynamicAlgorithmFromPlan(Algorithm):
+class DynamicAlgorithmFromPlan(Scheduling):
     """
     This plan
     """
