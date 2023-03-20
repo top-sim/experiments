@@ -1,0 +1,37 @@
+{
+	"items": [
+		{
+			"count": 1,
+			"hpso": "hpso01",
+			"demand": 512,
+			"duration": 18000,
+			"workflows": [
+				"ICAL", "DPrepA", "DPrepB", "DPrepC", "DPrepD"
+			],
+			"channels": 896,
+			"baseline": 65000.0
+		},
+		{
+			"count": 1,
+			"hpso": "hpso02a",
+			"demand": 512,
+			"duration": 18000,
+			"workflows": [
+				"ICAL", "DPrepA", "DPrepB", "DPrepC", "DPrepD"
+			],
+			"channels": 896,
+			"baseline": 65000.0
+		},
+		{
+			"count": 1,
+			"hpso": "hpso02b",
+			"demand": 512,
+			"duration": 18000,
+			"workflows": [
+				"ICAL", "DPrepA", "DPrepB", "DPrepC", "DPrepD"
+			],
+			"channels": 896,
+			"baseline": 65000.0
+		}
+	]
+}
