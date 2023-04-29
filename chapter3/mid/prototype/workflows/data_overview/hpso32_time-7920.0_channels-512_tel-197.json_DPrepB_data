@@ -1,0 +1,119 @@
+{
+  "End": {
+    "node": 1
+  },
+  "lstnr": {
+    "node": 1
+  },
+  "UpdateGSM": {
+    "node": 1024,
+    "out_edge": 1024
+  },
+  "UpdateLSM": {
+    "node": 1024,
+    "out_edge": 1024,
+    "total_compute": 0.00041433565778345764,
+    "fraction_compute_cost": 4.0462466580415785e-07,
+    "total_data": 322.85895411702006,
+    "fraction_data_cost": 0.3152919473799024
+  },
+  "CalSourceFinding": {
+    "node": 1024,
+    "out_edge": 1024
+  },
+  "Average": {
+    "node": 1024,
+    "out_edge": 1024,
+    "total_compute": 0.0,
+    "fraction_compute_cost": 0.0,
+    "total_data": 0.0,
+    "fraction_data_cost": 0.0
+  },
+  "Predict": {
+    "node": 2048,
+    "out_edge": 1024,
+    "total_compute": 0.2653688466074105,
+    "fraction_compute_cost": 0.00012957463213252466,
+    "total_data": 276.26786662467686,
+    "fraction_data_cost": 0.1348964192503305
+  },
+  "Solve": {
+    "node": 1024,
+    "out_edge": 2048,
+    "total_compute": 0.0,
+    "fraction_compute_cost": 0.0,
+    "total_data": 0.0,
+    "fraction_data_cost": 0.0
+  },
+  "Correct": {
+    "node": 1024,
+    "out_edge": 1024,
+    "total_compute": 0.0001944893906874,
+    "fraction_compute_cost": 1.8993104559316406e-07,
+    "total_data": 276.2633390446153,
+    "fraction_data_cost": 0.2697884170357571
+  },
+  "Subtract": {
+    "node": 7168,
+    "out_edge": 7168,
+    "total_compute": 1.2155586917963072e-05,
+    "fraction_compute_cost": 1.695812907081902e-09,
+    "total_data": 276.2633390446153,
+    "fraction_data_cost": 0.03854120243367959
+  },
+  "Flag": {
+    "node": 3072,
+    "out_edge": 2048,
+    "total_compute": 0.0016957043750558,
+    "fraction_compute_cost": 5.519871012551432e-07,
+    "total_data": 276.2633390446153,
+    "fraction_data_cost": 0.08992947234525238
+  },
+  "IFFT": {
+    "node": 2048,
+    "out_edge": 2048,
+    "total_compute": 0.0016625990908324,
+    "fraction_compute_cost": 8.118159623205078e-07,
+    "total_data": 0.0045275800615537,
+    "fraction_data_cost": 2.2107324519305177e-06
+  },
+  "Degrid": {
+    "node": 2048,
+    "out_edge": 2048,
+    "total_compute": 0.0051945284076254,
+    "fraction_compute_cost": 2.53639082403584e-06,
+    "total_data": 2473.2983537530054,
+    "fraction_data_cost": 1.2076652117934596
+  },
+  "FFT": {
+    "node": 2048,
+    "out_edge": 4096,
+    "total_compute": 0.0058190968179137,
+    "fraction_compute_cost": 2.8413558681219236e-06,
+    "total_data": 0.0158465302154381,
+    "fraction_data_cost": 7.737563581756884e-06
+  },
+  "IdentifyComponent": {
+    "node": 4096,
+    "out_edge": 4096
+  },
+  "Grid": {
+    "node": 2048,
+    "out_edge": 2048,
+    "total_compute": 0.005200706511021209,
+    "fraction_compute_cost": 2.5394074760845748e-06,
+    "total_data": 3043.3764619439658,
+    "fraction_data_cost": 1.486023663058577
+  },
+  "ExtractLSM": {
+    "node": 1024,
+    "out_edge": 1024
+  },
+  "SelfCalConverge": {
+    "node": 1024
+  },
+  "Raw-Vis-Copy": {
+    "node": 512,
+    "out_edge": 512
+  }
+}

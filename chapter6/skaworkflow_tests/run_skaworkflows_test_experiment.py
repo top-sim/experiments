@@ -18,8 +18,8 @@ import sys
 import time
 
 sys.path.insert(0, os.path.abspath('../..'))
-sys.path.insert(0, os.path.abspath('../../../skaworkflows'))
-sys.path.insert(0, os.path.abspath('../../../shadow'))
+sys.path.append("/home/rwb/github/skaworkflows")
+sys.path.insert(0, os.path.abspath('../../shadow'))
 
 import logging
 import simpy

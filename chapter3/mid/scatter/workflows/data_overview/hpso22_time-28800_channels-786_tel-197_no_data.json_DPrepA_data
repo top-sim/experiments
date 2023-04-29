@@ -1,0 +1,125 @@
+{
+  "UpdateGSM": {
+    "node": 786,
+    "out_edge": 786
+  },
+  "Solve": {
+    "node": 786,
+    "out_edge": 786,
+    "total_compute": 0.0,
+    "fraction_compute_cost": 0.0,
+    "total_data": 0.0,
+    "fraction_data_cost": 0.0
+  },
+  "Grid": {
+    "node": 786,
+    "out_edge": 786,
+    "total_compute": 0.07189882299543968,
+    "fraction_compute_cost": 9.14743295107375e-05,
+    "total_data": 170136.09735713096,
+    "fraction_data_cost": 216.45813913120986
+  },
+  "Degrid": {
+    "node": 786,
+    "out_edge": 786,
+    "total_compute": 0.07184367690972719,
+    "fraction_compute_cost": 9.140416909634503e-05,
+    "total_data": 165540.9678897557,
+    "fraction_data_cost": 210.6119184348037
+  },
+  "Flag": {
+    "node": 1572,
+    "out_edge": 1572,
+    "total_compute": 0.0227027456676149,
+    "fraction_compute_cost": 1.4441950170238486e-05,
+    "total_data": 3698.72037595552,
+    "fraction_data_cost": 2.352875557223613
+  },
+  "Subtract Image Component": {
+    "node": 786,
+    "out_edge": 786,
+    "total_compute": 2.564437486111111e-06,
+    "fraction_compute_cost": 3.26264311210065e-09,
+    "total_data": 12232.677454576862,
+    "fraction_data_cost": 15.563202868418399
+  },
+  "Source Find": {
+    "node": 786,
+    "out_edge": 786,
+    "total_compute": 0.0,
+    "fraction_compute_cost": 0.0,
+    "total_data": 0.0,
+    "fraction_data_cost": 0.0
+  },
+  "UpdateLSM": {
+    "node": 786,
+    "out_edge": 786,
+    "total_compute": 0.0089706301333562,
+    "fraction_compute_cost": 1.1413015436839948e-05,
+    "total_data": 24465.354909153724,
+    "fraction_data_cost": 31.126405736836798
+  },
+  "FinishMajorCycle": {
+    "node": 786,
+    "out_edge": 786
+  },
+  "Predict": {
+    "node": 786,
+    "out_edge": 786,
+    "total_compute": 2.776021850507109,
+    "fraction_compute_cost": 0.003531834415403446,
+    "total_data": 3698.830977390658,
+    "fraction_data_cost": 4.705891828741295
+  },
+  "Correct": {
+    "node": 786,
+    "out_edge": 786,
+    "total_compute": 0.0026038991446726,
+    "fraction_compute_cost": 3.3128487845707382e-06,
+    "total_data": 3698.72037595552,
+    "fraction_data_cost": 4.705751114447226
+  },
+  "BeginMajorCycle": {
+    "node": 786,
+    "out_edge": 786
+  },
+  "FFT": {
+    "node": 786,
+    "out_edge": 786,
+    "total_compute": 0.0379355460856128,
+    "fraction_compute_cost": 4.826405354403665e-05,
+    "total_data": 0.1106014351379622,
+    "fraction_data_cost": 0.0001407142940686542
+  },
+  "Image Spectral Fitting": {
+    "node": 786,
+    "out_edge": 786,
+    "total_compute": 0.0,
+    "fraction_compute_cost": 0.0,
+    "total_data": 0.0,
+    "fraction_data_cost": 0.0
+  },
+  "Subtract": {
+    "node": 1572,
+    "out_edge": 1572,
+    "total_compute": 0.000162743696542,
+    "fraction_compute_cost": 1.035265245178117e-07,
+    "total_data": 3698.72037595552,
+    "fraction_data_cost": 2.352875557223613
+  },
+  "Identify Component": {
+    "node": 786,
+    "out_edge": 786,
+    "total_compute": 2.216659381946844e-06,
+    "fraction_compute_cost": 2.8201773307211757e-09,
+    "total_data": 12232.677454576862,
+    "fraction_data_cost": 15.563202868418399
+  },
+  "Gather": {
+    "node": 1
+  },
+  "FrequencySplit": {
+    "node": 1,
+    "out_edge": 786
+  }
+}

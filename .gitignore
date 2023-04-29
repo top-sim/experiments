@@ -4,3 +4,7 @@ temp/*
 *_checkpoints*
 /venv/
 simdata
+chapter3/low/prototype/workflows/*.json
+chapter3/low/scatter/workflows/*.json
+chapter3/mid/prototype/workflows/*.json
+chapter3/mid/scatter/workflows/*.json
