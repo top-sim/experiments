@@ -8,3 +8,17 @@ chapter3/low/prototype/workflows/*.json
 chapter3/low/scatter/workflows/*.json
 chapter3/mid/prototype/workflows/*.json
 chapter3/mid/scatter/workflows/*.json
+/chapter4/skaworkflow_tests/low_parallel/workflows/*
+*.h5
+/chapter4/skaworkflow_tests/low_parallel/workflows/*
+chapter4/skaworkflow_tests/low_parallel/workflows/hpso01_time-18000_channels-896_tel-512.json
+chapter4/skaworkflow_tests/low_parallel/workflows/hpso01_time-18000_channels-896_tel-512_no_data.json
+/.env
+/chapter3/.png
+/topsim_user/schedule/__init__.py
+/chapter3/workflow_data_allocation/hpso01_time-18000_channels-512_tel-512_no_data.json_DPrepA_data
+/chapter3/workflow_data_allocation/hpso01_time-18000_channels-896_tel-512_no_data.json_DPrepA_data
+/chapter3/workflow_data_allocation/hpso01_time-18000_channels-896_tel-512_no_data-Copy1.json_DPrepA_data
+/.vscode/launch.json
+/Output.png
+/.vscode/settings.json

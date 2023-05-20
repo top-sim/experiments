@@ -86,7 +86,7 @@ def run_parametric(tup, queue, test=False):
         return None
 
     wf, env, f, graph, telescope, position, nodes, channels, lock = tup
-    if graph == 'scatter':
+    if graph == 'scatter' or channels == 512 or "no_data" not in wf.name:
         return None
     if "no_data" in wf.name:
         data = False
@@ -133,75 +133,66 @@ def low_setup(config_iterations, channel_iterations, wfdict, lock):
     data_iterations = [False, True]
     graph_iterations = ['prototype', 'scatter']
     count = 0
+    config = 896
     for data in data_iterations:
-        for config in config_iterations:
-            for channel in channel_iterations:
-                if config == 512 and channel == 896:
-                    # We are not interested in this experiment
-                    continue
-                low_hpso_str = next(
-                    x for x in LOW_HPSO_PATHS if f'{channel}' in x)
-                # Set up paths to the respective directory
-                for graph in graph_iterations:
-                    low_path_str = (
-                        f'{BASE_DIR}/low_{graph}/c{config}/n{channel}'
+        for channel in channel_iterations:
+           # Set up paths to the respective directory
+            for graph in graph_iterations:
+                low_path = Path(
+                    f"{BASE_DIR}/low/{graph}/"
+                )
+                low_config_shadow = config_to_shadow(low_path / f"no_data_low_sdp_config_{graph}_n{config}_{channel}channels.json", 'shadow_')
+                low_env = Environment(low_config_shadow)
+                for f in (Path(low_path) / 'workflows').iterdir():
+                    nenv = deepcopy(low_env)
+                    wfstr = (
+                        f"{f.name}{graph}low-adjusted{config}"
+                        f"{channel}"
                     )
-                    low_config_shadow = config_to_shadow(
-                        Path(f'{low_path_str}/low_sdp_config_n{config}'),
-                        'shadow_'
-                    )
-                    low_env = Environment(low_config_shadow)
-                    for f in (Path(low_path_str) / 'workflows').iterdir():
-                        nenv = deepcopy(low_env)
-                        wfstr = (
-                            f"{f.name}{graph}low-adjusted{config}"
-                            f"{channel}"
-                        )
-                        if wfstr in wfdict:
-                            continue
-                        else:
-                            wfdict[wfstr] = (
-                                f, nenv, f.name, graph, 'low-adjusted', count,
-                            config, channel,lock)
-                        count += 1
+                    if wfstr in wfdict:
+                        continue
+                    else:
+                        wfdict[wfstr] = (
+                            f, nenv, f.name, graph, 'low-adjusted', count,
+                        config, channel,lock)
+                    count += 1
     return wfdict
 
 def mid_setup(config_iterations, channel_iterations,wfdict,lock):
     data_iterations = [False, True]
     graph_iterations = ['prototype', 'scatter']
     count = 0
+    config = 896
     for data in data_iterations:
-        for config in config_iterations:
-            for channel in channel_iterations:
-                mid_hpso_str = next(
-                    x for x in MID_HPSO_PATHS if f'{channel}' in x)
-                # Set up paths to the respective directory
-                for graph in graph_iterations:
-                    mid_path_str = (
-                        f'{BASE_DIR}/mid_{graph}/c{config}/n{channel}')
-                    mid_config_shadow = config_to_shadow(
-                        Path(f'{mid_path_str}/mid_sdp_config_n{config}'),
-                        'shadow_')
-
-                    mid_env = Environment(mid_config_shadow)
-                    for f in (Path(mid_path_str) / 'workflows').iterdir():
-                        nenv = deepcopy(mid_env)
-                        wfstr = (
-                            f"{f.name}{graph}mid-adjusted{config}"
-                            f"{channel}")
-                        if wfstr in wfdict:
-                            continue
-                        else:
-                            wfdict[wfstr] = (
-                            f, nenv, f.name, graph, 'mid-adjusted', count,
-                            config, channel,lock)
-                        count += 1
+        for channel in channel_iterations:
+            # Set up paths to the respective directory
+            if config == 512 and channel == 896:
+                # We are not interested in this experiment
+                continue
+            for graph in graph_iterations:
+                mid_path = Path(
+                    f"{BASE_DIR}/mid/{graph}/"
+                )
+                mid_config_shadow = config_to_shadow(mid_path / f"no_data_mid_sdp_config_{graph}_n{config}_{channel}channels.json", 'shadow_')
+                mid_env = Environment(mid_config_shadow)
+                for f in (Path(mid_path) / 'workflows').iterdir():
+                    nenv = deepcopy(mid_env)
+                    wfstr = (
+                        f"{f.name}{graph}mid-adjusted{config}"
+                        f"{channel}")
+                    if wfstr in wfdict:
+                        continue
+                    else:
+                        wfdict[wfstr] = (
+                        f, nenv, f.name, graph, 'mid-adjusted', count,
+                        config, channel,lock)
+                    count += 1
 
     return wfdict
 
 
 if __name__ == '__main__':
-    BASE_DIR = Path(f"chapter5/parametric_model_baselines")
+    BASE_DIR = Path(f"chapter3/")
     wfs_dict = {}
     low_config_iterations = [896, 512]
     low_channel_iterations = [896, 512]
@@ -211,12 +202,12 @@ if __name__ == '__main__':
 
     wfs_dict = low_setup(low_config_iterations, low_channel_iterations, wfs_dict, lock)
     mid_config_iterations = [786, 512]
-    mid_channel_iterations = [786, 512]
+    mid_channel_iterations = [896, 512]
     wfs_dict = mid_setup(mid_config_iterations, mid_channel_iterations, wfs_dict, lock)
     output = Path(
-        f"chapter5/parametric_model_baselines/results_{date.today().isoformat()}.csv")
+        f"chapter3/results_{date.today().isoformat()}.csv")
     params = set(zip(wfs_dict.values(), [queue for x in range(len(wfs_dict))]))
     with Pool(processes=3) as pool:
         result = pool.starmap(run_parametric, params)
-    with Pool(processes=3) as pool:
+    with Pool(processes=4) as pool:
         result = pool.starmap(run_shadow, params)

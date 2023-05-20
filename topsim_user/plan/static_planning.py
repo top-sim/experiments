@@ -15,6 +15,7 @@
 
 import logging
 import copy
+import networkx as nx
 
 from topsim.algorithms.planning import Planning
 from topsim.core.planner import WorkflowPlan, WorkflowStatus
@@ -47,7 +48,7 @@ class SHADOWPlanning(Planning):
     def generate_plan(self, clock, cluster, buffer, observation, max_ingest):
         """
         For this StaticPlanning example, we are using the SHADOW static
-        scheduling library to produce static plans. There are a couple of
+        scheduling library to produce static plans.
 
         Parameters
         ----------
@@ -70,11 +71,14 @@ class SHADOWPlanning(Planning):
 
         est = self._calc_workflow_est(observation, buffer)
         eft = solution.makespan
+        mapping = {}
         tasks = []
+        exec_order_mapping = {}
 
         for task in solution.task_allocations:
             allocation = solution.task_allocations.get(task)
             tid = self._create_observation_task_id(task.tid, observation, clock)
+            exec_order_mapping[tid] = task.tid
             dm = copy.copy(self.delay_model)
             pred = list(workflow.graph.predecessors(task))
             predecessors = [
@@ -89,7 +93,7 @@ class SHADOWPlanning(Planning):
                 nm = self._create_observation_task_id(
                     element.tid, observation, clock
                 )
-                val = data[element]['data_size']
+                val = data[element]["transfer_data"]
                 edge_costs[nm] = val
 
             taskobj = Task(
@@ -98,16 +102,21 @@ class SHADOWPlanning(Planning):
                 allocation.aft,
                 allocation.machine.id,
                 predecessors,
-                task.flops_demand, 0, edge_costs,
+                task.flops_demand, task.io_demand, edge_costs,
                 dm
             )
+            mapping[task] = taskobj
             tasks.append(taskobj)
+        new_graph = nx.relabel_nodes(workflow.graph, mapping)
         tasks.sort(key=lambda x: x.est)
-        exec_order = solution.execution_order
+        exec_order = [
+            self._create_observation_task_id(x, observation, clock)
+            for x in solution.execution_order
+        ]
 
         return WorkflowPlan(
             observation.name, est, eft, tasks, exec_order,
-            WorkflowStatus.SCHEDULED, max_ingest
+            WorkflowStatus.SCHEDULED, max_ingest, new_graph
         )
 
     def to_df(self):
@@ -149,11 +158,11 @@ class SHADOWPlanning(Planning):
             additional information.
         """
 
-        if self.algorithm is 'heft':
+        if self.algorithm == 'heft':
             solution = heft(workflow)
-        elif self.algorithm is 'pheft':
+        elif self.algorithm == 'pheft':
             solution = pheft(workflow)
-        elif self.algorithm is 'fcfs':
+        elif self.algorithm == 'fcfs':
             solution = fcfs(workflow)
         else:
             raise RuntimeError(
@@ -183,14 +192,14 @@ class SHADOWPlanning(Planning):
         dictionary = {
             "system": {
                 "resources": None,
-                "bandwidth": cluster.system_bandwidth
+                "system_bandwidth": cluster.system_bandwidth
             }
         }
         resources = {}
         for m in available_resources:
             resources[m.id] = {
                 "flops": m.cpu,
-                "rates": m.bandwidth,
+                "compute_bandwidth": m.bandwidth,
                 "io": m.disk,
                 "memory": m.memory
             }
