@@ -26,7 +26,7 @@ from skaworkflows.config_generator import config_to_shadow
 from skaworkflows.parametric_runner import \
     calculate_parametric_runtime_estimates
 
-from chapter5.parametric_model_baselines.generate_data import (
+from archived_results.parametric_model_baselines import (
     LOW_HPSO_PATHS, MID_HPSO_PATHS)
 
 PAR_MODEL_SIZING = Path("../sdp-par-model/2021-06-02_LongBaseline_HPSOs.csv")

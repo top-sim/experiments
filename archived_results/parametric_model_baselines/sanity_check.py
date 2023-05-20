@@ -24,11 +24,11 @@ from pathlib import Path
 import skaworkflows.workflow.workflow_analysis as wa
 
 
-from chapter5.parametric_model_baselines.generate_data import (
+from archived_results.parametric_model_baselines import (
     LOW_HPSO_PATHS, MID_HPSO_PATHS
 )
 
-from chapter5.parametric_model_baselines.generate_data import (
+from archived_results.parametric_model_baselines import (
     LOW_TOTAL_SIZING, MID_TOTAL_SIZING
 )
 
