@@ -9,5 +9,5 @@ These results will be generated with the following parameters.
 - Parametric model: Also '896' node equivalent; this means not reserving nodes for ingest, and scheduling across the entire cluster
     - We will adjust the Parametric model result with the 512 nodes post-experiment 
 
- 
+
  
