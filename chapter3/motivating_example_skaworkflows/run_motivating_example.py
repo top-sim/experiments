@@ -1,4 +1,4 @@
-# Copyright (C) 27/5/23 RW Bunney
+# Copyright (C) 10/6/23 RW Bunney
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -12,34 +12,27 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 from pathlib import Path
 from shadow.models.workflow import Workflow
 from shadow.models.environment import Environment
 from shadow.algorithms.heuristic import heft, fcfs
 
-import sys
-sys.path.append('/home/rwb/github/skaworkflows')
-
-from skaworkflows.config_generator import config_to_shadow
-
-low_config_shadow = Path("chapter3/extending_initial_results/shadow_no_data_low_sdp_config_prototype_n896_896channels.json")
-
-low_env = Environment(low_config_shadow)
-
-wf = Path("chapter3/extending_initial_results/workflows/hpso01_time-18000_channels-896_tel-512.json")
-
-workflow = Workflow(wf)
+heft_env = Path('/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/motivating_example/final_heft_sys.json')
+heft_wf = Path('/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/motivating_example/final_heft.json')
+heft_wf_data = Path('/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/motivating_example/final_heft_somedata.json')
+low_env = Environment(heft_env)
+workflow = Workflow(heft_wf)
 
 workflow.add_environment(low_env)
+fcfs_res = fcfs(workflow, 0).makespan
+heft_res = heft(workflow, 1).makespan
+workflow_data = Workflow(heft_wf_data)
+workflow_data.add_environment(low_env)
+fcfs_data = fcfs(workflow_data, 0).makespan
+heft_data = heft(workflow_data, 1).makespan
+print()
 
-import time
-start = time.time()
-
-fcfs_res = fcfs(workflow).makespan
-print(fcfs_res)
-with open("chapter3/extending_initial_results/extending_comparisons.csv", 'w+') as f:
-    f.write(f"hpso01,workflow,{fcfs_res},prototype_no_transfer,low-adjusted,896,512,True")
-
-finish = time.time()
-print(f"Total time: {(finish - start)/60} minutes")
+print(f"FCFS {fcfs_res}")
+print(f"HEFT {heft_res}")
+print(f"FCFS {fcfs_data}")
+print(f"HEFT {heft_data}")

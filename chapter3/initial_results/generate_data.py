@@ -36,22 +36,22 @@ LOGGER = logging.getLogger(__name__)
 # Imaging HPSOs
 
 hpso_path_896 = (
-    "chapter3/compute_and_data_runtime/maximal_low_imaging_896channels.json"
+    "chapter3/maximal_low_imaging_896channels.json"
 )
 
 hpso_path_512 = (
-    "chapter3/compute_and_data_runtime/maximal_low_imaging_512channels.json"
+    "chapter3/maximal_low_imaging_512channels.json"
 )
 
 hpso_path_mid_896 = (
-    "chapter3/compute_and_data_runtime/maximal_mid_imaging_786channels.json"
+    "chapter3/maximal_mid_imaging_786channels.json"
 )
 
 hpso_path_mid_512 = (
-    "chapter3/compute_and_data_runtime/maximal_mid_imaging_512channels.json"
+    "chapter3/maximal_mid_imaging_512channels.json"
 )
 
-BASE_DIR = Path(f"chapter3/compute_and_data_runtime")
+BASE_DIR = Path(f"/home/rwb/Dropbox/University/PhD/experiment_data/")
 # PROTOTYPE_WORKFLOW_PATHS = {"DPrepA": "prototype", "DPrepB": "prototype"}
 PROTOTYPE_WORKFLOW_PATHS = {"ICAL": "prototype", "DPrepA": "prototype",
                             "DPrepB": "prototype", "DPrepC": "prototype",
@@ -66,7 +66,7 @@ MID_CONFIG = Path("mid_sdp_config")
 
 # TODO we are going to use the file-based config generation for this
 
-base_graph_paths = PROTOTYPE_WORKFLOW_PATHS
+# base_graph_paths = PROTOTYPE_WORKFLOW_PATHS
 low_path_str = BASE_DIR / 'low'
 mid_path_str = BASE_DIR / 'mid'
 # Generate configuration with prototype SKA Workflow
@@ -83,22 +83,22 @@ start = time.time()
 #     hpso_path=Path(hpso_path_512), output_dir=Path(low_path_str)/'prototype',
 #     cfg_name=f"{LOW_CONFIG}_prototype_n{896}_512channels.json", base_graph_paths=PROTOTYPE_WORKFLOW_PATHS,
 #     timestep="seconds", data=False)
-
-# config_generator.create_config('low', 'parametric', nodes=896,
-#     hpso_path=Path(hpso_path_896), output_dir=Path(low_path_str)/'prototype',
-#     cfg_name=f"{LOW_CONFIG}_prototype_n{896}_896channels.json", base_graph_paths=PROTOTYPE_WORKFLOW_PATHS,
-#     timestep="seconds", data=True)
-
+#
+config_generator.create_config('low', 'parametric', nodes=896,
+    hpso_path=Path(hpso_path_896), output_dir=Path(low_path_str)/'prototype',
+    cfg_name=f"{LOW_CONFIG}_prototype_n{896}_896channels.json", base_graph_paths=PROTOTYPE_WORKFLOW_PATHS,
+    timestep="seconds", data=True)
+#
 # config_generator.create_config('low', 'parametric', nodes=896,
 #     hpso_path=Path(hpso_path_512), output_dir=Path(low_path_str)/'prototype',
 #     cfg_name=f"{LOW_CONFIG}_prototype_n{896}_512channels.json", base_graph_paths=PROTOTYPE_WORKFLOW_PATHS,
 #     timestep="seconds", data=True)
-
-config_generator.create_config('low', 'parametric', 896,
-    hpso_path=Path(hpso_path_896), output_dir=Path(low_path_str)/'scatter',
-    cfg_name=f"{LOW_CONFIG}_scatter_n{896}_896channels.json", base_graph_paths=SCATTER_WORKFLOW_PATHS,
-    timestep="seconds", data=False)
-
+#
+# config_generator.create_config('low', 'parametric', 896,
+#     hpso_path=Path(hpso_path_896), output_dir=Path(low_path_str)/'scatter',
+#     cfg_name=f"{LOW_CONFIG}_scatter_n{896}_896channels.json", base_graph_paths=SCATTER_WORKFLOW_PATHS,
+#     timestep="seconds", data=False)
+#
 # config_generator.create_config('low', 'parametric', 896,
 #     hpso_path=Path(hpso_path_512), output_dir=Path(low_path_str)/'scatter',
 #     cfg_name=f"{LOW_CONFIG}_scatter_n{896}_512channels.json", base_graph_paths=SCATTER_WORKFLOW_PATHS,
