@@ -9,7 +9,8 @@
 				"ICAL", "DPrepA", "DPrepB", "DPrepC"
 			],
 			"channels": 786,
-			"baseline": 35000.0
+			"baseline": 35000.0,
+      "telescope": "mid"
 		},
 		{
 			"count": 1,
@@ -20,7 +21,8 @@
 				"ICAL", "DPrepA", "DPrepB", "DPrepC"
 			],
 			"channels": 786,
-			"baseline": 15000.0
+			"baseline": 15000.0,
+      "telescope": "mid"
 		},
 		{
 			"count": 1,
@@ -28,21 +30,23 @@
 			"demand": 197,
 			"duration": 28800,
 			"workflows": [
-				"ICAL", "DPrepA", "DPrepB"
+				"ICAL","DPrepA", "DPrepB"
 			],
 			"channels": 786,
-			"baseline": 150000.0
+			"baseline": 150000.0,
+      "telescope": "mid"
 		},
 		{
 			"count": 1,
 			"hpso": "hpso32",
 			"demand": 197,
-			"duration": 7920.0,
+			"duration": 7920,
 			"workflows": [
 				"ICAL", "DPrepB"
 			],
 			"channels": 786,
-			"baseline": 20000.0
+			"baseline": 20000.0,
+      "telescope": "mid"
 		}
 
 	]

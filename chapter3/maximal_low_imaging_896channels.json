@@ -6,10 +6,11 @@
 			"demand": 512,
 			"duration": 18000,
 			"workflows": [
-				"ICAL", "DPrepA", "DPrepB", "DPrepC", "DPrepD"
+				"ICAL","DPrepA", "DPrepB", "DPrepC", "DPrepD"
 			],
 			"channels": 896,
-			"baseline": 65000.0
+			"baseline": 65000.0,
+      "telescope": "low"
 		},
 		{
 			"count": 1,
@@ -17,10 +18,11 @@
 			"demand": 512,
 			"duration": 18000,
 			"workflows": [
-				"ICAL", "DPrepA", "DPrepB", "DPrepC", "DPrepD"
+				"ICAL","DPrepA", "DPrepB", "DPrepC", "DPrepD"
 			],
 			"channels": 896,
-			"baseline": 65000.0
+			"baseline": 65000.0,
+      "telescope": "low"
 		},
 		{
 			"count": 1,
@@ -28,10 +30,11 @@
 			"demand": 512,
 			"duration": 18000,
 			"workflows": [
-				"ICAL", "DPrepA", "DPrepB", "DPrepC", "DPrepD"
+				"ICAL","DPrepA", "DPrepB", "DPrepC", "DPrepD"
 			],
 			"channels": 896,
-			"baseline": 65000.0
+			"baseline": 65000.0,
+      "telescope": "low"
 		}
 	]
 }

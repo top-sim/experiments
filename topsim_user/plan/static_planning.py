@@ -164,6 +164,7 @@ class SHADOWPlanning(Planning):
             solution = pheft(workflow)
         elif self.algorithm == 'fcfs':
             solution = fcfs(workflow)
+            print("Using FCFS to allocate")
         else:
             raise RuntimeError(
                 f"{self.algorithm} is not implemented by {str(self)}"

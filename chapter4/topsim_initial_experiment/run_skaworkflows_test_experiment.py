@@ -35,13 +35,13 @@ logging.basicConfig(level="INFO")
 LOGGER = logging.getLogger(__name__)
 
 RUN_PATH = Path.cwd()
-FOLDER_PATH = Path(f'chapter4/skaworkflow_tests')
+FOLDER_PATH = Path(f'chapter4/topsim_initial_experiment/')
 #
 # cfg_path = Path(
 #     '/home/rwb/Dropbox/University/PhD/experiment_data/chapter4/topsim_initial_experiment/low/prototype/low_sdp_config.json')
 
-cfg_path_scatter = Path('/home/rwb/Dropbox/University/PhD/experiment_data/chapter4/topsim_initial_experiment/low/scatter/no_data_low_sdp_config_scatter_n896_896channels.json')
-cfg_path_scatter = Path('/home/rwb/Dropbox/University/PhD/experiment_data/chapter4/topsim_initial_experiment/low/scatter/no_data_low_sdp_config_scatter_n896_896channels.json')
+# cfg_path_scatter = Path('/home/rwb/Dropbox/University/PhD/experiment_data/chapter4/topsim_initial_experiment/low/prototype/no_data_low_sdp_config_prototype_n896_896channels.json')
+cfg_path_scatter = Path('/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/initial_results/low/prototype/no_data_low_sdp_config_prototype_n896_896channels_single.json')
 
 if not cfg_path_scatter.exists():
     LOGGER.info(f"Exiting simulation, simulation config does not exist")
@@ -62,21 +62,21 @@ from topsim_user.plan.static_planning import SHADOWPlanning
 from topsim_user.schedule.dynamic_plan import DynamicSchedulingFromPlan
 
 if __name__ == '__main__':
-    # st = time.time()
-    # LOGGER.info(f"Running experiment from {RUN_PATH}/{FOLDER_PATH}")
-    # env = simpy.Environment()
-    # instrument = Telescope
-    # simulation = Simulation(env=env, config=cfg_path_scatter, instrument=instrument,
-    #     planning_algorithm='batch', planning_model=BatchPlanning('batch'),
-    #     scheduling=BatchProcessing(min_resources_per_workflow=1,
-    #                                resource_split={'hpso01_0': (820, 836)},
-    #                                max_resource_partitions=2),
-    #  delay=None, timestamp=None, to_file=True,
-    #     hdf5_path=f'{RUN_PATH}/{FOLDER_PATH}/results_'
-    #               f'{date.today().isoformat()}.h5', )
-    # simulation.start()
-    # ft = time.time()
-    # LOGGER.info(f"Experiment took {(ft-st)/60} minutes to run")
+    st = time.time()
+    LOGGER.info(f"Running experiment from {RUN_PATH}/{FOLDER_PATH}")
+    env = simpy.Environment()
+    instrument = Telescope
+    simulation = Simulation(env=env, config=cfg_path_scatter, instrument=instrument,
+        planning_algorithm='batch', planning_model=BatchPlanning('batch'),
+        scheduling=BatchProcessing(min_resources_per_workflow=1,
+                                   resource_split={'hpso01_0': (820, 836), 'hpso01_1': (820, 836)},
+                                   max_resource_partitions=2),
+     delay=None, timestamp=None, to_file=True,
+        hdf5_path=f'{RUN_PATH}/{FOLDER_PATH}/results_'
+                  f'{date.today().isoformat()}.h5', )
+    simulation.start()
+    ft = time.time()
+    LOGGER.info(f"Experiment took {(ft-st)/60} minutes to run")
 
     st = time.time()
     LOGGER.info(f"Running experiment from {RUN_PATH}/{FOLDER_PATH}")
@@ -92,3 +92,20 @@ if __name__ == '__main__':
     simulation.start()
     ft = time.time()
     LOGGER.info(f"Experiment took {(ft - st) / 60} minutes to run")
+
+
+    st = time.time()
+    LOGGER.info(f"Running experiment from {RUN_PATH}/{FOLDER_PATH}")
+    env = simpy.Environment()
+    instrument = Telescope
+    simulation = Simulation(env=env, config=cfg_path_scatter, instrument=instrument,
+                            planning_algorithm='fcfs',
+                            planning_model=SHADOWPlanning('fcfs'),
+                            scheduling=DynamicSchedulingFromPlan(),
+                            delay=None, timestamp=None, to_file=True,
+                            hdf5_path=f'{RUN_PATH}/{FOLDER_PATH}/results_'
+                                      f'{date.today().isoformat()}.h5', )
+    simulation.start()
+    ft = time.time()
+    LOGGER.info(f"Experiment took {(ft - st) / 60} minutes to run")
+
