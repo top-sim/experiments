@@ -39,21 +39,24 @@ logging.basicConfig(level="INFO")
 LOGGER = logging.getLogger(__name__)
 
 RUN_PATH = Path.cwd()
-FOLDER_PATH = Path(f'chapter4/motivating_example_topsim')
+FOLDER_PATH = Path('chapter4/motivating_example_topsim')
 
-simulation_configuration = Path('/home/rwb/Dropbox/University/PhD/experiment_data/chapter4/motivating_example/heft_single_observation_simulation.json')
+simulation_configuration = Path(
+    '/home/rwb/Dropbox/University/PhD/experiment_data/chapter4/'
+    + 'motivating_example/heft_single_observation_simulation.json')
 
 if __name__ == '__main__':
     st = time.time()
     LOGGER.info(f"Running experiment from {RUN_PATH}/{FOLDER_PATH}")
     env = simpy.Environment()
     instrument = Telescope
-    simulation = Simulation(env=env, config=simulation_configuration,
-        instrument=instrument,planning_algorithm='batch',
+    simulation = Simulation(
+        env=env, config=simulation_configuration,
+        instrument=instrument, planning_algorithm='batch',
         planning_model=BatchPlanning('batch'),
         scheduling=BatchProcessing(
             min_resources_per_workflow=1,
-            resource_split={'emu': (3,3)},
+            resource_split={'emu': (3, 3)},
             max_resource_partitions=1
         ),
         delay=None, timestamp=None, to_file=True,

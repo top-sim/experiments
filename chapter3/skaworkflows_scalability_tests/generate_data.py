@@ -56,7 +56,8 @@ PROTOTYPE_WORKFLOW_PATHS = {"ICAL": "prototype", "DPrepA": "prototype",
 LOW_CONFIG = Path("low_sdp_config")
 # MID_CONFIG = Path("mid_sdp_config")
 
-# TODO we are going to use the file-based config generation for this
+# TODO we are going to use the file-based config generation for this 
+# TODO-TODO what did I mean by file-based config generation???
 
 # base_graph_paths = PROTOTYPE_WORKFLOW_PATHS
 low_path_str = BASE_DIR / 'low'

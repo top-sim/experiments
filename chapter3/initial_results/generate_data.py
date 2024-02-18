@@ -23,12 +23,12 @@ parallel workflow, which is representative of the parametric scheduling model.
 """
 
 import logging
-
+import time
 from pathlib import Path
 import sys
-sys.path.append('/home/rwb/github/skaworkflows')
-
 import skaworkflows.config_generator as config_generator
+
+sys.path.append('/home/rwb/github/skaworkflows')
 
 logging.basicConfig(level='INFO')
 LOGGER = logging.getLogger(__name__)
@@ -38,23 +38,23 @@ LOGGER = logging.getLogger(__name__)
 graph_type = sys.argv[1]
 
 hpso_path_896 = (
-    "chapter3/maximal_low_imaging_896channels.json"
+    "chapter3/observation_plans/maximal_low_imaging_896channels.json"
 )
 
 hpso_path_512 = (
-    "chapter3/maximal_low_imaging_512channels.json"
+    "chapter3/observation_plans/maximal_low_imaging_512channels.json"
 )
 
 hpso_path_mid_786 = (
-    "chapter3/maximal_mid_imaging_786channels.json"
+    "chapter3/observation_plans/maximal_mid_imaging_786channels.json"
 )
 
 hpso_path_mid_512 = (
-    "chapter3/maximal_mid_imaging_512channels.json"
+    "chapter3/observation_plans/maximal_mid_imaging_512channels.json"
 )
 
 hpso_maximal_single = (
-    "chapter3/maximal_imaging_single_896channels.json"
+    "chapter3/observation_plans/maximal_imaging_single_896channels.json"
 )
 
 
@@ -78,7 +78,6 @@ low_path_str = BASE_DIR / "chapter3/initial_results" / 'low_maximal'
 mid_path_str = BASE_DIR / "chapter3/initial_results" / 'mid_maximal'
 # Generate configuration with {graph_type} SKA Workflow
 # SKA LOW
-import time
 start = time.time()
 
 config_generator.create_config('low', 'parametric', nodes=896,

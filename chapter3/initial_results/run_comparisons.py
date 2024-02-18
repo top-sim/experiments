@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
+import sys
 from datetime import date
 from copy import deepcopy
 from pathlib import Path
@@ -21,13 +21,11 @@ from multiprocessing import Pool, Manager
 from shadow.models.workflow import Workflow
 from shadow.models.environment import Environment
 from shadow.algorithms.heuristic import heft, fcfs
-
-import sys
-sys.path.append('/home/rwb/github/skaworkflows')
-
 from skaworkflows.config_generator import config_to_shadow
 from skaworkflows.parametric_runner import \
     calculate_parametric_runtime_estimates
+
+sys.path.append('/home/rwb/github/skaworkflows')
 
 # from chapter5.parametric_model_baselines.generate_data import (
 #     LOW_HPSO_PATHS, MID_HPSO_PATHS)

@@ -22,17 +22,21 @@ heft_wf = Path('/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/motiva
 heft_wf_data = Path('/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/motivating_example/final_heft_somedata.json')
 low_env = Environment(heft_env)
 workflow = Workflow(heft_wf)
-
 workflow.add_environment(low_env)
+
+total_resources = sum([x.flops for x in low_env.machines])
+total_compute = sum([t.flops_demand for t in workflow.graph.nodes])
+print(f"{total_resources=}", f"{total_compute=}")
+print(f"Compute/Resources = {total_compute/total_resources}")
+
 fcfs_res = fcfs(workflow, 0).makespan
 heft_res = heft(workflow, 1).makespan
 workflow_data = Workflow(heft_wf_data)
 workflow_data.add_environment(low_env)
 fcfs_data = fcfs(workflow_data, 0).makespan
 heft_data = heft(workflow_data, 1).makespan
-print()
 
 print(f"FCFS {fcfs_res}")
 print(f"HEFT {heft_res}")
-print(f"FCFS {fcfs_data}")
-print(f"HEFT {heft_data}")
+print(f"FCFS (with data) {fcfs_data}")
+print(f"HEFT (with data) {heft_data}")
