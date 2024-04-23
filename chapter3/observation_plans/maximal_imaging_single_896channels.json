@@ -10,7 +10,7 @@
 			],
 			"channels": 896,
 			"baseline": 150000.0,
-      "telescope": "mid"
+      		"telescope": "mid"
 		}
   ]
 }

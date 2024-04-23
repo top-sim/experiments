@@ -26,74 +26,104 @@ import logging
 import time
 from pathlib import Path
 import sys
+
+sys.path.append("/home/rwb/github/skaworkflows")
+
 import skaworkflows.config_generator as config_generator
 
-sys.path.append('/home/rwb/github/skaworkflows')
 
-logging.basicConfig(level='INFO')
+logging.basicConfig(level="INFO")
 LOGGER = logging.getLogger(__name__)
 
-# Imaging HPSOs
 
+# Either "prototype" or "scatter"
 graph_type = sys.argv[1]
 
-hpso_path_896 = (
-    "chapter3/observation_plans/maximal_low_imaging_896channels.json"
-)
-
-hpso_path_512 = (
-    "chapter3/observation_plans/maximal_low_imaging_512channels.json"
-)
-
-hpso_path_mid_786 = (
-    "chapter3/observation_plans/maximal_mid_imaging_786channels.json"
-)
-
-hpso_path_mid_512 = (
-    "chapter3/observation_plans/maximal_mid_imaging_512channels.json"
-)
-
-hpso_maximal_single = (
-    "chapter3/observation_plans/maximal_imaging_single_896channels.json"
-)
+# HPSOs observation plans
+HPSO_PLANS = [
+    "chapter3/observation_plans/maximal_low_imaging_896channels.json",
+    "chapter3/observation_plans/maximal_low_imaging_896channels_256Antennas.json",
+    "chapter3/observation_plans/maximal_low_imaging_896channels_128Antennas.json",
+    # "chapter3/observation_plans/maximal_low_imaging_512channels.json",
+    "chapter3/observation_plans/maximal_mid_imaging_786channels.json",
+    # "chapter3/observation_plans/maximal_mid_imaging_512channels.json" ,
+    # "chapter3/observation_plans/maximal_imaging_single_896channels.json"
+]
 
 
 BASE_DIR = Path("/home/rwb/Dropbox/University/PhD/experiment_data/")
 # {graph_type}_WORKFLOW_PATHS = {"DPrepA": graph_type, "DPrepB": graph_type}
-WORKFLOW_PATHS = {"ICAL": graph_type, "DPrepA": graph_type,
-                            "DPrepB": graph_type, "DPrepC": graph_type,
-                            "DPrepD": graph_type}
 
-SCATTER_WORKFLOW_PATHS = {"ICAL": "scatter", "DPrepA": "scatter",
-                          "DPrepB": "scatter", "DPrepC": "scatter",
-                          "DPrepD": "scatter"}
+WORKFLOW_TYPE_MAP = {
+    "ICAL": graph_type,
+    "DPrepA": graph_type,
+    "DPrepB": graph_type,
+    "DPrepC": graph_type,
+    "DPrepD": graph_type,
+}
+
+SCATTER_WORKFLOW_TYPE_MAP = {
+    "ICAL": "scatter",
+    "DPrepA": "scatter",
+    "DPrepB": "scatter",
+    "DPrepC": "scatter",
+    "DPrepD": "scatter",
+}
 
 LOW_CONFIG = Path("low_sdp_config")
 MID_CONFIG = Path("mid_sdp_config")
 
-# TODO we are going to use the file-based config generation for this
-
-# base_graph_paths = {graph_type}_WORKFLOW_PATHS
-low_path_str = BASE_DIR / "chapter3/initial_results" / 'low_maximal'
-mid_path_str = BASE_DIR / "chapter3/initial_results" / 'mid_maximal'
-# Generate configuration with {graph_type} SKA Workflow
-# SKA LOW
+low_path = BASE_DIR / "chapter3/initial_results_newskaworkflows" / "low_maximal"
+mid_path_str = BASE_DIR / "chapter3/initial_results_newskaworkflows" / "mid_maximal"
 start = time.time()
 
-config_generator.create_config('low', 'parametric', nodes=896,
-    hpso_path=Path(hpso_path_896), output_dir=Path(low_path_str)/graph_type,
-    cfg_name=(f"{LOW_CONFIG}_{graph_type}_n896_896channels.json"), base_graph_paths=WORKFLOW_PATHS,
-    timestep="seconds", data=False, overwrite=True)
+telescope = "low"
+infrastructure_style = "parametric"
+nodes = 896
+timestamp = "seconds"
+data = [False, True]
+data_distribution = ["standard", "edges"]
+overwrite = True
 
-config_generator.create_config('low', 'parametric', nodes=896,
-    hpso_path=Path(hpso_path_896), output_dir=Path(low_path_str)/graph_type,
-    cfg_name=(f"{LOW_CONFIG}_{graph_type}_n896_896channels.json"), base_graph_paths=WORKFLOW_PATHS,
-    timestep="seconds", data=False, overwrite=True, data_distribution='edges')
+for hpso in HPSO_PLANS:
+    for d in data:
+        for dist in data_distribution:
+            config_generator.create_config(
+                telescope=telescope,
+                infrastructure=infrastructure_style,
+                nodes=nodes,
+                hpso_path=Path(hpso),
+                output_dir=Path(low_path / graph_type),
+                base_graph_paths=WORKFLOW_TYPE_MAP,
+                data=d,
+                data_distribution=dist,
+            )
 
-config_generator.create_config('low', 'parametric', nodes=896,
-    hpso_path=Path(hpso_path_896), output_dir=Path(low_path_str)/graph_type,
-    cfg_name=(f"{LOW_CONFIG}_{graph_type}_n896_896channels.json"), base_graph_paths=WORKFLOW_PATHS,
-    timestep="seconds", data=True, overwrite=True, data_distribution='edges')
+# config_generator.create_config(
+#     'low', 'parametric', nodes=896, hpso_path=Path(hpso_path_896), output_dir=Path(low_path_str)/graph_type,
+#                                cfg_name=f"{LOW_CONFIG}_{graph_type}_n896_896channels.json", base_graph_paths=WORKFLOW_PATHS,
+#                                timestep="seconds", data=False, overwrite=True)
+#
+# config_generator.create_config('low', 'parametric', nodes=896,
+#     hpso_path=Path(hpso_path_896), output_dir=Path(low_path_str)/graph_type,
+#     cfg_name=(f"{LOW_CONFIG}_{graph_type}_n896_896channels.json"), base_graph_paths=WORKFLOW_PATHS,
+#     timestep="seconds", data=False, overwrite=True, data_distribution='edges')
+#
+# config_generator.create_config('low', 'parametric', nodes=896,
+#     hpso_path=Path(hpso_path_896), output_dir=Path(low_path_str)/graph_type,
+#     cfg_name=(f"{LOW_CONFIG}_{graph_type}_n896_896channels.json"), base_graph_paths=WORKFLOW_PATHS,
+#     timestep="seconds", data=True, overwrite=True, data_distribution='edges')
+#
+#
+# config_generator.create_config('low', parametric', nodes=896,
+#     hpso_path=Path(hpso_path_896_256), output_dir=Path(low_path_str)/graph_type,
+#     cfg_name=(f"{LOW_CONFIG}_{graph_type}_n896_896channels_256Antennas.json"), base_graph_paths=WORKFLOW_PATHS,
+#     timestep="seconds", data=True, overwrite=True, data_distribution='edges')
+#
+# config_generator.create_config('low', 'parametric', nodes=896,
+#     hpso_path=Path(hpso_path_896_128), output_dir=Path(low_path_str)/graph_type,
+#     cfg_name=(f"{LOW_CONFIG}_{graph_type}_n896_896channels_128Antennas.json"), base_graph_paths=WORKFLOW_PATHS,
+#     timestep="seconds", data=True, overwrite=True, data_distribution='edges')
 
 
 # #
@@ -124,21 +154,21 @@ config_generator.create_config('low', 'parametric', nodes=896,
 #
 # # SKA MID
 
-config_generator.create_config('mid', 'parametric', nodes=786,
-    hpso_path=Path(hpso_path_mid_786), output_dir=Path(mid_path_str)/graph_type,
-    cfg_name=f"{MID_CONFIG}_{graph_type}_n786_786channels.json", base_graph_paths=WORKFLOW_PATHS,
-    timestep="seconds", data=False)
-#
-config_generator.create_config('mid', 'parametric', nodes=786,
-    hpso_path=Path(hpso_path_mid_786), output_dir=Path(mid_path_str)/graph_type,
-    cfg_name=f"{MID_CONFIG}_{graph_type}_n786_786channels.json", base_graph_paths=WORKFLOW_PATHS,
-    timestep="seconds", data=False, overwrite=True, data_distribution="edges")
-#
-config_generator.create_config('mid', 'parametric', nodes=786,
-    hpso_path=Path(hpso_path_mid_786), output_dir=Path(mid_path_str)/graph_type,
-    cfg_name=f"{MID_CONFIG}_{graph_type}_n786_786channels.json", base_graph_paths=WORKFLOW_PATHS,
-    timestep="seconds", data=True, overwrite=True, data_distribution="edges")
-#
+# config_generator.create_config('mid', 'parametric', nodes=786,
+#     hpso_path=Path(hpso_path_mid_786), output_dir=Path(mid_path_str)/graph_type,
+#     cfg_name=f"{MID_CONFIG}_{graph_type}_n786_786channels.json", base_graph_paths=WORKFLOW_PATHS,
+#     timestep="seconds", data=False)
+# #
+# config_generator.create_config('mid', 'parametric', nodes=786,
+#     hpso_path=Path(hpso_path_mid_786), output_dir=Path(mid_path_str)/graph_type,
+#     cfg_name=f"{MID_CONFIG}_{graph_type}_n786_786channels.json", base_graph_paths=WORKFLOW_PATHS,
+#     timestep="seconds", data=False, overwrite=True, data_distribution="edges")
+# #
+# config_generator.create_config('mid', 'parametric', nodes=786,
+#     hpso_path=Path(hpso_path_mid_786), output_dir=Path(mid_path_str)/graph_type,
+#     cfg_name=f"{MID_CONFIG}_{graph_type}_n786_786channels.json", base_graph_paths=WORKFLOW_PATHS,
+#     timestep="seconds", data=True, overwrite=True, data_distribution="edges")
+# #
 #
 # config_generator.create_config('mid', 'parametric', nodes=786,
 #     hpso_path=Path(hpso_path_mid_512), output_dir=Path(mid_path_str)/graph_type,
