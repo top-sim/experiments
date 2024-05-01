@@ -45,7 +45,8 @@ HPSO_PLANS = [
     # "chapter3/observation_plans/maximal_low_imaging_896channels_256Antennas.json",
     # "chapter3/observation_plans/maximal_low_imaging_896channels_128Antennas.json",
     # "chapter3/observation_plans/maximal_low_imaging_512channels.json",
-    "chapter3/observation_plans/maximal_mid_imaging_786channels.json",
+    "chapter4/playground/simulationA.json",
+    "chapter4/playground/simulationB.json",
 ]
 
 
@@ -71,16 +72,16 @@ SCATTER_WORKFLOW_TYPE_MAP = {
 LOW_CONFIG = Path("low_sdp_config")
 MID_CONFIG = Path("mid_sdp_config")
 
-low_path = BASE_DIR / "chapter3/results_with_metadata" / "low_maximal"
-mid_path_str = BASE_DIR / "chapter3/results_with_metadata" / "mid_maximal"
+low_path = BASE_DIR / "chapter4/results_with_metadata" / "low_maximal"
+mid_path_str = BASE_DIR / "chapter4/results_with_metadata" / "mid_maximal"
 start = time.time()
 
-telescope = "mid"
+telescope = "low" # TODO update this so it's not necessary in the config generation call
 infrastructure_style = "parametric"
-nodes = 786
+nodes = 64 # TODO update this so it's not necessary in the config generation call
 timestamp = "seconds"
-data = [False, True]
-data_distribution = ["standard"] #, "edges"]
+data = [True]
+data_distribution = ["edges"] #, "standard"]
 overwrite = True
 
 for hpso in HPSO_PLANS:

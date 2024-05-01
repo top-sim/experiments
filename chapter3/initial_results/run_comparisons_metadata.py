@@ -123,14 +123,16 @@ if __name__ == "__main__":
 
     BASE_DIR = Path(
         "/home/rwb/Dropbox/University/PhD/experiment_data/chapter3"
-        "/initial_results_newskaworkflows/low_maximal/prototype/"
-    )
+        "/results_with_metadata/low_maximal/prototype/"
+    ) # TODO accept this as a cli argument
     params = []
     shadow_config = {}
+    total_config = 0
     for cfg_path in os.listdir(BASE_DIR):
         if (BASE_DIR / cfg_path).is_dir():
             continue
         print(BASE_DIR / cfg_path)
+        total_config+=1
         # Setup for SHADOW config
         shadow_config = config_to_shadow(BASE_DIR / cfg_path)
 
@@ -153,6 +155,20 @@ if __name__ == "__main__":
             params.append(dict(parameters.iloc[i]))
         for o in params:
             o["cfg"] = shadow_config
+    print(f"{total_config=}")
+    print(f"{len(params)=}")
 
-        with Pool(processes=3) as pool:
-            result = pool.map(run_shadow, params)
+    print(','.join(params[0].keys()))
+    params[0]['cfg']=None
+
+    print(params[0])
+    
+    # output = Path(
+    # f"chapter3/metatdata/results_{date.today().isoformat()}.csv")
+    # if not output.exists:
+    #     with output.open('w+') as fo:
+
+    #         fo.write('hpso,workflow,time,graph,telescope,nodes,channels,data,pipeline_sets')
+
+    # with Pool(processes=3) as pool:
+    #     result = pool.map(run_shadow, params)
