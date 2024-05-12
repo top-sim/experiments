@@ -37,9 +37,11 @@ LOGGER = logging.getLogger(__name__)
 RUN_PATH = Path.cwd()
 FOLDER_PATH = Path(f'chapter4/skaworkflow_tests')
 
-cfg_path = Path(
-    'chapter4/skaworkflow_tests/low_parallel/low_sdp_config.json')
+# cfg_path = Path(
+#     'chapter4/skaworkflow_tests/low_parallel/low_sdp_config.json')
+cfg_path = Path('/home/rwb/Dropbox/University/PhD/experiment_data/chapter4/topsim_initial_experiment/low/prototype/no_data_low_sdp_config_prototype_n896_896channels.json')
 
+# cfg_path = Path('/home/rwb/Dropbox/University/PhD/experiment_data/chapter4/topsim_initial_experiment/low/scatter/no_data_low_sdp_config_scatter_n896_896channels.json')
 if not cfg_path.exists():
     LOGGER.info(f"Exiting simulation, simulation config does not exist")
 
@@ -64,8 +66,8 @@ if __name__ == '__main__':
     simulation = Simulation(env=env, config=cfg_path, instrument=instrument,
         planning_algorithm='batch', planning_model=BatchPlanning('batch'),
         scheduling=BatchProcessing(min_resources_per_workflow=1,
-                                   resource_split={'hpso01_0': (820, 896),
-                                                   'hpso01_1':(820, 896)},
+                                   resource_split={'hpso01_0': (820, 826),
+                                                   'hpso01_1':(820, 826)},
                                    max_resource_partitions=2),
      delay=None, timestamp=None, to_file=True,
         hdf5_path=f'{RUN_PATH}/{FOLDER_PATH}/results_'

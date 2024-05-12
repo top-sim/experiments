@@ -1,4 +1,4 @@
-# Copyright (C) 22/2/22 RW Bunney
+# Copyright (C) 2024 RW Bunney
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,19 +26,16 @@ logging.basicConfig(level="INFO")
 LOGGER = logging.getLogger(__name__)
 
 # RUN_PATH = Path.cwd()
-RUN_PATH = Path(f'chapter4/topsim_initial_experiment/')
-#
-# cfg_path = Path(
-#     '/home/rwb/Dropbox/University/PhD/experiment_data/chapter4/topsim_initial_experiment/low/prototype/low_sdp_config.json')
+run_path = Path(__file__).parent
+logging.info("Script is running in %s, saving output there...", run_path)
 
-# cfg_path_scatter = Path('/home/rwb/Dropbox/University/PhD/experiment_data/chapter4/topsim_initial_experiment/low/prototype/no_data_low_sdp_config_prototype_n896_896channels.json')
-cfg_path_scatter = Path('/home/rwb/Dropbox/University/PhD/experiment_data/chapter4/topsim_initial_experiment/low/scatter/no_data_low_sdp_config_scatter_n896_896channels.json')
+cfg_path = Path("/home/rwb/Dropbox/University/PhD/experiment_data/chapter4/results_with_metadata/low/prototype/skaworkflows_2024-05-12_12:29:18")
 
-if not cfg_path_scatter.exists():
-    LOGGER.info(f"Exiting simulation, simulation config does not exist")
+if not cfg_path.exists():
+    LOGGER.warning(f"Exiting simulation, simulation config does not exist")
     exit()
 
 from topsim.utils.experiment import Experiment
 
-e = Experiment([cfg_path_scatter], [("batch", "batch")])
+e = Experiment([cfg_path], [("batch", "batch")], output=run_path)
 e.run()

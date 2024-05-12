@@ -41,10 +41,6 @@ graph_type = sys.argv[1]
 
 # HPSOs observation plans
 HPSO_PLANS = [
-    # "chapter3/observation_plans/maximal_low_imaging_896channels.json",
-    # "chapter3/observation_plans/maximal_low_imaging_896channels_256Antennas.json",
-    # "chapter3/observation_plans/maximal_low_imaging_896channels_128Antennas.json",
-    # "chapter3/observation_plans/maximal_low_imaging_512channels.json",
     "chapter4/playground/simulationA.json",
     "chapter4/playground/simulationB.json",
 ]
@@ -72,13 +68,13 @@ SCATTER_WORKFLOW_TYPE_MAP = {
 LOW_CONFIG = Path("low_sdp_config")
 MID_CONFIG = Path("mid_sdp_config")
 
-low_path = BASE_DIR / "chapter4/results_with_metadata" / "low_maximal"
-mid_path_str = BASE_DIR / "chapter4/results_with_metadata" / "mid_maximal"
+low_path = BASE_DIR / "chapter4/results_with_metadata" / "low"
+mid_path_str = BASE_DIR / "chapter4/results_with_metadata" / "mid"
 start = time.time()
 
 telescope = "low" # TODO update this so it's not necessary in the config generation call
 infrastructure_style = "parametric"
-nodes = 64 # TODO update this so it's not necessary in the config generation call
+nodes = 256 # TODO update this so it's not necessary in the config generation call
 timestamp = "seconds"
 data = [True]
 data_distribution = ["edges"] #, "standard"]
@@ -94,6 +90,7 @@ for hpso in HPSO_PLANS:
                 hpso_path=Path(hpso),
                 output_dir=Path(low_path / graph_type),
                 base_graph_paths=WORKFLOW_TYPE_MAP,
+                timestep=5,
                 data=d,
                 data_distribution=dist,
             )

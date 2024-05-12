@@ -199,7 +199,6 @@ class BatchProcessing(Scheduling):
         beginning each time in the case that we have started an allocation
         loop in the scheduler but there are no resources available.
 
-
         Returns
         -------
 
@@ -213,8 +212,8 @@ class BatchProcessing(Scheduling):
                 if provision < self.min_resource_per_workflow:
                     return False
                 else:
-                    logger.info(f"{provision} machines for {workflow_plan.id}")
-                    logger.info(f"{cluster.num_provisioned_obs} provisioned")
+                    logger.info(f"{provision} machines provisioned for {workflow_plan.id}")
+                    # logger.info(f"{cluster.num_provisioned_obs} provisioned")
                     return cluster.provision_batch_resources(provision,
                         workflow_plan.id)
             else:
