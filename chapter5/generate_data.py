@@ -41,16 +41,12 @@ graph_type = sys.argv[1]
 
 # HPSOs observation plans
 HPSO_PLANS = [
-    # "chapter4/playground/simulationA.json",
-    # "chapter4/playground/simulationB.json",
-    # "chapter4/playground/simulationC.json",
-    # "chapter4/playground/simulationD.json",
-    "chapter4/playground/simulationE.json",
+    "chapter5/simulationBase.json",
+    "chapter5/simulationAltered.json"
 ]
 
 
 BASE_DIR = Path("/home/rwb/Dropbox/University/PhD/experiment_data/")
-# {graph_type}_WORKFLOW_PATHS = {"DPrepA": graph_type, "DPrepB": graph_type}
 
 WORKFLOW_TYPE_MAP = {
     "ICAL": graph_type,
@@ -68,19 +64,16 @@ SCATTER_WORKFLOW_TYPE_MAP = {
     "DPrepD": "scatter",
 }
 
-LOW_CONFIG = Path("low_sdp_config")
-MID_CONFIG = Path("mid_sdp_config")
-
-low_path = BASE_DIR / "chapter4/playground" / "low"
-mid_path_str = BASE_DIR / "chapter4/playground" / "mid"
+low_path = BASE_DIR / "chapter5/" / "low"
+mid_path_str = BASE_DIR / "chapter5/" / "mid"
 start = time.time()
 
 telescope = "low" # TODO update this so it's not necessary in the config generation call
 infrastructure_style = "parametric"
-nodes = 512 # TODO update this so it's not necessary in the config generation call
-timestamp = "seconds"
+nodes = 256  # TODO update this so it's not necessary in the config generation call
+timestamp = 5
 data = [True]
-data_distribution = ["edges"] #, "standard"]
+data_distribution = ["edges"]
 overwrite = False
 
 for hpso in HPSO_PLANS:

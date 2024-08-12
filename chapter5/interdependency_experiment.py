@@ -1,5 +1,5 @@
 # Copyright (C) 2024 RW Bunney
-
+import json
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -29,22 +29,41 @@ LOGGER = logging.getLogger(__name__)
 run_path = Path(__file__).parent
 logging.info("Script is running in %s, saving output there...", run_path)
 
-# cfg_path = Path("/home/rwb/Dropbox/University/PhD/experiment_data/chapter4/results_with_metadata/low/prototype/skaworkflows_2024-05-12_12:29:18")
-
-BASE_PATH = Path("/home/rwb/Dropbox/University/PhD/experiment_data/chapter4/playground/low/prototype/")
-
-cfg_paths = [(BASE_PATH / p) for p in os.listdir(BASE_PATH) if ".json" in p]
-
-# if not cfg_path.exists():
-#     LOGGER.warning(f"Exiting simulation, simulation config does not exist")
-#     exit()
+BASE_PATH = Path(
+    "/home/rwb/Dropbox/University/PhD/experiment_data/chapter5/interdependency/subset_schedule_comparison")
+# skaworkflows_2024-06-25_20-42-08_9.json
+cfg_paths = sorted([(BASE_PATH / p) for p in os.listdir(BASE_PATH) if ".json" in p])
 
 for p in cfg_paths:
     if not p.exists():
         LOGGER.warning(f"Exiting simulation, simulation config %s does not exist", p)
         exit()
 
+
 from topsim.utils.experiment import Experiment
 
-e = Experiment(cfg_paths, [("batch", "batch")], output=run_path)
-e.run()
+# for p in cfg_paths:
+#     if 'tmp.' in p.name:
+#         p.rename((p. parent / str(p.name.split('tmp.')[1])))
+
+# i = 0
+# while i < 32:
+#     cfg_paths[i].rename(cfg_paths[i].parent / str("tmp." + cfg_paths[i].name))
+#     i += 1
+from memory_profiler import profile
+
+@profile
+def runexp():
+    # e = Experiment(cfg_paths, [("batch", "batch") ], output=run_path)
+    # e = Experiment(cfg_paths, [("batch", "batch"), ("static", "dynamic_plan")],
+    #                output=run_path)
+    e = Experiment(cfg_paths, [("static", "dynamic_plan") ], output=run_path)
+    e.run()
+
+runexp()
+"""
+Investigate: 
+    /home/rwb/Dropbox/University/PhD/experiment_data/chapter5/interdependency/low_maximal/skaworkflows_2024-06-25_20-58-16_9.json
+    
+Looks like this is braking the simulator as a result of recent buffer changes.
+"""
