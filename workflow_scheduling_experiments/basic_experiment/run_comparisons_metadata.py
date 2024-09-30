@@ -35,8 +35,17 @@ from skaworkflows.parametric_runner import calculate_parametric_runtime_estimate
 
 PAR_MODEL_SIZING = Path("../sdp-par-model/2021-06-02_LongBaseline_HPSOs.csv")
 
+TESTING = True
+def run_shadow(params: dict,  tup: tuple):
+    output, lock = tup
+    print(params.values(), output, lock)
+    lock.acquire()
+    with output.open('a') as f:
+        f.write(f"{str(params.values())}\n")
+        f.flush()
+    lock.release()
 
-def run_shadow(params, test=False):
+    return
     if params["data_distribution"] == "edges":
         return None
     #
@@ -157,18 +166,24 @@ if __name__ == "__main__":
             o["cfg"] = shadow_config
     print(f"{total_config=}")
     print(f"{len(params)=}")
+    for i, p in enumerate(params):
+        p['time'] = i
+        if TESTING:
+            p['cfg'] = None
 
-    print(','.join(params[0].keys()))
-    params[0]['cfg']=None
+    header = (','.join(params[0].keys()))
+    # params[0]['cfg']=None
+    # for p in params:
+    #     print(p.keys())
 
-    print(params[0])
-    
-    # output = Path(
-    # f"chapter3/metatdata/results_{date.today().isoformat()}.csv")
-    # if not output.exists:
-    #     with output.open('w+') as fo:
+    # print(params[0])
+    manager = Manager()
+    queue = manager.Queue()
+    lock = manager.Lock()
 
-    #         fo.write('hpso,workflow,time,graph,telescope,nodes,channels,data,pipeline_sets')
-
-    # with Pool(processes=3) as pool:
-    #     result = pool.map(run_shadow, params)
+    output = Path(
+        f"chapter3/results_{date.today().isoformat()}.csv")
+    with output.open('w') as fo:
+        from itertools import product
+        with Pool(processes=3) as pool:
+            result = pool.starmap(run_shadow, product(params, [(output, lock)]))

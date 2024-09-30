@@ -3,7 +3,7 @@
 		{
 			"count": 1,
 			"hpso": "hpso01",
-			"demand": 32,
+			"demand": 64,
 			"duration": 18000,
 			"workflows": [
 				"ICAL",
@@ -12,15 +12,15 @@
 				"DPrepC",
 				"DPrepD"
 			],
-			"channels": 32768,
-			"coarse_channels": 32,
+			"channels": 16384,
+			"coarse_channels": 64,
 			"baseline": 65000.0,
 			"telescope": "low"
 		},
 		{
 			"count": 2,
 			"hpso": "hpso02a",
-			"demand": 32,
+			"demand": 64,
 			"duration": 18000,
 			"workflows": [
 				"ICAL",
@@ -29,15 +29,15 @@
 				"DPrepC",
 				"DPrepD"
 			],
-			"channels": 32768,
-			"coarse_channels": 896,
+			"channels": 16384,
+			"coarse_channels": 64,
 			"baseline": 65000.0,
 			"telescope": "low"
 		},
 		{
 			"count": 1,
 			"hpso": "hpso02b",
-			"demand": 32,
+			"demand": 64,
 			"duration": 18000,
 			"workflows": [
 				"ICAL",
@@ -46,8 +46,8 @@
 				"DPrepC",
 				"DPrepD"
 			],
-			"channels": 32768,
-			"coarse_channels": 32,
+			"channels": 16384,
+			"coarse_channels": 64,
 			"baseline": 65000.0,
 			"telescope": "low"
 		}

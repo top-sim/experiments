@@ -1,4 +1,8 @@
-# Results were generated with the following parameters.
+# Updates: 2024-09-30
+
+We've updated the data generation to make it less hard-coded (although it's still a little hard coded).
+
+# (Previous) Results were generated with the following parameters.
 
 # Data generated with generate_data.py
 - Maximam imaging workflows (ICAL, DPrepA-DPrepD)
@@ -13,3 +17,7 @@
 - Parametric model calculate_parametric_runtime_estimates from `skaworkflows`
 - Incomplete formatting of data (no heading row) 
 - Duplicates in the run 
+
+
+
+
