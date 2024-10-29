@@ -1,5 +1,6 @@
 # Copyright (C) 9/5/22 RW Bunney
 import json
+import random
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,6 +17,8 @@ import json
 
 import sys
 import os
+import logging
+import time
 from datetime import date
 from copy import deepcopy
 import pandas as pd
@@ -29,55 +32,51 @@ sys.path.append("/home/rwb/github/skaworkflows")
 from skaworkflows.config_generator import config_to_shadow
 from skaworkflows.parametric_runner import calculate_parametric_runtime_estimates
 
-
 # from chapter5.parametric_model_baselines.generate_data import (
 #     LOW_HPSO_PATHS, MID_HPSO_PATHS)
+logging.basicConfig(level=logging.INFO)
+LOGGER = logging.getLogger(__name__)
+PAR_MODEL_SIZING = Path(
+    "/home/rwb/github/skaworkflows/skaworkflows/data/sdp-par-model_output/.archive/2021"
+    "-06-02_long_HPSOs.csv"
+)
 
-PAR_MODEL_SIZING = Path("../sdp-par-model/2021-06-02_LongBaseline_HPSOs.csv")
+TESTING = False
 
-TESTING = True
-def run_shadow(params: dict,  tup: tuple):
+def run_shadow(params: dict, tup: tuple):
     output, lock = tup
-    print(params.values(), output, lock)
-    lock.acquire()
-    with output.open('a') as f:
-        f.write(f"{str(params.values())}\n")
-        f.flush()
-    lock.release()
-
-    return
-    if params["data_distribution"] == "edges":
-        return None
-    #
     env = Environment(params["cfg"], dictionary=True)
     wf_path = Path(params["dir"]) / params["workflow"]
     workflow = Workflow(wf_path)
     workflow.add_environment(env)
-    print(
-        f"Running FCFS for observation {params['observation']} using {params['workflow']}"
+    LOGGER.info(
+        "Running FCFS for observation %s using %s",
+        params['observation'], params['workflow']
     )
-    fcfs_res = fcfs(workflow).makespan
+    params['method'] = 'heft'
+    params['time'] = heft(workflow).makespan
+    params["graph_type"] = ".".join(params["graph_type"])
     # # heft_res = None
-    res_str_fcfs = (
-        f"{params['observation']},"
-        f"{params['workflow']},"
-        f"{fcfs_res},"
-        # f"{graph}," TODO Add graph type to output once this is complete
-        f"{params['nodes']},"
-        f"{params['demand']},"
-        f"{params['channels']},"
-        f"{params['data']},"
-        f"{params['data_distribution']}"
-    )
-    print(res_str_fcfs)
-    # lock.acquire()
-    # with output.open('a') as f:
-    #     f.write(f"{str(res_str_fcfs)}\n")
-    #     f.flush()
-    # lock.release()
+    output_params = {k: i for k, i in params.items() if k != 'cfg'}
+    for k, i in output_params.items():
+        LOGGER.debug("Param: %s, Value: %s", k, i)
+    LOGGER.debug("Graph type: %s", output_params["graph_type"])
+    res_str_fcfs = ','.join([str(x) for x in output_params.values()])
+    LOGGER.info("FCFS result: %s", res_str_fcfs)
+
+    if not TESTING:
+        lock.acquire()
+        try:
+            with output.open('a') as f:
+                # time.sleep(1)
+                f.write(f"{res_str_fcfs}\n")
+                f.flush()
+        finally:
+            lock.release()
+        return
 
 
-def run_parametric(tup, queue, test=False):
+def run_parametric(params: dict, tup: tuple, test=False):
     """
     Calculate the runtime estimates from the parametric model
     We only need one of these values for each workflow, so skip
@@ -93,47 +92,69 @@ def run_parametric(tup, queue, test=False):
     -------
 
     """
+
     if test:
         return None
     # print(tup)
-    wf, env, f, graph, telescope, position, nodes, channels, lock, pipeline_sets = tup
-    if graph == "scatter" or channels == 512 or "no_data" not in wf.name:
-        return None
-    if "no_data" in wf.name:
-        data = False
-    else:
-        data = True
-    hpso = f.split("_")[0]
-    pipeline_list = None
-    if pipeline_sets:
-        pipeline_list = pipeline_sets.split("_")
-    par_res = calculate_parametric_runtime_estimates(
-        PAR_MODEL_SIZING, telescope, [hpso], pipeline_list
+    output, lock = tup
+
+    LOGGER.info(
+        "Running Parametrics for observation %s using %s",
+        params['observation'], params['workflow']
     )
-    res_str = (
-        f"{hpso},parametric,{par_res[hpso]['time']},"
-        f"{graph},{telescope},{nodes},{channels},{data}"
+    params['method'] = 'heft'
+
+    # Extract observation from params and fetch the SDP Parametric model runtime estimates
+    # For maximal use case
+    observation = params['observation']
+    result = calculate_parametric_runtime_estimates(
+        PAR_MODEL_SIZING, params['telescope'], [observation], params['graph_type']
     )
-    print(res_str)
-    lock.acquire()
-    with output.open("a") as f:
-        f.write(f"{str(res_str)}\n")
-        f.flush()
-    lock.release()
+    duration = result[observation]["total_flops"] / (result[observation]["batch_flops"]),
+    params['time'] = duration
+
+    # Ensure workflows is not separated by comma, so as to avoid CSV compatibility issues
+    params["graph_type"] = ".".join(params["graph_type"])
+
+    # # heft_res = None
+    output_params = {k: i for k, i in params.items() if k != 'cfg'}
+    for k, i in output_params.items():
+        LOGGER.debug("Param: %s, Value: %s", k, i)
+
+    LOGGER.debug("Graph type: %s", output_params["graph_type"])
+    res_str_fcfs = ','.join([str(x) for x in output_params.values()])
+    LOGGER.info("FCFS result: %s", res_str_fcfs)
+    if not TESTING:
+        lock.acquire()
+        try:
+            with output.open('a') as f:
+                # time.sleep(1)
+                f.write(f"{res_str_fcfs}\n")
+                f.flush()
+        finally:
+            lock.release()
+        return
 
 
 if __name__ == "__main__":
-    # Given a simulation configuration file generated from a HPSO spec,
-    # this script will: - Open the script and retrieve parameters for each
-    # workflow - Retrieve the system sizing paramters (incl. number of
-    # machines for the simulation) - Setup simulation combinations -
-    # Translate simulation configuration to SHADOW format - Run combinations
-    # using SHADOW library in parallel
+    import argparse
 
-    BASE_DIR = Path(
-        "/home/rwb/Dropbox/University/PhD/experiment_data/chapter3"
-        "/results_with_metadata/low_maximal/prototype/"
-    ) # TODO accept this as a cli argument
+    parser = argparse.ArgumentParser(Path(__file__).name,)
+    parser.add_argument('path')
+    parser.add_argument('-v', '--verbose')
+
+    args = parser.parse_args()
+    BASE_DIR = Path(args.path)
+    if not BASE_DIR.exists():
+        logging.warning("Path %s does not exist, leaving script...", str(BASE_DIR))
+    # TODO check if path is file path or directory; if file path, flag this, get
+    # base_dir and then skip the loop once using the file path given to the script
+    try:
+        level = args.verbose
+        LOGGER.setLevel(level=logging.DEBUG)
+    except IndexError:
+        LOGGER.warning("Could not set log level, using default 'Warning'. ")
+
     params = []
     shadow_config = {}
     total_config = 0
@@ -141,17 +162,21 @@ if __name__ == "__main__":
         if (BASE_DIR / cfg_path).is_dir():
             continue
         print(BASE_DIR / cfg_path)
-        total_config+=1
+        total_config += 1
         # Setup for SHADOW config
         shadow_config = config_to_shadow(BASE_DIR / cfg_path)
 
         # Retrieve workflow parameters
+
+        # TODO consider adding this to SKAWorkflows library
+
         with open(BASE_DIR / cfg_path) as fp:
             cfg = json.load(fp)
         telescope_type = cfg["instrument"]["telescope"]["observatory"]
         pipelines = cfg["instrument"]["telescope"]["pipelines"]
         nodes = len(cfg["cluster"]["system"]["resources"])
         observations = pipelines.keys()
+        LOGGER.debug('Observations: %s', observations)
         parameters = (
             pd.DataFrame.from_dict(pipelines, orient="index")
             .reset_index()
@@ -159,31 +184,41 @@ if __name__ == "__main__":
         )
         parameters["nodes"] = nodes
         parameters["dir"] = BASE_DIR
-        # print(parameters)
+        # Append information necessary for paramteric runner
+        parameters["telescope"] = telescope_type + '-adjusted'
+
         for i in range(len(observations)):
-            params.append(dict(parameters.iloc[i]))
+            observation = dict(parameters.iloc[i])
+            # Observations stored in TOpSim format have _N appended to the end.
+            # We do not need this for the scheduling tests
+            observation['observation'] = observation['observation'].split('_')[0]
+            params.append(observation)
         for o in params:
             o["cfg"] = shadow_config
-    print(f"{total_config=}")
-    print(f"{len(params)=}")
+        # break # We only care about a single config file.
+
+    LOGGER.info("Total configs processed: %d", total_config)
+    LOGGER.info("Number of observations added %d", len(params))
     for i, p in enumerate(params):
         p['time'] = i
-        if TESTING:
-            p['cfg'] = None
 
-    header = (','.join(params[0].keys()))
-    # params[0]['cfg']=None
-    # for p in params:
-    #     print(p.keys())
+    if not params:
+        LOGGER.warning("No inputs provided, will not run scheduling")
+        sys.exit()
 
-    # print(params[0])
+    header = ','.join([p for p in params[0].keys() if p != 'cfg'])
+
     manager = Manager()
     queue = manager.Queue()
     lock = manager.Lock()
-
-    output = Path(
-        f"chapter3/results_{date.today().isoformat()}.csv")
-    with output.open('w') as fo:
+    LOGGER.debug("Writing .csv with header: %s ", header)
+    output = Path(__file__).parent / f"results_{date.today().isoformat()}.csv"
+    with output.open('w+') as fo:
+        fo.write(f"{header}\n")
+        fo.flush()
         from itertools import product
+
+        with Pool(processes=1) as pool:
+            pool.starmap(run_parametric, product(params, [(output, lock)]))
         with Pool(processes=3) as pool:
-            result = pool.starmap(run_shadow, product(params, [(output, lock)]))
+            pool.starmap(run_shadow, product(params, [(output, lock)]))

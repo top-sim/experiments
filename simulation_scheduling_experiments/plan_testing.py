@@ -32,11 +32,10 @@ while total < expected * min_obs and sum(current_count.values()) < min_obs:
                 total += (random.choice(pick_demand) / max)
                 # print(total)
 # This is wrong - 512 for all of these should return 1.0
-print(total)
-print(current_count)
-hpso_idx = {'hpso01':0, 'hpso2':1, 'hpso3':2}
+
+hpso_idx = {'hpso01': 0, 'hpso2':1, 'hpso3':2}
 x = [64,64,64] #64,64,64]
-n=2
+n=25
 max = 512
 print(len(x))
 random.seed(5)
