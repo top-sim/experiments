@@ -51,7 +51,7 @@ MID_OBSERVATIONS= {
                'workflows': ["ICAL", "DPrepB"]}
 }
 
-channel_multiplier = 256
+channel_multiplier = 128
 
 
 def maximal_low_obs_plan():
@@ -137,7 +137,7 @@ def maximal_mid_obs_plan():
     """
 
     nodes = 796
-    max_demand = 512
+    max_demand = 197
     max_channels = 512 # Max for mid
     params = []
     LOGGER.info("Preparing maximal output for LOW telescope\n"
@@ -156,7 +156,7 @@ def maximal_mid_obs_plan():
                 "demand": max_demand,
                 "channels": max_channels * channel_multiplier,
                 "coarse_channels": nodes,
-                "baseline": MID_OBSERVATIONS['hpso013']['baseline'],
+                "baseline": MID_OBSERVATIONS['hpso13']['baseline'],
                 "telescope": "mid"
             },
             {
@@ -179,7 +179,7 @@ def maximal_mid_obs_plan():
                 "workflows": MID_OBSERVATIONS['hpso22']['workflows'],
                 "channels": max_channels * channel_multiplier,
                 "coarse_channels": nodes,
-                "baseline": MID_OBSERVATIONS['hpos22']['baseline'],
+                "baseline": MID_OBSERVATIONS['hpso22']['baseline'],
                 "telescope": "mid"
             },
             {

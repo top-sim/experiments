@@ -192,10 +192,15 @@ if __name__ == "__main__":
             # Observations stored in TOpSim format have _N appended to the end.
             # We do not need this for the scheduling tests
             observation['observation'] = observation['observation'].split('_')[0]
+            wf_path = BASE_DIR / observation['workflow']
+            with wf_path.open('r') as fp: 
+                wf_dict = json.load(fp)
+                workflows = wf_dict['header']['parameters']['workflows']
+                observation['graph_type'] = workflows
             params.append(observation)
         for o in params:
             o["cfg"] = shadow_config
-        # break # We only care about a single config file.
+        break # We only care about a single config file.
 
     LOGGER.info("Total configs processed: %d", total_config)
     LOGGER.info("Number of observations added %d", len(params))
@@ -220,5 +225,5 @@ if __name__ == "__main__":
 
         with Pool(processes=1) as pool:
             pool.starmap(run_parametric, product(params, [(output, lock)]))
-        with Pool(processes=3) as pool:
-            pool.starmap(run_shadow, product(params, [(output, lock)]))
+        # with Pool(processes=3) as pool:
+        #     pool.starmap(run_shadow, product(params, [(output, lock)]))

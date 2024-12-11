@@ -74,6 +74,12 @@ SKA_Low_antenna = [64, 128, 256, 512]
 SKA_Mid_antenna = [64, 102, 140, 197]
 
 channel_multiplier = 128
+
+
+# TODO Consider how this would scale to: 
+# - Multiple baselines
+# - Multiple variations of a single HPSO
+# - Start with 1 hpso and see if we can get similar output as we do from this one. 
 def permute_low_observation_plans_minimal():
     """
     Using the lowest SKA LOW configurations as a starting point, modify the observation
