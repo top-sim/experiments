@@ -26,7 +26,7 @@ from datetime import date
 logging.basicConfig(level="INFO")
 LOGGER = logging.getLogger(__name__)
 parser = argparse.ArgumentParser(Path(__file__).name, )
-parser.add_argument('method', help="batch, static, all", type=str, nargs=1)
+parser.add_argument('method', help="batch, static, all", type=str)
 parser.add_argument('-f', '--file', help="Use a specific file", type=str)
 parser.add_argument('-d', '--dir', help="Use a directory of config", type=str)
 parser.add_argument('--slurm', help='Use slurm', action="store_true")
@@ -64,6 +64,7 @@ else:
 from topsim.utils.experiment import Experiment
 
 # TODO Fix up all the combinations here with slurm and directories/paths
+LOGGER.debug("Using method: %s", args.method)
 if args.method == 'batch':
     e = Experiment(cfg_paths, [("batch", "batch")], output=experiment_path / "results")
 elif args.method == 'static':

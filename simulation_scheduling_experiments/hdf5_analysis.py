@@ -12,9 +12,9 @@ from pathlib import Path
 # Setup all the visualisation nicities
 from matplotlib import rcParams
 
-rcParams['text.usetex'] = True
+rcParams['text.usetex'] = False
 rcParams['font.family'] = 'serif'
-rcParams['font.serif'] = "computer modern roman"
+# rcParams['font.serif'] = "computer modern roman"
 rcParams['font.size'] = 12.0
 
 rcParams['axes.linewidth'] = 1
@@ -364,6 +364,7 @@ def create_simulation_schedule_map(simulations, key):
         #         color=['grey', 'orange'],
         #         left=np.array(begin), edgecolor='black')
     ax.legend()
+    plt.savefig(f"ScheduleMap_{hash(key)}.png")
 
 
 def get_observation_duration(df):
@@ -669,8 +670,8 @@ if __name__ == "__main__":
         print(df_total)
         with open('df_total.csv', 'w') as fp:
             df_total.to_csv(fp)
-    # for s in siulations:
-    #     create_simulation_schedule_map(simulations, s)
+        for s in simulations:
+            create_simulation_schedule_map(simulations, s)
     else:
         df_total = pd.read_csv(df_total_path)
     usage_summary_dataframe = get_observation_plan_percentage(df_total, RESULT_PATH)
