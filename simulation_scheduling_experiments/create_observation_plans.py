@@ -22,8 +22,8 @@ import logging
 import numpy as np
 
 from skaworkflows.config_generator import create_config
-VERBOSE = False
-logging.basicConfig(level=logging.DEBUG)
+VERBOSE = True
+logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
 class NpEncoder(json.JSONEncoder):
@@ -137,7 +137,7 @@ def permute_low_observation_plans(n=1):
             demand_ratio = sum(np.array(list(hpso_demand.values())) * number_obs) / (
                 sum(number_obs) * max_antenna
             )
-            if demand_ratio > 0.8:
+            if demand_ratio > 0.85:
                 continue
             tmp = {}
             for hpso, demand in hpso_demand.items():
@@ -149,7 +149,7 @@ def permute_low_observation_plans(n=1):
 
     if VERBOSE:
         for comb, num in final_set.items():
-            print(comb, num)
+            LOGGER.info("Created combination: %s, %s", comb, num)
 
     return final_set
 
@@ -461,7 +461,7 @@ if __name__ == "__main__":
         "DPrepD": args.graph_type,
     }
 
-    random.seed(8)
+    random.seed(2)
     if args.test:
         VERBOSE = True
         random.seed(0)
@@ -483,6 +483,7 @@ if __name__ == "__main__":
     low_path = Path(args.path) / args.telescope
 
     print("Creating config")
+    # sys.exit()
     for ap in all_params:
         for plan in ap:
             create_config(

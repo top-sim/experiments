@@ -164,45 +164,51 @@ if __name__ == "__main__":
         print(BASE_DIR / cfg_path)
         total_config += 1
         # Setup for SHADOW config
-        shadow_config = config_to_shadow(BASE_DIR / cfg_path)
+        timesteps = [1,5,15,30,60]
+        for t in timesteps: 
+            shadow_config = config_to_shadow(BASE_DIR / cfg_path)
+            for machine,compute in shadow_config["system"]["resources"].items():
+                compute['flops'] = compute['flops'] * t
+                compute['compute_bandwidth'] = compute['compute_bandwidth'] * t
+            shadow_config["system"]["system_bandwidth"]  = shadow_config["system"]["system_bandwidth"]  * t
+            # Retrieve workflow parameters
 
-        # Retrieve workflow parameters
+            # TODO consider adding this to SKAWorkflows library
 
-        # TODO consider adding this to SKAWorkflows library
-
-        with open(BASE_DIR / cfg_path) as fp:
-            cfg = json.load(fp)
-        telescope_type = cfg["instrument"]["telescope"]["observatory"]
-        pipelines = cfg["instrument"]["telescope"]["pipelines"]
-        nodes = len(cfg["cluster"]["system"]["resources"])
-        observations = pipelines.keys()
-        LOGGER.debug('Observations: %s', observations)
-        parameters = (
-            pd.DataFrame.from_dict(pipelines, orient="index")
-            .reset_index()
-            .rename(columns={"index": "observation"})
-        )
-        parameters["nodes"] = nodes
-        parameters["dir"] = BASE_DIR
-        # Append information necessary for paramteric runner
-        parameters["telescope"] = telescope_type + '-adjusted'
-
-        for i in range(len(observations)):
-            observation = dict(parameters.iloc[i])
-            # Observations stored in TOpSim format have _N appended to the end.
-            # We do not need this for the scheduling tests
-            observation['observation'] = observation['observation'].split('_')[0]
-            wf_path = BASE_DIR / observation['workflow']
-            with wf_path.open('r') as fp: 
-                wf_dict = json.load(fp)
-                workflows = wf_dict['header']['parameters']['workflows']
-                observation['graph_type'] = workflows
-            params.append(observation)
-        for o in params:
-            o["cfg"] = shadow_config
-        break # We only care about a single config file.
+            with open(BASE_DIR / cfg_path) as fp:
+                cfg = json.load(fp)
+            telescope_type = cfg["instrument"]["telescope"]["observatory"]
+            pipelines = cfg["instrument"]["telescope"]["pipelines"]
+            nodes = len(cfg["cluster"]["system"]["resources"])
+            observations = pipelines.keys()
+            LOGGER.debug('Observations: %s', observations)
+            parameters = (
+                pd.DataFrame.from_dict(pipelines, orient="index")
+                .reset_index()
+                .rename(columns={"index": "observation"})
+            )
+            parameters["nodes"] = nodes
+            parameters["dir"] = BASE_DIR
+            # Append information necessary for paramteric runner
+            parameters["telescope"] = telescope_type + '-adjusted'
+            parameters["timestep"] = t
+            for i in range(len(observations)):
+                observation = dict(parameters.iloc[i])
+                # Observations stored in TOpSim format have _N appended to the end.
+                # We do not need this for the scheduling tests
+                observation['observation'] = observation['observation'].split('_')[0]
+                wf_path = BASE_DIR / observation['workflow']
+                with wf_path.open('r') as fp: 
+                    wf_dict = json.load(fp)
+                    workflows = wf_dict['header']['parameters']['workflows']
+                    observation['graph_type'] = workflows
+                params.append(observation)
+            for o in params:
+                o["cfg"] = shadow_config
+        # break # We only care about a single config file.
 
     LOGGER.info("Total configs processed: %d", total_config)
+    # sys.exit()
     LOGGER.info("Number of observations added %d", len(params))
     for i, p in enumerate(params):
         p['time'] = i
@@ -223,7 +229,7 @@ if __name__ == "__main__":
         fo.flush()
         from itertools import product
 
-        with Pool(processes=1) as pool:
-            pool.starmap(run_parametric, product(params, [(output, lock)]))
-        # with Pool(processes=3) as pool:
-        #     pool.starmap(run_shadow, product(params, [(output, lock)]))
+        # with Pool(processes=1) as pool:
+        #     pool.starmap(run_parametric, product(params, [(output, lock)]))
+        with Pool(processes=3) as pool:
+            pool.starmap(run_shadow, product(params, [(output, lock)]))

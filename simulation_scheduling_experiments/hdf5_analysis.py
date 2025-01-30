@@ -9,32 +9,44 @@ import matplotlib.pyplot as plt
 import json
 from pathlib import Path
 
+from matplotlib.gridspec import GridSpec
+
 # Setup all the visualisation nicities
 from matplotlib import rcParams
 
-rcParams['text.usetex'] = False
-rcParams['font.family'] = 'serif'
+rcParams["text.usetex"] = False
+rcParams["font.family"] = "serif"
 # rcParams['font.serif'] = "computer modern roman"
-rcParams['font.size'] = 12.0
+rcParams["font.size"] = 12.0
 
-rcParams['axes.linewidth'] = 1
+rcParams["axes.linewidth"] = 1
 
 # X-axis
-rcParams['xtick.direction'] = 'in'
-rcParams['xtick.minor.visible'] = True
+rcParams["xtick.direction"] = "in"
+rcParams["xtick.minor.visible"] = True
 # Y-axis
-rcParams['ytick.direction'] = 'in'
-rcParams['ytick.minor.visible'] = True
+rcParams["ytick.direction"] = "in"
+rcParams["ytick.minor.visible"] = True
 
 
-def extract_simulations_from_hdf5(resfile, verbose=True):
-    path = Path(resfile)
-    if not path.exists():
+class TopSimResult:
+    DATASET_TYPES = ["sim", "summary", "tasks"]  # TODO change to 'Result Tables'
+
+    def __init__(result_path: str):
+        store = pd.HDFStore(result_path)
+        result_path: Path = Path(result_path)
+        config_path: Path = None
+        timestep: int = None
+        observation_plan: pd.DataFrame = None
+
+
+def extract_simulations_from_hdf5(result_path, verbose=True):
+    if not result_path.exists():
         print("HDF5 file does not exist, leaving")
 
     simulations = {}
-    if path.is_dir():
-        for p in path.iterdir():
+    if result_path.is_dir():
+        for p in result_path.iterdir():
             # TODO if this is a folder iterate through all hdf5 files
             tmp_simulations = {}
             store = pd.HDFStore(str(p))
@@ -45,9 +57,9 @@ def extract_simulations_from_hdf5(resfile, verbose=True):
             if verbose:
                 print(p, keysplit)
             dataset_types = ["sim", "summary", "tasks"]
-            tmp_simulations.update({
-                f"{e[1]}/{e[2]}": {d: None for d in dataset_types} for e in keysplit
-            })
+            tmp_simulations.update(
+                {f"{e[1]}/{e[2]}": {d: None for d in dataset_types} for e in keysplit}
+            )
             for simulation, dtype in tmp_simulations.items():
                 for dst in dataset_types:
                     tmp_simulations[simulation][dst] = pd.read_hdf(
@@ -60,7 +72,7 @@ def extract_simulations_from_hdf5(resfile, verbose=True):
     return simulations
 
 
-def collate_simulation_results(simulations):
+def collate_simulation_results(result_path: Path, simulations: dict):
     df_total = pd.DataFrame()
     processed = []
     for simulation, dtype in simulations.items():
@@ -72,8 +84,8 @@ def collate_simulation_results(simulations):
         for obs in set(df_tel["observation"]):
             df_obs = df_tel[df_tel["observation"] == obs]
             obs_length = (
-                df_obs[df_obs["event"] == "finished"]["time"].iloc[0]
-                - df_obs[df_obs["event"] == "started"]["time"].iloc[0]
+                    df_obs[df_obs["event"] == "finished"]["time"].iloc[0]
+                    - df_obs[df_obs["event"] == "started"]["time"].iloc[0]
             )
             obs_durations.append(obs_length)
 
@@ -84,9 +96,11 @@ def collate_simulation_results(simulations):
         if cfg_path in processed:
             continue
         # cfg_path = cfg_path.parent / str(cfg_path.parent / 'processed' / cfg_path.name)
-        with open(cfg_path) as fp:
+        parent_dir = result_path.parent
+        cfg_path = parent_dir / cfg_path.name
+        with open(cfg_path, "r", encoding="utf-8") as fp:
             cfg = json.load(fp)
-        timestep = cfg['timestep']
+        timestep = cfg["timestep"]
         pipelines = cfg["instrument"]["telescope"]["pipelines"]
         nodes = len(cfg["cluster"]["system"]["resources"])
         parameters = (
@@ -96,8 +110,8 @@ def collate_simulation_results(simulations):
         )
         observations = pipelines.keys()
 
-        print(f"{parameters['workflow']}")
-        parameters['timestep'] = timestep
+        # print(f"{parameters['workflow']}")
+        parameters["timestep"] = timestep
 
         # So long as the second last workflow is put on the scheduler
         # before the sum of the total observations is complete, we should be fine.
@@ -112,7 +126,8 @@ def collate_simulation_results(simulations):
         if len(obs_durations) < 2:
             second_last_index = -1
         if (
-                sum(obs_durations) + obs_length
+                sum(obs_durations)
+                + obs_length
                 - sorted(df_sched[df_sched["event"] == "stopped"]["time"])[-1]
         ) < 0:
             success = False
@@ -122,11 +137,11 @@ def collate_simulation_results(simulations):
         # Ratio of completion time to 'success criteria'.
         # Failed observations will report a negative number.
         parameters["success_ratio"] = (
-            (
-                sum(obs_durations)
-                - (sorted(df_sched[df_sched["event"] == "stopped"]["time"])[-1])
-             ) / sum(obs_durations)
-        )
+                                              sum(obs_durations)
+                                              - (sorted(
+                                          df_sched[df_sched["event"] == "stopped"][
+                                              "time"])[-1])
+                                      ) / sum(obs_durations)
 
         parameters["schedule_length"] = len(df_sim)
         parameters["planning"] = df_sim["planning"]
@@ -135,7 +150,7 @@ def collate_simulation_results(simulations):
         # Use simulation config to differentiate between different sims
         parameters["sim_cfg"] = cfg_path.name
         parameters["total_obs_duration"] = sum(obs_durations)
-        parameters['simulation_run'] = simulation
+        parameters["simulation_run"] = simulation
         df_total = pd.concat([df_total, parameters], ignore_index=True)
 
     return df_total
@@ -155,16 +170,18 @@ def process_workflow_stats(cfg_path: Path, df_total: pd.DataFrame):
 
     """
 
-    workflow_paths = set(df_total['workflow'])
+    workflow_paths = set(df_total["workflow"])
     total_workflow_df = pd.DataFrame()
     total_compute = 0
     total_duration = 0
     for index, row in df_total.iterrows():
-        duration = row['duration']
+        duration = row["duration"]
         total_duration += duration
-        csv_path = Path(cfg_path).parent / (row['workflow'] + '.csv')
+        csv_path = Path(cfg_path).parent / (row["workflow"] + ".csv")
+        if not csv_path.exists():
+            return 0
         total_workflow_df = pd.concat([total_workflow_df, pd.read_csv(csv_path)])
-        total_compute += sum(total_workflow_df['total_compute']) * (10 ** 15) * (duration)
+        total_compute += sum(total_workflow_df["total_compute"]) * (10 ** 15) * (duration)
         # wf_df[c] = str(parameters[c].values[0])
     # wf_df.to_csv(BASE_DIR / 'test_ouput.csv')
 
@@ -378,7 +395,15 @@ def get_observation_duration(df):
         )
 
 
-def get_observation_plan_percentage(df_total, results_path, verbose=True):
+def calculate_low_percentages():
+    pass
+
+
+def calculate_mid_percentages():
+    pass
+
+
+def get_observation_plan_percentage(df_total, results_path: Path, verbose=True):
     """
     Determine the resource usage of the telescope across the entire observation plan,
     as a fraction of the maximum possible value.
@@ -391,38 +416,47 @@ def get_observation_plan_percentage(df_total, results_path, verbose=True):
     """
     max_channels = 128 * 256
     max_demand = 512
-    group = df_total.groupby(["sim_cfg", "planning", "simulation_run"])
+    group = df_total.groupby(["sim_cfg", "planning", "simulation_run"])  # , data"])
     usage = {}
     timestep = 5
     # Isolating observing plans, with planning algorithms
+    count = 0
+    usage = []
     for name, g in group:
         cfg, planning, sim_run = name
         plan_demand = g["demand"].astype(int).sum()
         plan_channels = g["channels"].astype(int).sum()
         total_compute_observation_plan = process_workflow_stats(results_path, g)
+        # if total_compute_observation_plan == 0:
+        #     continue
 
-        usage[f"{sim_run.split('/')[0]}_{cfg}_{planning}"] = {
+        usage.append({
             "demand_ratio": round(plan_demand / (max_demand * len(g)), 2),
             "channels_ratio": round(plan_channels / (max_channels * len(g)), 2),
             # "demand": g["demand"].iloc[0],
             # "channels": g["channels"].iloc[0],
             "data": g["data"].iloc[0],
+            "data_distribution": g["data_distribution"].iloc[0],
             "success": g["success"].iloc[0],
             "schedule_length": int(g["schedule_length"].iloc[0]),
             "planning": planning,
-            "schedule_length_ratio": (int(g["schedule_length"].iloc[0])
-                                      / g['total_obs_duration'].iloc[0]),
+            "schedule_length_ratio": (
+                    int(g["schedule_length"].iloc[0]) / g["total_obs_duration"].iloc[0]
+            ),
             "total_compute": total_compute_observation_plan,
-            "average_compute": (total_compute_observation_plan / (int(
-                g["schedule_length"].iloc[0]) * timestep) / (10 ** 15))
-        }
+            "average_compute": (
+                    total_compute_observation_plan
+                    / (int(g["schedule_length"].iloc[0]) * timestep)
+                    / (10 ** 15)
+            ),
+            "cfg": cfg
+        })
+        count += 1
 
     usage_df = pd.DataFrame(usage)
     if verbose:
-        print(usage_df.T)
-        # for name, results in usage.items():
-        #     print(f"{name}: {results}")
-    return usage_df.T
+        print(usage_df)
+    return usage_df
 
 
 def plot_plan_compostition(df_total):
@@ -457,16 +491,28 @@ def plot_histogram_of_success(usage):
 
     """
     data = []
-    for demand in usage.groupby('demand_ratio'):
+    for demand in usage.groupby("demand_ratio"):
         group, df = demand
-        data.extend([group] * (
-            len(df[(df['success'] == True) & (df['planning'] != 'BatchPlanning')])))
+        data.extend(
+            [group]
+            * (len(df[(df["success"] == True) & (df["planning"] != "BatchPlanning")]))
+        )
 
 
-def plot_scatter_comparison_plan_results(usage,
-                                         verbose=True,
-                                         withzoom=True,
-                                         withannotations=True):
+def setup_axes(axes: list):
+    """
+    Apply common axes settings so we have consistent presentation
+    """
+    for ax in axes:
+        ax.set_axisbelow(True)
+        ax.grid(True, "major", "both", ls="-", color="black")
+        ax.grid(True, "minor", "both", ls="--")
+
+    return axes
+
+def plot_scatter_comparison_plan_results(
+        usage: pd.DataFrame, verbose=True, withzoom=True, withannotations=True
+):
     """
 
     Create a scatterplot that shows relative completion time based on the simulation
@@ -480,120 +526,137 @@ def plot_scatter_comparison_plan_results(usage,
     -------
 
     """
-    # sns.stripplot(
-    #     data=usage, x="planning", y="schedule_length", hue="success"
-    # )  # , style="planning")
-    # sns.stripplot(data=usage, x="schedule_length_ratio", y="schedule_length", hue="success")
+    import matplotlib as mpl
 
-    from matplotlib.gridspec import GridSpec
     # Show only the successful results for batch_planning
     success = True
-    planning = "BatchPlanning"
+
+    algorithms = ["BatchPlanning", "SHADOWPlanning"]
     # ax = plt.subplots(ncols=2, sharey=True)
-
-    fig = plt.figure(layout="constrained")
-
-
-    gs = GridSpec(2, 2, figure=fig, left=0.05, right=0.1, wspace=0.05)
-    ax1 = fig.add_subplot(gs[0, 0])
-    ax2 = fig.add_subplot(gs[0, -1])
-    ax3 = fig.add_subplot(gs[-1, -0])
-    ax4 = fig.add_subplot(gs[-1, -1])
-
-    include_data_only_sims = True
-    if include_data_only_sims:
-       usage = usage[(usage['data'] == True)]
-
-    boxes = []
-    result = usage[(usage['planning'] == planning)]
-    demand = set(result['demand_ratio'])
-    for x in demand:
-        boxes.append(np.array(result[result['demand_ratio'] == x]['average_compute']))
-    ax2.set_ylim(0, 15)
-    ax2.set_ylabel('Petaflops')
-    # ax2.boxplot(boxes)
-    ax2.scatter(result['demand_ratio'], result['average_compute'])
-    ax2.set_xlim(0,1.0)
-
-    result = usage[(usage['success'] != success) & (usage['planning'] == planning)]
-    ax1.scatter(
-        np.array(result['demand_ratio']),
-        np.array(result['schedule_length_ratio']),
-        marker='+',
-        label='Failure + Batch', color='red'
-    )
-
-    result = usage[(usage['success'] == success) & (usage['planning'] == planning)]
-    ax1.scatter(
-        np.array(result['demand_ratio']),
-        np.array(result['schedule_length_ratio']),
-        marker='o',
-        label='Success + Batch', color='grey'
-    )
-    ax1.set_xlim(0,1.0)
-    ax3.set_ylim(0, 10.0)
-    ax1.set_ylabel('Schedule length ratio')
-    ax1.set_xlabel('Demand ratio')
-    # result_success_select = result[result['demand_ratio'] == 0.3].iloc[0]
-
+    from textwrap import wrap
     average_flops_low = 13.8
-    # flops_range = [0, 15]
-    # ax2 = ax1.twinx()
-    # ax2.yaxis.set_inverted(True)
-    # ax2.boxplot(result['average_compute'])
-    ax2.plot([0.0,5.0],[average_flops_low, average_flops_low], '-')
-    ax4.plot([0.0,5.0],[average_flops_low, average_flops_low], '-')
-    # Do this for each
-    # average_compute_mid = np.average(result['average_compute'])
-    # average_compute_min = np.min(result['average_compute'])
-    # average_compute_max = np.max(result['average_compute'])
-    # ax2.plot([0.1,1.0], [average_compute_mid, average_compute_mid], '--')
-    # ax2.fill_between([0.1, 1.0], average_compute_min, average_compute_max, alpha=0.2)
-    # ax2.scatter(np.array(result['demand_ratio']), np.array(result['average_compute']))
+    y_max = 100
+    for planning in algorithms:
+        fig = plt.figure(figsize=(12, 6))
 
-    boxes = []
-    result = usage[(usage['planning'] != planning)]
-    demand = set(result['demand_ratio'])
-    for x in demand:
-        boxes.append(np.array(result[result['demand_ratio'] == x]['average_compute']))
-    ax4.set_ylim(0, 15)
-    ax4.set_ylabel('Petaflops')
-    ax4.boxplot(boxes)
+        data_points = len(usage[usage["planning"]==planning])
+        figtitle =(f"Allocaiton heuristic: {planning}")
 
-    result = usage[(usage['success'] == success) & (usage['planning'] != planning)]
-    ax3.scatter(
-        np.array(result['demand_ratio']),
-        np.array(result['schedule_length_ratio']),
-        marker='o',
-        label='Success + Batch', color='grey'
-    )
-    ax3.set_xlim(0,1.0)
-    ax3.set_ylim(0, 10.0)
-    ax3.set_ylabel('Schedule length ratio')
-    ax3.set_xlabel('Demand ratio')
-    result = usage[(usage['success'] != success) & (usage['planning'] != planning)]
-    ax3.scatter(
-        np.array(result['demand_ratio']),
-        np.array(result['schedule_length_ratio']),
-        marker='+',
-        label='Failure + Batch', color='red'
-    )
-    # ax1.legend()
-    # result_fail_select = result[result['demand_ratio'] == 0.3].iloc[-1]
+        fig.suptitle("")
+        gs = GridSpec(
+            1, 2, figure=fig
+        )  # , wspace=0.25) # , left=0.05, right=0.1, wspace=0.05)
+        ax1 = fig.add_subplot(gs[0, 0])
+        ax1.set_title(
+            "Percentage of successful or failed \nplans across telescope demand.",
+            wrap=True
+        )
+        ax2 = fig.add_subplot(gs[0, -1])
+        ax2.set_title(
+            "Average compute load of successful or failed \nplans across telescope demand.",
+            wrap=True
+        )
+        ax1, ax2 = setup_axes([ax1, ax2])
+        ax1.set_axisbelow(True)
+        ax1.grid(True, "major", "both", ls="-", color="black")
+        ax1.grid(True, "minor", "both", ls="--")
+
+        include_data_only_sims = False
+        if include_data_only_sims:
+            usage = usage[(usage["data"] == True)]
+
+        boxes = []
+        result = usage[(usage["planning"] == planning)]
+        demand = set(result["demand_ratio"])
+        for x in demand:
+            boxes.append(np.array(result[result["demand_ratio"] == x]["average_compute"]))
+        import matplotlib.colors as mcolors
+
+        # Color palette nonsense
+        cmap = plt.cm.Set1
+        n_colors = 8
+        positions = np.linspace(0, 1, n_colors)
+        hex_colors = [mcolors.to_hex(cmap(pos)) for pos in positions]
+
+        result_fail = usage[(usage["success"] != success) & (usage["planning"] == planning)]
+        data_fail = np.array(sorted(result_fail["demand_ratio"]), dtype='float').T
+        result_succ = usage[(usage["success"] == success) & (usage["planning"] == planning)]
+        data_succ = np.array(sorted(result_succ["demand_ratio"]), dtype='float').T
+        stack = [data_fail, data_succ]
+        facecolors = np.array(['red', 'blue'])
+        ax1.hist(
+            stack,
+            bins=np.arange(0,1, 0.1),
+            histtype='bar',
+            # bins=np.arange(0, 1, 0.1),
+            # weights=np.ones_like(data) / len(data),
+            edgecolor='black',
+            # hatch="xx",histtype='bar',
+            facecolor=facecolors,
+            label=["Failed", "Successful"]
+            # stacked=False,
+        )
+        ax2.scatter(
+            result_fail["demand_ratio"].to_numpy(), result_fail["average_compute"],
+            marker='x',
+            s=80,
+            color="black",
+            label="Failed"
+        )
+        ax2.set_yscale("log")
+
+        data = np.array(sorted(result["demand_ratio"]), dtype='float'),
+
+        ax2.scatter(
+            result_succ["demand_ratio"].to_numpy(), result_succ["average_compute"],
+            s=100,
+            color="blue",
+            marker='.',
+            label="Successful"
+        )
+        ax2.set_yscale("log")
+
+        ax1.set_ylabel("Number of simulations")
+        ax1.set_xlabel("Demand ratio")
+        ax1.legend()
+
+        # Plot estimated average FLOPS across the plan
+        ax2.set_ylim(0, int(y_max)+1)
+        ax2.set_ylabel("Petaflops")
+        ax2.set_xlim(0, 1.0)
+        ax2.set_xlabel("Demand ratio")
+
+        ax2.plot([0.0, 5.0], [average_flops_low, average_flops_low], "--",
+                 color="red",
+                 linewidth=3, zorder=0)
+        ax2.plot()
+        ax2.legend()
+        plt.tight_layout(pad=3.0)
 
     x1, x2, y1, y2 = 0.25, 0.35, 0.9, 2.0
     show_zoom = False
     if show_zoom:
         axins = ax1.inset_axes(
             [0.5, 0.5, 0.47, 0.47],
-            xlim=(x1, x2), ylim=(y1, y2), xticklabels=[], yticklabels=[]
+            xlim=(x1, x2),
+            ylim=(y1, y2),
+            xticklabels=[],
+            yticklabels=[],
         )
-        result = usage[(usage['success'] == success) & (usage['planning'] == planning)]
-        axins.scatter(np.array(result['demand_ratio']),
-                      np.array(result['schedule_length_ratio']), marker='o', color='grey')
-        result = usage[(usage['success'] != success) & (usage['planning'] == planning)]
-        axins.scatter(np.array(result['demand_ratio']),
-                      np.array(result['schedule_length_ratio']), marker='+', color='red')
+        result = usage[(usage["success"] == success) & (usage["planning"] == planning)]
+        axins.scatter(
+            np.array(result["demand_ratio"]),
+            np.array(result["schedule_length_ratio"]),
+            marker="o",
+            color="grey",
+        )
+        result = usage[(usage["success"] != success) & (usage["planning"] == planning)]
+        axins.scatter(
+            np.array(result["demand_ratio"]),
+            np.array(result["schedule_length_ratio"]),
+            marker="+",
+            color="red",
+        )
         import matplotlib.patheffects as path_effects
         from matplotlib.patches import ConnectionPatch
 
@@ -602,9 +665,7 @@ def plot_scatter_comparison_plan_results(usage,
         #                       coordsA=axins.transData, coordsB=ax2.transData)
         # fig.add_artist(con)
 
-
-        ax1.indicate_inset_zoom(axins, edgecolor='black')
-
+        ax1.indicate_inset_zoom(axins, edgecolor="black")
 
 
 def plot_comp_per_channels(df_total):
@@ -620,10 +681,10 @@ def plot_comp_per_channels(df_total):
 
     """
 
-    planning = set(usage['planning'])
-    success = set(usage['success'])
+    planning = set(usage["planning"])
+    success = set(usage["success"])
 
-    usage = usage[usage['data'] == False]
+    usage = usage[usage["data"] == False]
 
 
 def calculate_maximum_moving_average_for_observing_plan():
@@ -644,7 +705,29 @@ def calculate_maximum_moving_average_for_observing_plan():
     """
 
 
-def plot_observation_plan(usage):
+def get_observation_plans(df_total: pd.DataFrame, config_dir: Path) -> dict:
+    """
+    For each simulation config file, get the observation plan
+    """
+
+    plans = []
+    for config in set(df_total['sim_cfg']):
+        path = config_dir / config
+        with path.open('r') as fp:
+            sim_cfg = json.load(fp)
+            observation_plan = pd.DataFrame(
+                sim_cfg["instrument"]["telescope"]["observations"])
+            observation_plan['config'] = config
+            plans.append(observation_plan)
+    result = pd.concat(plans)
+    return result
+
+
+def plot_observation_plan(observation_plan: pd.DataFrame):
+    """
+    Show the telescope usage of each observation across the simulation. 
+    """
+
     pass
 
 
@@ -652,33 +735,40 @@ def get_config_parameters(config):
     pass
 
 
+PLOT_SIMULATION_MAPS = False
 if __name__ == "__main__":
     pd.set_option("display.max_columns", None)
     pd.set_option("display.width", 1000)
-    RESULT_PATH = sys.argv[1]
+    RESULT_PATH = Path(sys.argv[1])
 
     re_load = bool(int(sys.argv[2]))
-    df_total_path = Path('df_total.csv')
-    df_total = None
+    df_total_path = Path("df_total.csv")
+    df_total = None  # TODO rename
     if not df_total_path.exists() or re_load:
         # Trui RESULT_FILE = 'results_f2024-07-23.h5'
         simulations = extract_simulations_from_hdf5(RESULT_PATH, verbose=True)
         if not simulations:
             exit(1)
-        df_total = collate_simulation_results(simulations)
+        df_total = collate_simulation_results(RESULT_PATH, simulations)
         df_total = convert_categorical_ints_to_str(df_total)
         print(df_total)
-        with open('df_total.csv', 'w') as fp:
+        with open("df_total.csv", "w") as fp:
             df_total.to_csv(fp)
-        for s in simulations:
-            create_simulation_schedule_map(simulations, s)
     else:
         df_total = pd.read_csv(df_total_path)
+
+    if PLOT_SIMULATION_MAPS:
+        for s in df_total:
+            create_simulation_schedule_map(simulations,
+                                           s)  # This will fail, need to extract simulations from df_total
+
     usage_summary_dataframe = get_observation_plan_percentage(df_total, RESULT_PATH)
-    # process_workflow_stats(Path(RESULT_PATH).parent, df_total)
-    with open('usage_summary.csv', 'w') as fp:
+    process_workflow_stats(RESULT_PATH.parent, df_total)
+    with open("usage_summary.csv", "w") as fp:
         usage_summary_dataframe.to_csv(fp)
-    plot_scatter_comparison_plan_results(usage_summary_dataframe)
+    # plot_scatter_comparison_plan_results(usage_summary_dataframe)
+    observation_plans = get_observation_plans(df_total=df_total, config_dir=RESULT_PATH.parent)
+    # plot_histogram_of_success(usage_summary_dataframe)
     # produce_scatterplot(df_total)
 
     plt.show()
