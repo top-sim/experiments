@@ -705,7 +705,7 @@ def calculate_maximum_moving_average_for_observing_plan():
     """
 
 
-def get_observation_plans(df_total: pd.DataFrame, config_dir: Path) -> dict:
+def get_observation_plans(df_total: pd.DataFrame, config_dir: Path) -> pd.DataFrame:
     """
     For each simulation config file, get the observation plan
     """
@@ -719,17 +719,38 @@ def get_observation_plans(df_total: pd.DataFrame, config_dir: Path) -> dict:
                 sim_cfg["instrument"]["telescope"]["observations"])
             observation_plan['config'] = config
             plans.append(observation_plan)
-    result = pd.concat(plans)
-    return result
+    return pd.concat(plans, ignore_index=True)
 
 
 def plot_observation_plan(observation_plan: pd.DataFrame):
     """
-    Show the telescope usage of each observation across the simulation. 
+    Show the telescope usage of each observation across the simulation.
+
+    Key columns of observation_plan are:
+    - name
+    - start
+    - duration
+    - instrument_demand
     """
 
-    pass
+    fig = plt.figure(figsize=(12, 6))
+    gs = GridSpec(
+        1, 1, figure=fig
+    )  # , wspace=0.25) # , left=0.05, right=0.1, wspace=0.05)
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax1 = setup_axes([ax1])[-1]
+    # Need to map width to the right
+    y = observation_plan['instrument_demand']
+    x = np.array(observation_plan['start'])
+    color_map = {"hpso01": "red", "hpso02a": "blue", "hpso02b": "orange"}
+    dur = np.array(observation_plan['duration'])
+    observation_plan.loc[:, 'color'] = observation_plan.loc[:,'type'].map(color_map)
+    colors = np.array(observation_plan['color'])
 
+    print(x, dur)
+    xticks = []
+    ax1.bar(x, height=y, width=dur, color=colors, edgecolor="black" )
+    ax1.set_ylim(0,512)
 
 def get_config_parameters(config):
     pass
@@ -768,7 +789,12 @@ if __name__ == "__main__":
         usage_summary_dataframe.to_csv(fp)
     # plot_scatter_comparison_plan_results(usage_summary_dataframe)
     observation_plans = get_observation_plans(df_total=df_total, config_dir=RESULT_PATH.parent)
+    print(observation_plans)
     # plot_histogram_of_success(usage_summary_dataframe)
     # produce_scatterplot(df_total)
-
+    cfg="skaworkflows_2024-12-14_05-49-06_0.json"
+    for cfg in set(observation_plans['config']):
+        plan = observation_plans[(
+                observation_plans["config"] == cfg)]
+        plot_observation_plan(plan)
     plt.show()

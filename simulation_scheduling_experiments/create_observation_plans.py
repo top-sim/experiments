@@ -110,18 +110,22 @@ channel_multiplier = 128
 
 def calc_demand_ratio():
     """ """
-
+def total(d):
+    total={}
+    for k, v in d.items():
+        total[k] = sum([x for y, x in v.items()])
+    return total
 
 def permute_low_observation_plans(n=1):
     """
     Using the lowest SKA LOW configurations as a starting point, modify the observation
-    plan
-    based on the parameters, in order to generate a configuration that targets a particular
-    telescope demand.
+    plan based on the parameters, in order to generate a configuration that targets
+    a particular telescope demand.
 
     Returns
     -------
     """
+    max_largest_demand = 4
 
     hpso_idx = ["hpso01", "hpso02a", "hpso02b"]  # {'hpso01': 0, 'hpso2': 1, 'hpso3': 2}
     hpso_demand = {"hpso01": 64, "hpso02a": 64, "hpso02b": 64}
@@ -133,6 +137,10 @@ def permute_low_observation_plans(n=1):
             idx = random.randint(0, len(hpso_demand) - 1)
             hpso_demand[hpso_idx[idx]] = j
             number_obs = values_to_nparray(LOW_OBSERVATIONS, "ratio") * n
+            hd = list(hpso_demand.values())
+            for i, num in enumerate(number_obs):
+                if hd[i] == 512:
+                    number_obs[i] = max_largest_demand
             LOGGER.debug("Number of observations: %s", number_obs)
             demand_ratio = sum(np.array(list(hpso_demand.values())) * number_obs) / (
                 sum(number_obs) * max_antenna
@@ -150,7 +158,7 @@ def permute_low_observation_plans(n=1):
     if VERBOSE:
         for comb, num in final_set.items():
             LOGGER.info("Created combination: %s, %s", comb, num)
-
+    sys.exit()
     return final_set
 
 
