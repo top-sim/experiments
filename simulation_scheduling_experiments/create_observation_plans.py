@@ -126,13 +126,13 @@ def permute_low_observation_plans(n=1):
     -------
     """
     max_largest_demand = 4
-
     hpso_idx = ["hpso01", "hpso02a", "hpso02b"]  # {'hpso01': 0, 'hpso2': 1, 'hpso3': 2}
-    hpso_demand = {"hpso01": 64, "hpso02a": 64, "hpso02b": 64}
+    hpso_demand = {"hpso01": {}, "hpso02a": {}, "hpso02b": {}}
+    for hpso in hpso_demand:
+        hpso_demand[hpso] = {d: 0 for d in SKA_Low_antenna}
     max_antenna = 512
-    print(len(hpso_demand))
     final_set = {}
-    for j in [64, 128, 256, 512]:
+    for j in SKA_Low_antenna:
         for i in range(0, len(hpso_demand)):
             idx = random.randint(0, len(hpso_demand) - 1)
             hpso_demand[hpso_idx[idx]] = j
@@ -337,7 +337,7 @@ def standard_mid_obs_plan(num_obs_repeats: dict):
 
 
 def standard_low_obs_plan(
-    num_obs_repeats: int,
+    num_obs_repeats: dict,
 ):
     """
     Currently, this is a placeholder method to generate one of a couple different
