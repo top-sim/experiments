@@ -16,42 +16,6 @@ max = 512
 min_obs = 6
 current_count = {'hpso01': 0, 'hpso02a': 0, 'hpso02b': 0}
 
-# while total < expected * min_obs and sum(current_count.values()) < min_obs:
-#     for pick in percentage:
-#         num_obs = sum(current_count.values())
-#         if num_obs == 0:
-#             current_count[pick] += 1
-#             pick_demand = demand[pick]
-#             total += (random.choice(pick_demand) / max)
-#             # print(total)
-#         else:
-#             # print("world")
-#             if current_count[pick] / min_obs < percentage[pick]:
-#                 current_count[pick] += 1
-#                 pick_demand = demand[pick]
-#                 total += (random.choice(pick_demand) / max)
-#                 # print(total)
-# This is wrong - 512 for all of these should return 1.0
-
-# hpso_idx = {'hpso01': 0, 'hpso2':1, 'hpso3':2}
-# x = [64,64,64] #64,64,64]
-# n=25
-# max = 512
-# print(len(x))
-# random.seed(5)
-# final_set = {}
-# for j in [64, 128, 256, 512]:
-#     for i in range(0,len(x)):
-#         idx = random.randint(0, len(x)-1)
-#         x[idx] = j
-#         # print(x)
-#         number_obs = np.array([1,2,2])*n
-#         # number_obs = np.array([random.randint(1,3), random.randint(2,5),random.randint(2,5)])*n
-#         # print(sum(number_obs))
-#         demand_ratio = sum(np.array(x)*number_obs)/(sum(number_obs)*max)
-#
-#         final_set[demand_ratio] = ([a for a in x], number_obs)
-
 # for demand, comb in final_set.items():
 #     print(demand, comb)
 # print(len(final_set) * 4 * 2 * 2)
@@ -79,6 +43,7 @@ LOW_OBSERVATIONS = {
 }
 
 MAX_ANTENNA = 512
+
 
 def total(d):
     total = {}
@@ -110,6 +75,7 @@ def spread_observations_across_demand(number, demand_pool):
 
     return obs  # Enumerate over this with the demand dictionary
 
+
 def calc_demand_ratio(hpso_demand):
     total_obs = sum([sum(x.values()) for x in hpso_demand.values()])
     total_demand = total_obs * MAX_ANTENNA
@@ -120,25 +86,27 @@ def calc_demand_ratio(hpso_demand):
 
     return cumulative_demand / total_demand
 
+
 hpso_idx = ["hpso01", "hpso02a", "hpso02b"]  # {'hpso01': 0, 'hpso2': 1, 'hpso3': 2}
 n = 16
 max_largest_demand = 2
-random.seed(25)
-for g in range(10):
+random.seed(1)
+
+final_set = {}
+for g in range(25):
     hpso_demand = {"hpso01": {}, "hpso02a": {}, "hpso02b": {}}
-    final_set = {}
     for i, antenna in enumerate(SKA_Low_antenna):
         for hpso in hpso_demand:
-            for j in SKA_Low_antenna[0:i+1]:
+            for j in SKA_Low_antenna[0:i + 1]:
                 hpso_demand[hpso].update({j: 0})
-    # DEMAND POOL slowly gets bigger
+        # DEMAND POOL slowly gets bigger
         number_obs = values_to_nparray(LOW_OBSERVATIONS, "ratio") * n
         ## NEW CODE
         prev_hpso = None
         for j, items in enumerate(hpso_demand.items()):
             hpso, demand = items
             obs = spread_observations_across_demand(number_obs[j],
-                                                        hpso_demand[hpso])
+                                                    hpso_demand[hpso])
             prev_d = 0
             for i, d in enumerate(demand):
                 if demand == 512:
@@ -154,8 +122,9 @@ for g in range(10):
                 prev_d = d
 
         tmp = {}
-        demand_ratio = calc_demand_ratio(hpso_demand)
-
+        demand_ratio = np.round(calc_demand_ratio(hpso_demand), 2)
+        if demand_ratio in final_set:
+            continue
         for hpso, demand in hpso_demand.items():
             tmp[hpso] = []
             for antenna, obs in demand.items():
@@ -165,7 +134,9 @@ for g in range(10):
                 })
         final_set[demand_ratio] = tmp
 
-    print(final_set.keys())
+print(f"{len(final_set)=}")
+for key in sorted(final_set.keys()):
+    print(key)
 
 import json
 

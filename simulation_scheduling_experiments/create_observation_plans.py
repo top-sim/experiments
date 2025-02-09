@@ -22,9 +22,11 @@ import logging
 import numpy as np
 
 from skaworkflows.config_generator import create_config
+
 VERBOSE = True
 logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
+
 
 class NpEncoder(json.JSONEncoder):
     # My complete laziness
@@ -38,6 +40,7 @@ class NpEncoder(json.JSONEncoder):
         if isinstance(o, np.ndarray):
             return o.tolist()
         return super(NpEncoder, self).default(o)
+
 
 LOW_OBSERVATIONS = {
     "hpso01": {
@@ -59,7 +62,6 @@ LOW_OBSERVATIONS = {
         "ratio": 2,
     },
 }
-
 
 # TODO These defaults really should be stored in SKAWorkflows and referenced exclusively
 # there until the end of time. Bonus points for wrapping the SDP parametric model
@@ -95,10 +97,10 @@ LOW_RATIOS = [1, 2, 2]
 
 MID_RATIOS = [1, 2, 2, 4]
 
+MAX_ANTENNA = 512
 #
 # These are the 'coarse-grained' channel values.
 SKA_channels = [64, 128, 256]
-# SKA_low_channels = [64, 128, 256, ]
 
 # 32 is an arbitrary minimum; 512 hard maximum
 SKA_Low_antenna = [64, 128, 256, 512]
@@ -108,57 +110,102 @@ SKA_Mid_antenna = [64, 102, 140, 197]
 channel_multiplier = 128
 
 
-def calc_demand_ratio():
-    """ """
 def total(d):
-    total={}
+    total = {}
     for k, v in d.items():
         total[k] = sum([x for y, x in v.items()])
     return total
 
-def permute_low_observation_plans(n=1):
-    """
-    Using the lowest SKA LOW configurations as a starting point, modify the observation
-    plan based on the parameters, in order to generate a configuration that targets
-    a particular telescope demand.
 
-    Returns
-    -------
-    """
-    max_largest_demand = 4
+def values_to_nparray(value_map, key):
+    return np.fromiter((y[key] for x, y in value_map.items()), int)
+
+
+def spread_observations_across_demand(number, demand_pool):
+    count = 0
+    obs = []
+    while number > 0:
+        nobs = random.randint(0, number)
+        if count < len(demand_pool) - 1:
+            obs.append(nobs)
+            number -= nobs
+        else:
+            obs.append(number)
+            number = 0
+        count += 1
+    length = len(obs)
+    demand_length = len(demand_pool)
+    if length < demand_length:
+        obs.extend(0 for x in range(demand_length - length))
+
+    return obs  # Enumerate over this with the demand dictionary
+
+
+def calc_demand_ratio(hpso_demand):
+    total_obs = sum([sum(x.values()) for x in hpso_demand.values()])
+    total_demand = total_obs * MAX_ANTENNA
+    cumulative_demand = 0
+    for hpso, items in hpso_demand.items():
+        for antenna, num in items.items():
+            cumulative_demand += antenna * num
+
+    return cumulative_demand / total_demand
+
+
+def permute_low_observation_plans(n=1):
     hpso_idx = ["hpso01", "hpso02a", "hpso02b"]  # {'hpso01': 0, 'hpso2': 1, 'hpso3': 2}
-    hpso_demand = {"hpso01": {}, "hpso02a": {}, "hpso02b": {}}
-    for hpso in hpso_demand:
-        hpso_demand[hpso] = {d: 0 for d in SKA_Low_antenna}
-    max_antenna = 512
+    n = 16
+    max_largest_demand = 2
+    random.seed(100)
+
     final_set = {}
-    for j in SKA_Low_antenna:
-        for i in range(0, len(hpso_demand)):
-            idx = random.randint(0, len(hpso_demand) - 1)
-            hpso_demand[hpso_idx[idx]] = j
+    for g in range(100):
+        hpso_demand = {"hpso01": {}, "hpso02a": {}, "hpso02b": {}}
+        for i, antenna in enumerate(SKA_Low_antenna):
+            for hpso in hpso_demand:
+                for j in SKA_Low_antenna[0:i + 1]:
+                    hpso_demand[hpso].update({j: 0})
+            # DEMAND POOL slowly gets bigger
             number_obs = values_to_nparray(LOW_OBSERVATIONS, "ratio") * n
-            hd = list(hpso_demand.values())
-            for i, num in enumerate(number_obs):
-                if hd[i] == 512:
-                    number_obs[i] = max_largest_demand
-            LOGGER.debug("Number of observations: %s", number_obs)
-            demand_ratio = sum(np.array(list(hpso_demand.values())) * number_obs) / (
-                sum(number_obs) * max_antenna
-            )
-            if demand_ratio > 0.85:
-                continue
+            ## NEW CODE
+            prev_hpso = None
+            for j, items in enumerate(hpso_demand.items()):
+                hpso, demand = items
+                obs = spread_observations_across_demand(number_obs[j],
+                                                        hpso_demand[hpso])
+                prev_d = []
+                # Allocate demand across antenna options
+                for i, d in enumerate(demand):
+                    if d == 512:
+                        tmp = obs[i]
+                        leftover = tmp - max_largest_demand
+                        if leftover > 0:
+                            demand[d] = max_largest_demand
+                            intermediate_obs = {p: 0 for p in prev_d}
+                            int_obs = spread_observations_across_demand(
+                                leftover, intermediate_obs)
+                            for x, key in enumerate(intermediate_obs):
+                                demand[key] += int_obs[x]
+                        else:
+                            demand[d] = obs[i]
+                    else:
+                        demand[d] = obs[i]
+                    if d > 64:
+                        prev_d.append(d)
+
             tmp = {}
+            demand_ratio = np.round(calc_demand_ratio(hpso_demand), 2)
+            if demand_ratio in final_set:
+                continue
             for hpso, demand in hpso_demand.items():
-                tmp[hpso] = {
-                    "demand": demand,
-                    "num_obs": number_obs[hpso_idx.index(hpso)],
-                }
+                tmp[hpso] = []
+                for antenna, obs in demand.items():
+                    tmp[hpso].append({
+                        "demand": antenna,
+                        "num_obs": obs
+                    })
             final_set[demand_ratio] = tmp
 
-    if VERBOSE:
-        for comb, num in final_set.items():
-            LOGGER.info("Created combination: %s, %s", comb, num)
-    sys.exit()
     return final_set
 
 
@@ -202,7 +249,7 @@ def values_to_nparray(value_map, key):
     return np.fromiter((y[key] for x, y in value_map.items()), int)
 
 
-def calc_n_for_given_time_in_seconds(time: int, durations: np.array, ratios:np.array):
+def calc_n_for_given_time_in_seconds(time: int, durations: np.array, ratios: np.array):
     """
     Determine the 'ratio' multiplier for a given set of HPSO ratios and durations,
     such that n * ratios gives a total observation plan of at least 'time' length.
@@ -264,7 +311,7 @@ def permute_mid_observation_plan(n=1):
             hpso_demand[hpso_idx[idx]] = j
             number_obs = np.array(default_observation_ratios) * n
             demand_ratio = sum(np.array(list(hpso_demand.values())) * number_obs) / (
-                sum(number_obs) * max_antenna
+                    sum(number_obs) * max_antenna
             )
             if demand_ratio > 0.8:
                 continue
@@ -324,7 +371,7 @@ def standard_mid_obs_plan(num_obs_repeats: dict):
                     "demand": items["demand"],
                     "channels": channels_demand * channel_multiplier,
                     "coarse_channels": items["demand"],
-                    "baseline": MID_OBSERVATIONS[hpso]["baseline"], 
+                    "baseline": MID_OBSERVATIONS[hpso]["baseline"],
                     "telescope": "mid",
                 },
             )
@@ -337,7 +384,7 @@ def standard_mid_obs_plan(num_obs_repeats: dict):
 
 
 def standard_low_obs_plan(
-    num_obs_repeats: dict,
+        num_obs_repeats: dict,
 ):
     """
     Currently, this is a placeholder method to generate one of a couple different
@@ -352,7 +399,7 @@ def standard_low_obs_plan(
     -------
 
     """
-    params = []
+    params = {}
 
     # permutations = permute_low_observation_plans()
     # demand = SKA_Low_antenna[i]
@@ -367,23 +414,24 @@ def standard_low_obs_plan(
             "items": [],
         }
         for hpso, items in hpso_numbers.items():
-            observation["items"].append(
-                {
-                    "count": items["num_obs"],
-                    "hpso": hpso,
-                    "duration": LOW_OBSERVATIONS[hpso]["duration"],
-                    "workflows": LOW_OBSERVATIONS[hpso]["workflows"],
-                    "demand": items["demand"],
-                    "channels": channels_demand * channel_multiplier,
-                    "coarse_channels": items["demand"],
-                    "baseline": LOW_OBSERVATIONS[hpso]["baseline"],
-                    "telescope": "low",
-                },
-            )
-        params.append(observation)
+            for el in items:
+                observation["items"].append(
+                    {
+                        "count": el["num_obs"],
+                        "hpso": hpso,
+                        "duration": LOW_OBSERVATIONS[hpso]["duration"],
+                        "workflows": LOW_OBSERVATIONS[hpso]["workflows"],
+                        "demand": el["demand"],
+                        "channels": channels_demand * channel_multiplier,
+                        "coarse_channels": el["demand"],
+                        "baseline": LOW_OBSERVATIONS[hpso]["baseline"],
+                        "telescope": "low",
+                    },
+                )
+        params[demand] = observation
 
     if VERBOSE:
-        print(json.dumps(params, indent=2, cls=NpEncoder))
+        print(json.dumps(params, indent=2, cls=NpEncoder, sort_keys=True))
 
     return params
 
@@ -493,7 +541,10 @@ if __name__ == "__main__":
     print("Creating config")
     # sys.exit()
     for ap in all_params:
-        for plan in ap:
+        sorted_keys = sorted(ap.keys())
+        for demand in sorted_keys:
+            print(f"Creating plan with demand: {demand}")
+            plan = ap[demand]
             create_config(
                 plan,
                 low_path,
