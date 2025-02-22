@@ -1,0 +1,55 @@
+{
+	"items": [
+		{
+			"count": 2,
+			"hpso": "hpso01",
+			"demand": 256,
+			"duration": 18000,
+			"workflows": [
+				"ICAL",
+				"DPrepA",
+				"DPrepB",
+				"DPrepC",
+				"DPrepD"
+			],
+			"channels": 16384,
+			"coarse_channels": 64,
+			"baseline": 65000.0,
+			"telescope": "low"
+		},
+		{
+			"count": 4,
+			"hpso": "hpso02a",
+			"demand": 32,
+			"duration": 18000,
+			"workflows": [
+				"ICAL",
+				"DPrepA",
+				"DPrepB",
+				"DPrepC",
+				"DPrepD"
+			],
+			"channels": 16384,
+			"coarse_channels": 64,
+			"baseline": 65000.0,
+			"telescope": "low"
+		},
+		{
+			"count": 4,
+			"hpso": "hpso02b",
+			"demand": 32,
+			"duration": 18000,
+			"workflows": [
+				"ICAL",
+				"DPrepA",
+				"DPrepB",
+				"DPrepC",
+				"DPrepD"
+			],
+			"channels": 16384,
+			"coarse_channels": 64,
+			"baseline": 65000.0,
+			"telescope": "low"
+		}
+	]
+}
