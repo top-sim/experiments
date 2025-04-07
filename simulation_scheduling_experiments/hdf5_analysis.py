@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
-
+import datetime
 import sys
 import numpy as np
-import seaborn as sns
+# import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
 import json
@@ -22,11 +22,15 @@ rcParams["font.size"] = 12.0
 rcParams["axes.linewidth"] = 1
 
 # X-axis
-rcParams["xtick.direction"] = "out"
+rcParams["xtick.direction"] = "in"
 rcParams["xtick.minor.visible"] = True
 # Y-axis
-rcParams["ytick.direction"] = "out"
+rcParams["ytick.direction"] = "in"
 rcParams["ytick.minor.visible"] = True
+
+import logging
+logging.basicConfig(level="INFO")
+LOGGER = logging.getLogger()
 
 
 class TopSimResult:
@@ -174,21 +178,31 @@ def process_workflow_stats(cfg_path: Path, df_total: pd.DataFrame):
     """
 
     workflow_paths = set(df_total["workflow"])
-    total_workflow_df = pd.DataFrame()
+    # total_workflow_df = pd.DataFrame()
     total_compute = 0
     total_duration = 0
     for index, row in df_total.iterrows():
         duration = row["duration"]
         total_duration += duration
-        csv_path = Path(cfg_path).parent / (row["workflow"] + ".csv")
+        wf_path = Path(cfg_path).parent / (row["workflow"])
+        with wf_path.open() as fp:
+            jdict = json.load(fp)
+            baseline = jdict["header"]["parameters"]["baseline"]
+        csv_path = wf_path.with_suffix(".csv")
         if not csv_path.exists():
             return 0
-        total_workflow_df = pd.concat([total_workflow_df, pd.read_csv(csv_path)])
-        total_compute += sum(total_workflow_df["total_compute"]) * (10 ** 15) * (duration)
+        total_workflow_df = pd.read_csv(csv_path)
+        if "total_compute" in total_workflow_df:
+            # TODO  consider finding "peak" compute as well?
+            # This would be the compute for a given workflow
+            total_compute += sum(total_workflow_df["total_compute"]) * (duration)
+        else:
+            # Pulsar is entire cost for the whole workflow
+            total_compute += total_workflow_df.iloc[0]['pulsar'] * (duration) / (10**15)
         # wf_df[c] = str(parameters[c].values[0])
     # wf_df.to_csv(BASE_DIR / 'test_ouput.csv')
 
-    return total_compute
+    return total_compute, baseline
     # sys.exit(0)
     # wfs = list(parameters['workflow'])
 
@@ -457,13 +471,15 @@ def get_observation_plan_percentage(df_total, results_path: Path, verbose=True):
     usage = []
     for name, g in group:
         cfg, planning, sim_run = name
+        LOGGER.info("Processing Simulation %s with method %s", sim_run, planning)
         plan_demand = g["demand"].astype(int).sum()
         plan_channels = g["channels"].astype(int).sum()
-        total_compute_observation_plan = process_workflow_stats(results_path, g)
+        total_compute_observation_plan, baseline = process_workflow_stats(results_path, g)
         # if total_compute_observation_plan == 0:
         #     continue
 
         usage.append({
+            "baseline": baseline, # TODO change to baseline ratio
             "demand_ratio": round(plan_demand / (max_demand * len(g)), 2),
             "channels_ratio": round(plan_channels / (max_channels * len(g)), 2),
             # "demand": g["demand"].iloc[0],
@@ -477,11 +493,11 @@ def get_observation_plan_percentage(df_total, results_path: Path, verbose=True):
             "schedule_length_ratio": (
                     int(g["schedule_length"].iloc[0]) / g["total_obs_duration"].iloc[0]
             ),
+            # These are both Petaflops
             "total_compute": total_compute_observation_plan,
             "average_compute": (
                     total_compute_observation_plan
                     / (int(g["schedule_length"].iloc[0]) * timestep)
-                    / (10 ** 15)
             ),
             "cfg": cfg
         })
@@ -710,44 +726,35 @@ def plot_success_histogram(
 
 def plot_alternative_scatter(usage):
 
-    import matplotlib as mpl
-
     fig = plt.figure(figsize=(12, 6))
     # Show only the successful results for batch_planning
     success = True
-    algorithms = ["BatchPlanning", "SHADOWPlanning"]
+    algorithms = ["batch", "heft"] #["BatchPlanning", "SHADOWPlanning"]
     colors = ["blue", "red"]
-    # ax = plt.subplots(ncols=2, sharey=True)
     from textwrap import wrap
     average_flops_low = 13.8
     y_max = 100
-    # figtitle = (f"Allocaiton heuristic: {planning}")
 
     fig.suptitle("Percentage of successful or failed \nplans across telescope demand")
     gs = GridSpec(
-        2, 1, figure=fig, height_ratios=[1, 4]
+        8, 8, figure=fig, hspace=0.25, wspace=1
     )  # , wspace=0.25) # , left=0.05, right=0.1, wspace=0.05)
-    ax1 = fig.add_subplot(gs[1])
-    # ax1.set_title(
-    #     "Percentage of successful or failed \nplans across telescope demand.",
-    #     wrap=True
-    # )
-    ax2 = fig.add_subplot(gs[0], sharex=ax1)
-    # ax3.set_title(
-    #     "Average compute load of successful or failed \nplans across telescope demand.",
-    #     wrap=True
-    # )
-    ax1, ax2 = setup_axes([ax1, ax2])
+    ax1 = fig.add_subplot(gs[2:,0:4])
+    import matplotlib.ticker as ticker
+    ax1.xaxis.set_minor_locator(ticker.MultipleLocator(0.25))
+    ax2 = fig.add_subplot(gs[0:2, 0:4], sharex=ax1)
     plt.setp(ax2.get_xticklabels(), visible=False)
+    ax3 = fig.add_subplot(gs[0:4, 4:])
+    ax4 = fig.add_subplot(gs[5:, 4:])
+    ax1, ax2, ax3, ax4 = setup_axes([ax1, ax2, ax3, ax4])
     ax1.set_axisbelow(True)
     ax1.grid(True, "major", "both", ls="-", color="black")
     ax1.grid(True, "minor", "both", ls="--")
 
-    include_data_only_sims = False
+    include_data_only_sims = True
     if include_data_only_sims:
         usage = usage[(usage["data"] == True)]
 
-    ax3 = ax1.twinx()
     boxes = []
     data = []
     for i, planning in enumerate(algorithms):
@@ -756,38 +763,26 @@ def plot_alternative_scatter(usage):
 
     ax1.hist(
         data,
-        bins=np.arange(0.5, 6, 0.5),
-        # weights=np.ones_like(data) / len(data),
+        bins=np.arange(1, 5, 0.25),
+        # weights=np.ones_like(data) / len(data), # TODO Consider revisiting
         # hatch="xx",histtype='bar',
         facecolor=colors,
-        # facecolor='red',
         edgecolor='black',
         stacked=True,
         alpha=0.7
     )
-    ax1.legend(algorithms)
+    # ax1.legend(algorithms)
     for i, planning in enumerate(algorithms):
         # data_points = len(usage[usage["planning"] == planning])
         result = usage[(usage["planning"] == planning)]
         demand = set(result["demand_ratio"])
         for x in demand:
             boxes.append(np.array(result[result["demand_ratio"] == x]["average_compute"]))
-        import matplotlib.colors as mcolors
 
-        # Color palette nonsense
-        cmap = plt.cm.Set1
-        n_colors = 8
-        positions = np.linspace(0, 1, n_colors)
-        hex_colors = [mcolors.to_hex(cmap(pos)) for pos in positions]
-
-
-        data = np.array(sorted(result["schedule_length_ratio"]), dtype='float').T
-        ax3.scatter(
+        # data = np.array(sorted(result["schedule_length_ratio"]), dtype='float').T
+        ax2.scatter(
             result['schedule_length_ratio'].to_numpy(),
             result['average_compute'].to_numpy(),
-            # bins=np.arange(0, 1, 0.1),
-            # weights=np.ones_like(data) / len(data),
-            # hatch="xx",histtype='bar',
             label=["Demand ratio"],
             marker='o',
             s=50,
@@ -795,28 +790,39 @@ def plot_alternative_scatter(usage):
             edgecolors='black'
         )
 
-        ax2.scatter(
-            result['schedule_length_ratio'].to_numpy(),
+        ax3.scatter(
             result['demand_ratio'].to_numpy(),
+            result['schedule_length_ratio'].to_numpy(),
             color=colors[i]
         )
 
-    ax3.set_yscale("log")
+        ax4.scatter(
+            result['channels_ratio'].to_numpy(),
+            result['schedule_length_ratio'].to_numpy(),
+            color=colors[i]
+        )
 
+    # AX1 LABELS
     ax1.set_ylabel("Number of simulations")
     ax1.set_xlabel("Schedule length ratio")
-    ax2.legend(labels=algorithms)
+    ax1.set_xlim([0.5,5])
 
-    # Plot estimated average FLOPS across the plan
-    ax3.set_ylim(1, 1000)
-    ax3.set_ylabel("Petaflops")
-    ax2.set_ylim(0, 1.0)
-    # ax2.set_xlabel("Demand ratio")
-
-    ax3.plot([1.0, 6.0], [average_flops_low, average_flops_low], "--",
+    # AX2 LABELS
+    ax2.set_ylabel("Petaflops")
+    ax2.legend(algorithms)
+    ax2.set_ylim([0,15])
+    ax2.plot([0.0, 5.0], [average_flops_low, average_flops_low], "--",
              color="red",
              linewidth=3, zorder=-1)
-    # ax3.legend()
+
+    # AX3 & AX4 LABELS
+    ax3.set_xlabel("Telescope Demand % over 7-days ()")
+    ax3.set_ylabel("Schedule length ratio")
+    ax3.legend(labels=algorithms)
+    ax4.set_xlabel("Telescope Channel % over 7-days ()")
+    ax4.set_ylabel("Schedule length ratio")
+    ax4.legend(labels=algorithms)
+
     plt.tight_layout(pad=3.0)
 
     x1, x2, y1, y2 = 0.25, 0.35, 0.9, 2.0
@@ -846,25 +852,6 @@ def plot_alternative_scatter(usage):
 
         ax1.indicate_inset_zoom(axins, edgecolor="black")
 
-
-
-def plot_comp_per_channels(df_total):
-    """
-    Demonstrate how comp per channels goes down which explains why failure happens
-    more in the lower channel bins.
-    Parameters
-    ----------
-    usage
-
-    Returns
-    -------
-
-    """
-
-    planning = set(usage["planning"])
-    success = set(usage["success"])
-
-    usage = usage[usage["data"] == False]
 
 
 def calculate_maximum_moving_average_for_observing_plan():
@@ -944,12 +931,15 @@ def get_config_parameters(config):
     pass
 
 
+def select_config_from_demand(demand: float, num_config=2):
+    pass
+
 def setup_parser():
     import argparse
     parser = argparse.ArgumentParser(Path(__file__).name)
     parser.add_argument("--result_dir")
     parser.add_argument("--csv_path")
-    parser.add_argument("--reprocess_results", default=False, action="store_true")
+    parser.add_argument("--reprocess", default=False, action="store_true")
     return parser.parse_args()
 
 
@@ -972,7 +962,7 @@ if __name__ == "__main__":
 
     simulation_summaries = []
     fetch_summaries_only = False # Make this a CLI option
-    if not df_total_path.exists() or args.reprocess_results:
+    if not df_total_path.exists() or args.reprocess:
         for simulation_batch in extract_simulations_from_hdf5(RESULT_PATH, verbose=True):
             if not simulation_batch:
                 exit(1)
@@ -996,16 +986,25 @@ if __name__ == "__main__":
         for s in simulation_summaries:
             create_simulation_schedule_map(s)
 
-    usage_summary_dataframe = get_observation_plan_percentage(df_total, RESULT_PATH)
-    process_workflow_stats(RESULT_PATH.parent, df_total)
-    with open("usage_summary.csv", "w") as fp:
-        usage_summary_dataframe.to_csv(fp)
-    # plot_success_histogram(usage_summary_dataframe)
+    fdate = datetime.date.today().strftime("%Y-%m-%d")
+    summary_pathname = Path(f"usage_summary.csv") #_{fdate}.csv")
+    if not summary_pathname.exists():
+        usage_summary_dataframe = get_observation_plan_percentage(df_total, RESULT_PATH)
+        # process_workflow_stats(RESULT_PATH.parent, df_total)
+        with open(f"usage_summary.csv", "w") as fp:
+            usage_summary_dataframe.to_csv(fp)
+    # with open(f"usage_summary_{fdate}.csv", "w") as fp:
+    #     usage_summary_dataframe.to_csv(fp)
+    # # plot_success_histogram(usage_summary_dataframe)
+    else:
+        usage_summary_dataframe = pd.read_csv(summary_pathname)
     plot_alternative_scatter(usage_summary_dataframe)
     observation_plans = get_observation_plans(df_total=df_total,
                                               config_dir=RESULT_PATH.parent)
     print(observation_plans)
     plot_histogram_of_success(usage_summary_dataframe)
+    # TODO CONSIDER
+    # Plot the different system utilisation of each observation plan for each parameter and match that to the SLR
     # produce_scatterplot(df_total)
     cfg = "skaworkflows_2024-12-14_05-49-06_0.json"
     # for cfg in set(observation_plans['config']):
