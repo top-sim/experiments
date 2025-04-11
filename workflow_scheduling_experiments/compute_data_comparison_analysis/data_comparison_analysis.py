@@ -14,7 +14,7 @@ from skaworkflows.common import SI
 from workflow_scheduling_experiments.basic_experiment.create_observation_plans import LOW_OBSERVATIONS, MID_OBSERVATIONS
 
 LOGGER = logging.getLogger(__name__)
-LOGGER.setLevel(logging.DEBUG)
+LOGGER.setLevel(logging.INFO)
 
 # Setup all the visualisation nicities
 rcParams['text.usetex'] = True
@@ -56,6 +56,26 @@ bytes_per_vis = 12
 # 'hpso01':32090,
 # 'hpso15':504}
 #
+
+class NpEncoder(json.JSONEncoder):
+    # My complete laziness
+    # https://java2blog.com/object-of-type-int64-is-not-json-serializable/
+
+    def default(self, o):
+        if isinstance(o, np.integer):
+            return int(o)
+        if isinstance(o, np.floating):
+            return float(o)
+        if isinstance(o, np.ndarray):
+            return o.tolist()
+        if isinstance(o, np.int64):
+            return int(o)
+        if isinstance(o, np.bool_):
+            return bool(o)
+        if isinstance(o, Path):
+            return o.name
+        return super(NpEncoder, self).default(o)
+
 
 def load_csv(path):
     with path.open() as fp:
@@ -148,24 +168,43 @@ def load_workflows_from_csvs(config_dir: Path) -> pd.DataFrame:
 
     return params
 
+def retrieve_workflow_stats(wf_params: dict):
+    """
+    For a workflow, get the stats
+
+    Returns
+    -------
+
+    """
+
+
 def calculate_relative_compute():
     pass
 
+
+import argparse
+
 if __name__ == "__main__":
-
-    import argparse
-
+    """
+    This script generates the compute-vs-data cost analysis performed on the workflow task 
+    and edge costs. The logic is as follows: 
+    
+    1. Load the simulation config to derive the available compute used. 
+    2. Use this to get workflow spec files for observation in the simulation. 
+    """
     parser = argparse.ArgumentParser(Path(__file__).name, )
     parser.add_argument('path', help="Path to the simulation config file")
 
     args = parser.parse_args()
     RESULT_PATH = Path(args.path)
 
+    LOGGER.info("Loading machine config...")
     machine_specs = load_machine_spec_from_config(RESULT_PATH)
     flops, compute_bandwidth, memory = machine_specs[-1].values()
     # TODO get workflows from the path in the system config
-    workflow = Path()
+    # workflow = Path()
+    LOGGER.info("Loading workflows...")
     all_workflows = load_workflows_from_csvs(RESULT_PATH.parent)
 
-    print(all_workflows)
-
+    for wf in all_workflows:
+        print(json.dumps(wf, indent=2, cls=NpEncoder))
