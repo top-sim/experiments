@@ -1,4 +1,7 @@
+git+git://github.com/myxie/shadow@master#egg=topsim
 git+git://github.com/top-sim/topsim@master#egg=topsim
+git+git://github.com/top-sim/skaworkflows@master#egg=skaworkflows
 pandas
 numpy
-seaborn
+h5py
+tables

@@ -1,0 +1,13 @@
+hpso02b,parametric,26732,base,low-adjusted
+hpso01,parametric,32090,base,low-adjusted
+hpso02a,parametric,26732,base,low-adjusted
+hpso02b,parametric,26732,parallel,low-adjusted
+hpso02a,parametric,26732,parallel,low-adjusted
+hpso01,parametric,32090,parallel,low-adjusted
+hpso32,parametric,0,base,mid-adjusted
+hpso13,parametric,5655,base,mid-adjusted
+hpso22,parametric,62847,base,mid-adjusted
+hpso13,parametric,5655,parallel,mid-adjusted
+hpso15,parametric,504,parallel,mid-adjusted
+hpso32,parametric,0,parallel,mid-adjusted
+hpso22,parametric,62847,parallel,mid-adjusted

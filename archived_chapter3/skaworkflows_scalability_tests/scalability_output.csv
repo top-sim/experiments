@@ -1,0 +1,368 @@
+/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/initial_results_newskaworkflows/low_maximal/prototype/skaworkflows_2024-04-16_22:05:42
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:06:47
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:05:42
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:07:51
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:06:47,3355,896,128,32768,False,standard
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:07:51,2670,896,128,32768,False,standard
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:05:42,2670,896,128,32768,False,standard
+/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/initial_results_newskaworkflows/low_maximal/prototype/skaworkflows_2024-04-16_18:08:56
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:05:42
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:07:51
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:06:47
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:06:47,3355,896,128,32768,False,standard
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:05:42,2670,896,128,32768,False,standard
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:07:51,2670,896,128,32768,False,standard
+/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/initial_results_newskaworkflows/low_maximal/prototype/skaworkflows_2024-04-16_21:05:24
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:06:47
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:05:42
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:07:51
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:07:51,2670,896,128,32768,False,standard
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:05:42,2670,896,128,32768,False,standard
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:06:47,3355,896,128,32768,False,standard
+Running FCFS for observation hpso02b_2 using workflows/-9129519675584908033_2024-04-16_21:05:24
+Running FCFS for observation hpso01_0 using workflows/-4251473303183623613_2024-04-16_21:12:09
+Running FCFS for observation hpso02a_1 using workflows/-8025268446008182807_2024-04-16_21:18:53
+hpso01_0,workflows/-4251473303183623613_2024-04-16_21:12:09,116564,896,512,32768,True,standard
+hpso02b_2,workflows/-9129519675584908033_2024-04-16_21:05:24,64863,896,512,32768,True,standard
+hpso02a_1,workflows/-8025268446008182807_2024-04-16_21:18:53,64863,896,512,32768,True,standard
+/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/initial_results_newskaworkflows/low_maximal/prototype/skaworkflows_2024-04-16_21:55:51
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:07:51
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:05:42
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:06:47
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:07:51,2670,896,128,32768,False,standard
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:06:47,3355,896,128,32768,False,standard
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:05:42,2670,896,128,32768,False,standard
+Running FCFS for observation hpso02b_2 using workflows/-9129519675584908033_2024-04-16_21:05:24
+Running FCFS for observation hpso01_0 using workflows/-4251473303183623613_2024-04-16_21:12:09
+Running FCFS for observation hpso02a_1 using workflows/-8025268446008182807_2024-04-16_21:18:53
+hpso02b_2,workflows/-9129519675584908033_2024-04-16_21:05:24,64863,896,512,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/-4550687725270385476_2024-04-16_21:55:51
+hpso01_0,workflows/-4251473303183623613_2024-04-16_21:12:09,116564,896,512,32768,True,standard
+hpso02a_1,workflows/-8025268446008182807_2024-04-16_21:18:53,64863,896,512,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-3826032486976970966_2024-04-16_21:57:30
+Running FCFS for observation hpso02a_1 using workflows/3822129990172189411_2024-04-16_21:59:08
+hpso02b_2,workflows/-4550687725270385476_2024-04-16_21:55:51,25194,896,256,32768,True,standard
+hpso02a_1,workflows/3822129990172189411_2024-04-16_21:59:08,25194,896,256,32768,True,standard
+hpso01_0,workflows/-3826032486976970966_2024-04-16_21:57:30,19069,896,256,32768,True,standard
+/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/initial_results_newskaworkflows/low_maximal/prototype/skaworkflows_2024-04-16_22:00:46
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:07:51
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:05:42
+Running FCFS for observation hpso02b_2 using workflows/-9129519675584908033_2024-04-16_21:05:24
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:07:51,2670,896,128,32768,False,standard
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:05:42,2670,896,128,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:06:47
+Running FCFS for observation hpso02a_1 using workflows/-8025268446008182807_2024-04-16_21:18:53
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:06:47,3355,896,128,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-3826032486976970966_2024-04-16_21:57:30
+hpso01_0,workflows/-3826032486976970966_2024-04-16_21:57:30,19069,896,256,32768,True,standard
+Running FCFS for observation hpso02a_1 using workflows/3822129990172189411_2024-04-16_21:59:08
+hpso02b_2,workflows/-9129519675584908033_2024-04-16_21:05:24,64863,896,512,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-4251473303183623613_2024-04-16_21:12:09
+hpso02a_1,workflows/3822129990172189411_2024-04-16_21:59:08,25194,896,256,32768,True,standard
+hpso02a_1,workflows/-8025268446008182807_2024-04-16_21:18:53,64863,896,512,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/-4550687725270385476_2024-04-16_21:55:51
+hpso02b_2,workflows/-4550687725270385476_2024-04-16_21:55:51,25194,896,256,32768,True,standard
+hpso01_0,workflows/-4251473303183623613_2024-04-16_21:12:09,116564,896,512,32768,True,standard
+/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/initial_results_newskaworkflows/low_maximal/prototype/skaworkflows_2024-04-16_17:47:24
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:07:51
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:05:42
+Running FCFS for observation hpso02b_2 using workflows/-9129519675584908033_2024-04-16_21:05:24
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:05:42,2670,896,128,32768,False,standard
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:07:51,2670,896,128,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:06:47
+Running FCFS for observation hpso02a_1 using workflows/-8025268446008182807_2024-04-16_21:18:53
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:06:47,3355,896,128,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-3826032486976970966_2024-04-16_21:57:30
+hpso01_0,workflows/-3826032486976970966_2024-04-16_21:57:30,19069,896,256,32768,True,standard
+Running FCFS for observation hpso02a_1 using workflows/3822129990172189411_2024-04-16_21:59:08
+hpso02b_2,workflows/-9129519675584908033_2024-04-16_21:05:24,64863,896,512,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-4251473303183623613_2024-04-16_21:12:09
+hpso02a_1,workflows/3822129990172189411_2024-04-16_21:59:08,25194,896,256,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/5607435393838823137_2024-04-16_17:47:24
+hpso02a_1,workflows/-8025268446008182807_2024-04-16_21:18:53,64863,896,512,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/-4550687725270385476_2024-04-16_21:55:51
+hpso02b_2,workflows/-4550687725270385476_2024-04-16_21:55:51,25194,896,256,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-4062314065848166113_2024-04-16_17:54:41
+hpso01_0,workflows/-4251473303183623613_2024-04-16_21:12:09,116564,896,512,32768,True,standard
+hpso02b_2,workflows/5607435393838823137_2024-04-16_17:47:24,27448,896,512,32768,False,standard
+hpso01_0,workflows/-4062314065848166113_2024-04-16_17:54:41,33836,896,512,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/-7591749499416186560_2024-04-16_18:01:48
+hpso02a_1,workflows/-7591749499416186560_2024-04-16_18:01:48,27448,896,512,32768,False,standard
+/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/initial_results_newskaworkflows/low_maximal/prototype/skaworkflows_2024-04-16_22:08:56
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:05:42
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:07:51
+Running FCFS for observation hpso02b_2 using workflows/-9129519675584908033_2024-04-16_21:05:24
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:05:42,2670,896,128,32768,False,standard
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:07:51,2670,896,128,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:06:47
+Running FCFS for observation hpso02a_1 using workflows/-8025268446008182807_2024-04-16_21:18:53
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:06:47,3355,896,128,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-3826032486976970966_2024-04-16_21:57:30
+hpso01_0,workflows/-3826032486976970966_2024-04-16_21:57:30,19069,896,256,32768,True,standard
+Running FCFS for observation hpso02a_1 using workflows/3822129990172189411_2024-04-16_21:59:08
+hpso02b_2,workflows/-9129519675584908033_2024-04-16_21:05:24,64863,896,512,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-4251473303183623613_2024-04-16_21:12:09
+hpso02a_1,workflows/3822129990172189411_2024-04-16_21:59:08,25194,896,256,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/5607435393838823137_2024-04-16_17:47:24
+hpso02a_1,workflows/-8025268446008182807_2024-04-16_21:18:53,64863,896,512,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/-4550687725270385476_2024-04-16_21:55:51
+hpso02b_2,workflows/-4550687725270385476_2024-04-16_21:55:51,25194,896,256,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-4062314065848166113_2024-04-16_17:54:41
+hpso01_0,workflows/-4251473303183623613_2024-04-16_21:12:09,116564,896,512,32768,True,standard
+hpso02b_2,workflows/5607435393838823137_2024-04-16_17:47:24,27448,896,512,32768,False,standard
+hpso01_0,workflows/-4062314065848166113_2024-04-16_17:54:41,33836,896,512,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/-7591749499416186560_2024-04-16_18:01:48
+hpso02a_1,workflows/-7591749499416186560_2024-04-16_18:01:48,27448,896,512,32768,False,standard
+/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/initial_results_newskaworkflows/low_maximal/prototype/skaworkflows_2024-04-16_20:43:05
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:05:42
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:07:51
+Running FCFS for observation hpso02b_2 using workflows/-9129519675584908033_2024-04-16_21:05:24
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:07:51,2670,896,128,32768,False,standard
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:05:42,2670,896,128,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:06:47
+Running FCFS for observation hpso02a_1 using workflows/-8025268446008182807_2024-04-16_21:18:53
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:06:47,3355,896,128,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-3826032486976970966_2024-04-16_21:57:30
+hpso01_0,workflows/-3826032486976970966_2024-04-16_21:57:30,19069,896,256,32768,True,standard
+Running FCFS for observation hpso02a_1 using workflows/3822129990172189411_2024-04-16_21:59:08
+hpso02b_2,workflows/-9129519675584908033_2024-04-16_21:05:24,64863,896,512,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-4251473303183623613_2024-04-16_21:12:09
+hpso02a_1,workflows/3822129990172189411_2024-04-16_21:59:08,25194,896,256,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/5607435393838823137_2024-04-16_17:47:24
+hpso02a_1,workflows/-8025268446008182807_2024-04-16_21:18:53,64863,896,512,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/-4550687725270385476_2024-04-16_21:55:51
+hpso02b_2,workflows/-4550687725270385476_2024-04-16_21:55:51,25194,896,256,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-4062314065848166113_2024-04-16_17:54:41
+hpso01_0,workflows/-4251473303183623613_2024-04-16_21:12:09,116564,896,512,32768,True,standard
+hpso02b_2,workflows/5607435393838823137_2024-04-16_17:47:24,27448,896,512,32768,False,standard
+hpso01_0,workflows/-4062314065848166113_2024-04-16_17:54:41,33836,896,512,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/-7591749499416186560_2024-04-16_18:01:48
+hpso02a_1,workflows/-7591749499416186560_2024-04-16_18:01:48,27448,896,512,32768,False,standard
+/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/initial_results_newskaworkflows/low_maximal/prototype/skaworkflows_2024-04-16_22:12:09
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:05:42
+Running FCFS for observation hpso02b_2 using workflows/-4550687725270385476_2024-04-16_21:55:51
+Running FCFS for observation hpso02b_2 using workflows/-9129519675584908033_2024-04-16_21:05:24
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:05:42,2670,896,128,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:06:47
+hpso02b_2,workflows/-4550687725270385476_2024-04-16_21:55:51,25194,896,256,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-3826032486976970966_2024-04-16_21:57:30
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:06:47,3355,896,128,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:07:51
+hpso01_0,workflows/-3826032486976970966_2024-04-16_21:57:30,19069,896,256,32768,True,standard
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:07:51,2670,896,128,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/3822129990172189411_2024-04-16_21:59:08
+Running FCFS for observation hpso02b_2 using workflows/5607435393838823137_2024-04-16_17:47:24
+hpso02a_1,workflows/3822129990172189411_2024-04-16_21:59:08,25194,896,256,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:12:09
+hpso02b_2,workflows/-9129519675584908033_2024-04-16_21:05:24,64863,896,512,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-4251473303183623613_2024-04-16_21:12:09
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:12:09,7233,896,128,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:13:13
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:13:13,7651,896,128,32768,True,standard
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:14:17
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:14:17,7233,896,128,32768,True,standard
+hpso02b_2,workflows/5607435393838823137_2024-04-16_17:47:24,27448,896,512,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-4062314065848166113_2024-04-16_17:54:41
+hpso01_0,workflows/-4251473303183623613_2024-04-16_21:12:09,116564,896,512,32768,True,standard
+Running FCFS for observation hpso02a_1 using workflows/-8025268446008182807_2024-04-16_21:18:53
+hpso01_0,workflows/-4062314065848166113_2024-04-16_17:54:41,33836,896,512,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/-7591749499416186560_2024-04-16_18:01:48
+hpso02a_1,workflows/-8025268446008182807_2024-04-16_21:18:53,64863,896,512,32768,True,standard
+hpso02a_1,workflows/-7591749499416186560_2024-04-16_18:01:48,27448,896,512,32768,False,standard
+/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/initial_results_newskaworkflows/low_maximal/prototype/skaworkflows_2024-04-16_20:19:51
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:05:42
+Running FCFS for observation hpso02b_2 using workflows/-4550687725270385476_2024-04-16_21:55:51
+Running FCFS for observation hpso02b_2 using workflows/-9129519675584908033_2024-04-16_21:05:24
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:05:42,2670,896,128,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:06:47
+hpso02b_2,workflows/-4550687725270385476_2024-04-16_21:55:51,25194,896,256,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-3826032486976970966_2024-04-16_21:57:30
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:06:47,3355,896,128,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:07:51
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:07:51,2670,896,128,32768,False,standard
+hpso01_0,workflows/-3826032486976970966_2024-04-16_21:57:30,19069,896,256,32768,True,standard
+Running FCFS for observation hpso02a_1 using workflows/3822129990172189411_2024-04-16_21:59:08
+Running FCFS for observation hpso02b_2 using workflows/5607435393838823137_2024-04-16_17:47:24
+hpso02a_1,workflows/3822129990172189411_2024-04-16_21:59:08,25194,896,256,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:12:09
+hpso02b_2,workflows/-9129519675584908033_2024-04-16_21:05:24,64863,896,512,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-4251473303183623613_2024-04-16_21:12:09
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:12:09,7233,896,128,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:13:13
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:13:13,7651,896,128,32768,True,standard
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:14:17
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:14:17,7233,896,128,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/-9129519675584908033_2024-04-16_20:19:51
+hpso02b_2,workflows/5607435393838823137_2024-04-16_17:47:24,27448,896,512,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-4062314065848166113_2024-04-16_17:54:41
+hpso01_0,workflows/-4251473303183623613_2024-04-16_21:12:09,116564,896,512,32768,True,standard
+Running FCFS for observation hpso02a_1 using workflows/-8025268446008182807_2024-04-16_21:18:53
+hpso02b_2,workflows/-9129519675584908033_2024-04-16_20:19:51,27448,896,512,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-4251473303183623613_2024-04-16_20:27:29
+hpso01_0,workflows/-4062314065848166113_2024-04-16_17:54:41,33836,896,512,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/-7591749499416186560_2024-04-16_18:01:48
+hpso02a_1,workflows/-8025268446008182807_2024-04-16_21:18:53,64863,896,512,32768,True,standard
+hpso01_0,workflows/-4251473303183623613_2024-04-16_20:27:29,33836,896,512,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/-8025268446008182807_2024-04-16_20:35:15
+hpso02a_1,workflows/-7591749499416186560_2024-04-16_18:01:48,27448,896,512,32768,False,standard
+hpso02a_1,workflows/-8025268446008182807_2024-04-16_20:35:15,27448,896,512,32768,False,standard
+/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/initial_results_newskaworkflows/low_maximal/prototype/skaworkflows_2024-04-16_21:50:47
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:05:42
+Running FCFS for observation hpso02b_2 using workflows/-4550687725270385476_2024-04-16_21:55:51
+Running FCFS for observation hpso02b_2 using workflows/-9129519675584908033_2024-04-16_21:05:24
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:05:42,2670,896,128,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:06:47
+hpso02b_2,workflows/-4550687725270385476_2024-04-16_21:55:51,25194,896,256,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-3826032486976970966_2024-04-16_21:57:30
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:06:47,3355,896,128,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:07:51
+hpso01_0,workflows/-3826032486976970966_2024-04-16_21:57:30,19069,896,256,32768,True,standard
+Running FCFS for observation hpso02a_1 using workflows/3822129990172189411_2024-04-16_21:59:08
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:07:51,2670,896,128,32768,False,standard
+Running FCFS for observation hpso02b_2 using workflows/5607435393838823137_2024-04-16_17:47:24
+hpso02a_1,workflows/3822129990172189411_2024-04-16_21:59:08,25194,896,256,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:12:09
+hpso02b_2,workflows/-9129519675584908033_2024-04-16_21:05:24,64863,896,512,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-4251473303183623613_2024-04-16_21:12:09
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:12:09,7233,896,128,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:13:13
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:13:13,7651,896,128,32768,True,standard
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:14:17
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:14:17,7233,896,128,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/-9129519675584908033_2024-04-16_20:19:51
+hpso02b_2,workflows/5607435393838823137_2024-04-16_17:47:24,27448,896,512,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-4062314065848166113_2024-04-16_17:54:41
+hpso01_0,workflows/-4251473303183623613_2024-04-16_21:12:09,116564,896,512,32768,True,standard
+Running FCFS for observation hpso02a_1 using workflows/-8025268446008182807_2024-04-16_21:18:53
+hpso02b_2,workflows/-9129519675584908033_2024-04-16_20:19:51,27448,896,512,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-4251473303183623613_2024-04-16_20:27:29
+hpso01_0,workflows/-4062314065848166113_2024-04-16_17:54:41,33836,896,512,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/-7591749499416186560_2024-04-16_18:01:48
+hpso02a_1,workflows/-8025268446008182807_2024-04-16_21:18:53,64863,896,512,32768,True,standard
+hpso01_0,workflows/-4251473303183623613_2024-04-16_20:27:29,33836,896,512,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/-8025268446008182807_2024-04-16_20:35:15
+hpso02a_1,workflows/-7591749499416186560_2024-04-16_18:01:48,27448,896,512,32768,False,standard
+hpso02a_1,workflows/-8025268446008182807_2024-04-16_20:35:15,27448,896,512,32768,False,standard
+/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/initial_results_newskaworkflows/low_maximal/prototype/skaworkflows_2024-04-16_22:15:22
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:05:42
+Running FCFS for observation hpso02b_2 using workflows/-4550687725270385476_2024-04-16_21:55:51
+Running FCFS for observation hpso02b_2 using workflows/-9129519675584908033_2024-04-16_21:05:24
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:05:42,2670,896,128,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:06:47
+hpso02b_2,workflows/-4550687725270385476_2024-04-16_21:55:51,25194,896,256,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-3826032486976970966_2024-04-16_21:57:30
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:06:47,3355,896,128,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:07:51
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:07:51,2670,896,128,32768,False,standard
+hpso01_0,workflows/-3826032486976970966_2024-04-16_21:57:30,19069,896,256,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/5607435393838823137_2024-04-16_17:47:24
+Running FCFS for observation hpso02a_1 using workflows/3822129990172189411_2024-04-16_21:59:08
+hpso02a_1,workflows/3822129990172189411_2024-04-16_21:59:08,25194,896,256,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:12:09
+hpso02b_2,workflows/-9129519675584908033_2024-04-16_21:05:24,64863,896,512,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-4251473303183623613_2024-04-16_21:12:09
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:12:09,7233,896,128,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:13:13
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:13:13,7651,896,128,32768,True,standard
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:14:17
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:14:17,7233,896,128,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/-9129519675584908033_2024-04-16_20:19:51
+hpso02b_2,workflows/5607435393838823137_2024-04-16_17:47:24,27448,896,512,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-4062314065848166113_2024-04-16_17:54:41
+hpso01_0,workflows/-4251473303183623613_2024-04-16_21:12:09,116564,896,512,32768,True,standard
+Running FCFS for observation hpso02a_1 using workflows/-8025268446008182807_2024-04-16_21:18:53
+hpso02b_2,workflows/-9129519675584908033_2024-04-16_20:19:51,27448,896,512,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-4251473303183623613_2024-04-16_20:27:29
+hpso01_0,workflows/-4062314065848166113_2024-04-16_17:54:41,33836,896,512,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/-7591749499416186560_2024-04-16_18:01:48
+hpso02a_1,workflows/-8025268446008182807_2024-04-16_21:18:53,64863,896,512,32768,True,standard
+^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OP^[OPhpso01_0,workflows/-4251473303183623613_2024-04-16_20:27:29,33836,896,512,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/-8025268446008182807_2024-04-16_20:35:15
+hpso02a_1,workflows/-7591749499416186560_2024-04-16_18:01:48,27448,896,512,32768,False,standard
+hpso02a_1,workflows/-8025268446008182807_2024-04-16_20:35:15,27448,896,512,32768,False,standard
+/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/initial_results_newskaworkflows/low_maximal/prototype/skaworkflows_2024-04-16_21:45:50
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:05:42
+Running FCFS for observation hpso02b_2 using workflows/-9129519675584908033_2024-04-16_21:05:24
+Running FCFS for observation hpso02a_1 using workflows/-8025268446008182807_2024-04-16_21:18:53
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:05:42,2670,896,128,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:06:47
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:06:47,3355,896,128,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:07:51
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:07:51,2670,896,128,32768,False,standard
+Running FCFS for observation hpso02b_2 using workflows/5607435393838823137_2024-04-16_17:47:24
+hpso02b_2,workflows/-9129519675584908033_2024-04-16_21:05:24,64863,896,512,32768,True,standard
+hpso02a_1,workflows/-8025268446008182807_2024-04-16_21:18:53,64863,896,512,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/-4550687725270385476_2024-04-16_21:55:51
+Running FCFS for observation hpso01_0 using workflows/-4251473303183623613_2024-04-16_21:12:09
+hpso02b_2,workflows/-4550687725270385476_2024-04-16_21:55:51,25194,896,256,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-3826032486976970966_2024-04-16_21:57:30
+hpso01_0,workflows/-3826032486976970966_2024-04-16_21:57:30,19069,896,256,32768,True,standard
+Running FCFS for observation hpso02a_1 using workflows/3822129990172189411_2024-04-16_21:59:08
+hpso02b_2,workflows/5607435393838823137_2024-04-16_17:47:24,27448,896,512,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-4062314065848166113_2024-04-16_17:54:41
+hpso02a_1,workflows/3822129990172189411_2024-04-16_21:59:08,25194,896,256,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:12:09
+hpso01_0,workflows/-4251473303183623613_2024-04-16_21:12:09,116564,896,512,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-4251473303183623613_2024-04-16_20:27:29
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:12:09,7233,896,128,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:13:13
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:13:13,7651,896,128,32768,True,standard
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:14:17
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:14:17,7233,896,128,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/-9129519675584908033_2024-04-16_20:19:51
+hpso01_0,workflows/-4062314065848166113_2024-04-16_17:54:41,33836,896,512,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/-7591749499416186560_2024-04-16_18:01:48
+hpso01_0,workflows/-4251473303183623613_2024-04-16_20:27:29,33836,896,512,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/-8025268446008182807_2024-04-16_20:35:15
+hpso02b_2,workflows/-9129519675584908033_2024-04-16_20:19:51,27448,896,512,32768,False,standard
+Running FCFS for observation hpso02b_2 using workflows/-4550687725270385476_2024-04-16_21:45:50
+hpso02a_1,workflows/-7591749499416186560_2024-04-16_18:01:48,27448,896,512,32768,False,standard
+hpso02b_2,workflows/-4550687725270385476_2024-04-16_21:45:50,8278,896,256,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-3826032486976970966_2024-04-16_21:47:27
+hpso02a_1,workflows/-8025268446008182807_2024-04-16_20:35:15,27448,896,512,32768,False,standard
+hpso01_0,workflows/-3826032486976970966_2024-04-16_21:47:27,10564,896,256,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/3822129990172189411_2024-04-16_21:49:07
+hpso02a_1,workflows/3822129990172189411_2024-04-16_21:49:07,8278,896,256,32768,False,standard
+/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/initial_results_newskaworkflows/low_maximal/prototype/skaworkflows_2024-04-16_21:25:37
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:05:42
+Running FCFS for observation hpso02a_1 using workflows/-8025268446008182807_2024-04-16_21:18:53
+Running FCFS for observation hpso02b_2 using workflows/-9129519675584908033_2024-04-16_21:05:24
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:05:42,2670,896,128,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:06:47
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:06:47,3355,896,128,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:07:51
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:07:51,2670,896,128,32768,False,standard
+Running FCFS for observation hpso02b_2 using workflows/5607435393838823137_2024-04-16_17:47:24
+hpso02a_1,workflows/-8025268446008182807_2024-04-16_21:18:53,64863,896,512,32768,True,standard
+hpso02b_2,workflows/-9129519675584908033_2024-04-16_21:05:24,64863,896,512,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/-4550687725270385476_2024-04-16_21:55:51
+Running FCFS for observation hpso01_0 using workflows/-4251473303183623613_2024-04-16_21:12:09
+hpso02b_2,workflows/-4550687725270385476_2024-04-16_21:55:51,25194,896,256,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-3826032486976970966_2024-04-16_21:57:30
+hpso01_0,workflows/-3826032486976970966_2024-04-16_21:57:30,19069,896,256,32768,True,standard
+hpso02b_2,workflows/5607435393838823137_2024-04-16_17:47:24,27448,896,512,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/3822129990172189411_2024-04-16_21:59:08
+Running FCFS for observation hpso01_0 using workflows/-4062314065848166113_2024-04-16_17:54:41
+hpso02a_1,workflows/3822129990172189411_2024-04-16_21:59:08,25194,896,256,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/8474003562302208810_2024-04-16_22:12:09
+hpso01_0,workflows/-4251473303183623613_2024-04-16_21:12:09,116564,896,512,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-4251473303183623613_2024-04-16_20:27:29
+hpso02b_2,workflows/8474003562302208810_2024-04-16_22:12:09,7233,896,128,32768,True,standard
+Running FCFS for observation hpso01_0 using workflows/-5817743310632921894_2024-04-16_22:13:13
+hpso01_0,workflows/-5817743310632921894_2024-04-16_22:13:13,7651,896,128,32768,True,standard
+Running FCFS for observation hpso02a_1 using workflows/9021398701513208197_2024-04-16_22:14:17
+hpso02a_1,workflows/9021398701513208197_2024-04-16_22:14:17,7233,896,128,32768,True,standard
+Running FCFS for observation hpso02b_2 using workflows/-9129519675584908033_2024-04-16_20:19:51
+hpso01_0,workflows/-4062314065848166113_2024-04-16_17:54:41,33836,896,512,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/-7591749499416186560_2024-04-16_18:01:48
+hpso01_0,workflows/-4251473303183623613_2024-04-16_20:27:29,33836,896,512,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/-8025268446008182807_2024-04-16_20:35:15
+hpso02b_2,workflows/-9129519675584908033_2024-04-16_20:19:51,27448,896,512,32768,False,standard
+Running FCFS for observation hpso02b_2 using workflows/-4550687725270385476_2024-04-16_21:45:50
+hpso02a_1,workflows/-7591749499416186560_2024-04-16_18:01:48,27448,896,512,32768,False,standard
+hpso02b_2,workflows/-4550687725270385476_2024-04-16_21:45:50,8278,896,256,32768,False,standard
+Running FCFS for observation hpso01_0 using workflows/-3826032486976970966_2024-04-16_21:47:27
+hpso02a_1,workflows/-8025268446008182807_2024-04-16_20:35:15,27448,896,512,32768,False,standard
+hpso01_0,workflows/-3826032486976970966_2024-04-16_21:47:27,10564,896,256,32768,False,standard
+Running FCFS for observation hpso02a_1 using workflows/3822129990172189411_2024-04-16_21:49:07
+hpso02a_1,workflows/3822129990172189411_2024-04-16_21:49:07,8278,896,256,32768,False,standard

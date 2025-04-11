@@ -1,0 +1,49 @@
+{
+	"items": [
+		{
+			"count": 1,
+			"hpso": "hpso13",
+			"demand": 197,
+			"duration": 28800,
+			"workflows": [
+				"ICAL", "DPrepA", "DPrepB", "DPrepC"
+			],
+			"channels": 512,
+			"baseline": 35000.0
+		},
+		{
+			"count": 1,
+			"hpso": "hpso15",
+			"demand": 197,
+			"duration": 15840,
+			"workflows": [
+				"ICAL", "DPrepA", "DPrepB", "DPrepC"
+			],
+			"channels": 512,
+			"baseline": 15000.0
+		},
+		{
+			"count": 1,
+			"hpso": "hpso22",
+			"demand": 197,
+			"duration": 28800,
+			"workflows": [
+				"ICAL", "DPrepA", "DPrepB"
+			],
+			"channels": 512,
+			"baseline": 150000.0
+		},
+		{
+			"count": 1,
+			"hpso": "hpso32",
+			"demand": 197,
+			"duration": 7920.0,
+			"workflows": [
+				"ICAL", "DPrepB"
+			],
+			"channels": 512,
+			"baseline": 20000.0
+		}
+
+	]
+}

@@ -1,0 +1,99 @@
+# text = axins.annotate("Point test", xy=[0.3, result_success_select['schedule_length_ratio']], ha='center', size='small', xytext=(0.5,0.5),
+    #     arrowprops = dict(
+    #         arrowstyle="->", shrinkA=0, shrinkB=5, color="black", linewidth=0.75
+    #     ),
+    # )
+    # text.set_path_effects(
+    #     [path_effects.Stroke(linewidth=2, foreground="white"), path_effects.Normal()]
+    # )
+    # text.arrow_patch.set_path_effects(
+    #     [path_effects.Stroke(linewidth=2, foreground="white"), path_effects.Normal()]
+    # )
+    # text = axins.annotate("Point test", xy=[0.3, result_fail_select['schedule_length_ratio']], ha='center', size='small', xytext=(0.5,1.5),
+    #     arrowprops = dict(
+    #         arrowstyle="->", shrinkA=0, shrinkB=5, color="black", linewidth=0.75
+    #     ),
+    # )
+    # text.set_path_effects(
+    #     [path_effects.Stroke(linewidth=2, foreground="white"), path_effects.Normal()]
+    # )
+    # text.arrow_patch.set_path_effects(
+    #     [path_effects.Stroke(linewidth=2, foreground="white"), path_effects.Normal()]
+    # )
+
+    # HEFT STATIC SCHEDULING
+    # result = usage[(usage['success'] == success) & (usage['planning'] != planning)]
+    # ax[0].scatter(
+    #     np.array(result['demand_ratio']),
+    #     np.array(result['schedule_length_ratio']),
+    #     marker='o',
+    #     label='Success + Static', color='grey'
+    # )
+    #
+    # result = usage[(usage['success'] != success) & (usage['planning'] != planning)]
+    #
+
+    # ax[0].scatter(
+    #     np.array(result['demand_ratio']),
+    #     np.array(result['schedule_length_ratio']),
+    #     marker='+',
+    #     label='Failure + Static', color='red'
+    # )
+    # for axn in ax:
+    #     axn.yaxis.set_tick_params(labelleft=True)
+    #     axn.set_xlim([-1, 1.1])
+    #     axn.legend()
+
+    # Need to figure out how to match observation data points with the scheduling
+    # algorithm data points; or just show the addition of the new points
+    # For example
+
+    # Histogram is going to be really important
+    # It'll be the number of successful plans of a given variable in bins
+
+    #
+    # fig, ax = plt.subplots(ncols=1, sharey=True)
+    # markers = ['o', 'X']
+    # colors = ['red', 'black']
+    # planning = set(usage['planning'])
+    # data = set(usage['data'])
+    # success = set(usage['success'])
+    # # TODO invert the markers/colours so that colour is planning and marker is fail
+    # for i, d in enumerate(data):
+    #     lines = []
+    #     for j, p in enumerate(planning):
+    #         marker_lines = []
+    #         for s in success:
+    #             tmp_usage = usage[
+    #                 (usage['planning'] == p)
+    #                 & (usage['data'] == d)
+    #                 & (usage['success'] == s)
+    #                 ]
+    #             marker = 'o' if s else 'X'
+    #             line = ax[i].plot(
+    #                 np.array(tmp_usage['channels_ratio']),
+    #                 np.array(tmp_usage['schedule_length_ratio']),
+    #                 marker=marker,
+    #                 # facecolors='none',
+    #                 # label=f"Planning: {p}",
+    #                 color=colors[j]
+    #             )
+    #             marker_lines.append(line)
+    #             if s:
+    #                 lines.append(line)
+    #
+    #             ax[i].legend()
+    #     #     ax[0].add_artist(
+    #     #         ax[0].legend(
+    #     #             handles=marker_lines,
+    #     #             labels=success,
+    #     #             loc='center right',
+    #     #             bbox_to_anchor=(0.5, 0.5),
+    #     #             title='Success')
+    #     #     )
+    #     #     # lines.append(line)
+    #     # ax[0].legend(
+    #     #     handles=lines, labels=planning, title='Allocation policy',
+    #     #     bbox_to_anchor=(0.5, 1.0),
+    #     # )  # =lines)
+    #     # ax[0].set_title(f"Data = {d}")

@@ -1,0 +1,187 @@
+{
+	"items": [
+		{
+			"count": 1,
+			"hpso": "hpso13",
+			"demand": 197,
+			"duration": 28800,
+			"workflows": [
+				"ICAL",
+				"DPrepA",
+				"DPrepB",
+				"DPrepC"
+			],
+			"channels": 65536,
+			"coarse_channels": 786,
+			"telescope": "mid",
+			"baseline": 35000.0
+		},
+		{
+			"count": 1,
+			"hpso": "hpso15",
+			"demand": 197,
+			"duration": 15840,
+			"workflows": [
+				"ICAL",
+				"DPrepA",
+				"DPrepB",
+				"DPrepC"
+			],
+			"channels": 65536,
+			"coarse_channels": 786,
+			"baseline": 15000.0,
+			"telescope": "mid"
+		},
+		{
+			"count": 1,
+			"hpso": "hpso22",
+			"demand": 197,
+			"duration": 28800,
+			"workflows": [
+				"ICAL",
+				"DPrepA",
+				"DPrepB"
+			],
+			"channels": 65536,
+			"coarse_channels": 786,
+			"baseline": 150000.0,
+			"telescope": "mid"
+		},
+		{
+			"count": 1,
+			"hpso": "hpso32",
+			"demand": 197,
+			"duration": 7920,
+			"workflows": [
+				"ICAL",
+				"DPrepB"
+			],
+			"channels": 65536,
+			"coarse_channels": 786,
+			"baseline": 20000.0,
+			"telescope": "mid"
+		},
+		{
+			"count": 1,
+			"hpso": "hpso13",
+			"demand": 197,
+			"duration": 28800,
+			"workflows": [
+				"ICAL",
+				"DPrepA",
+				"DPrepB",
+				"DPrepC"
+			],
+			"channels": 32768,
+			"coarse_channels": 786,
+			"baseline": 35000.0,
+			"telescope": "mid"
+		},
+		{
+			"count": 1,
+			"hpso": "hpso15",
+			"demand": 64,
+			"duration": 15840,
+			"workflows": [
+				"ICAL",
+				"DPrepA",
+				"DPrepB",
+				"DPrepC"
+			],
+			"channels": 65536,
+			"coarse_channels": 786,
+			"baseline": 15000.0,
+			"telescope": "mid"
+		},
+		{
+			"count": 1,
+			"hpso": "hpso22",
+			"demand": 64,
+			"duration": 28800,
+			"workflows": [
+				"ICAL",
+				"DPrepA",
+				"DPrepB"
+			],
+			"channels": 65536,
+			"coarse_channels": 786,
+			"baseline": 150000.0,
+			"telescope": "mid"
+		},
+		{
+			"count": 1,
+			"hpso": "hpso32",
+			"demand": 64,
+			"duration": 7920,
+			"workflows": [
+				"ICAL",
+				"DPrepB"
+			],
+			"channels": 65536,
+			"coarse_channels": 786,
+			"baseline": 20000.0,
+			"telescope": "mid"
+		},
+		{
+			"count": 1,
+			"hpso": "hpso13",
+			"demand": 140,
+			"duration": 28800,
+			"workflows": [
+				"ICAL",
+				"DPrepA",
+				"DPrepB",
+				"DPrepC"
+			],
+			"channels": 32768,
+			"coarse_channels": 786,
+			"baseline": 35000.0,
+			"telescope": "mid"
+		},
+		{
+			"count": 1,
+			"hpso": "hpso15",
+			"demand": 140,
+			"duration": 15840,
+			"workflows": [
+				"ICAL",
+				"DPrepA",
+				"DPrepB",
+				"DPrepC"
+			],
+			"channels": 65536,
+			"coarse_channels": 786,
+			"baseline": 15000.0,
+			"telescope": "mid"
+		},
+		{
+			"count": 1,
+			"hpso": "hpso22",
+			"demand": 140,
+			"duration": 28800,
+			"workflows": [
+				"ICAL",
+				"DPrepA",
+				"DPrepB"
+			],
+			"channels": 65536,
+			"coarse_channels": 786,
+			"baseline": 150000.0,
+			"telescope": "mid"
+		},
+		{
+			"count": 1,
+			"hpso": "hpso32",
+			"demand": 140,
+			"duration": 7920,
+			"workflows": [
+				"ICAL",
+				"DPrepB"
+			],
+			"channels": 65536,
+			"coarse_channels": 786,
+			"baseline": 20000.0,
+			"telescope": "mid"
+		}
+	]
+}

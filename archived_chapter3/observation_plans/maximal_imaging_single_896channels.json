@@ -1,0 +1,16 @@
+{
+	"items": [
+		{
+			"count": 1,
+			"hpso": "hpso22",
+			"demand": 197,
+			"duration": 28800,
+			"workflows": [
+				"ICAL"
+			],
+			"channels": 896,
+			"baseline": 150000.0,
+      		"telescope": "mid"
+		}
+  ]
+}
