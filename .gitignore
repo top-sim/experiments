@@ -26,4 +26,3 @@ chapter4/skaworkflow_tests/low_parallel/workflows/hpso01_time-18000_channels-896
 /chapter3/extending_initial_results/low_sdp_config_prototype_n896_896channels.json
 *.json
 *.csv
-*.png
