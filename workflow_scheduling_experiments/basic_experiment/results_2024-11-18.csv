@@ -1,0 +1,5 @@
+observation,workflow,ingest_demand,duration,channels,coarse_channels,demand,workflow_type,graph_type,data,data_distribution,nodes,dir,telescope,time
+hpso13,workflows/-6945540424978040141_2024-11-10_21-57-52,30,28800,65536,796,197,['prototype'],ICAL.DPrepA.DPrepB.DPrepC,False,standard,796,/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/maximal/all,mid-adjusted,(5655.0,),heft
+hpso15,workflows/-5643670302229644219_2024-11-10_22-00-24,12,15840,65536,796,197,['prototype'],ICAL.DPrepA.DPrepB.DPrepC,False,standard,796,/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/maximal/all,mid-adjusted,(504.0,),heft
+hpso22,workflows/2768866859543975590_2024-11-10_22-02-55,81,28800,65536,796,197,['prototype'],ICAL.DPrepA.DPrepB,False,standard,796,/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/maximal/all,mid-adjusted,(62847.0,),heft
+hpso32,workflows/-2887030758418618714_2024-11-10_22-05-22,17,7920,65536,796,197,['prototype'],ICAL.DPrepB,False,standard,796,/home/rwb/Dropbox/University/PhD/experiment_data/chapter3/maximal/all,mid-adjusted,(706.0,),heft

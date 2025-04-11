@@ -170,7 +170,7 @@ if __name__ == "__main__":
             for machine,compute in shadow_config["system"]["resources"].items():
                 compute['flops'] = compute['flops'] * t
                 compute['compute_bandwidth'] = compute['compute_bandwidth'] * t
-            shadow_config["system"]["system_bandwidth"]  = shadow_config["system"]["system_bandwidth"]  * t
+            shadow_config["system"]["system_bandwidth"] = shadow_config["system"]["system_bandwidth"]  * t
             # Retrieve workflow parameters
 
             # TODO consider adding this to SKAWorkflows library
