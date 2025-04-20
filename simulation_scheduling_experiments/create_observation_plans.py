@@ -342,7 +342,6 @@ def standard_mid_obs_plan(num_obs_repeats: dict):
     'hpso13': {'duration': 28800, 'workflows': ["ICAL", "DPrepA", "DPrepB", "DPrepC"]},
     'hpso15': {'duration': 15840, 'workflows': ["ICAL", "DPrepA", "DPrepB", "DPrepC"]},
     'hpso22': {'duration': 28800, 'workflows': ["ICAL", "DPrepA", "DPrepB"]},
-    'hpso22': {'duration': 28800, 'workflows': ["ICAL", "DPrepA", "DPrepB"]},
     'hpso32': {'duration': 7920, 'workflows': ["ICAL", "DPrepB"]}
 
 
