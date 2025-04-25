@@ -66,10 +66,13 @@ from topsim.utils.experiment import Experiment
 # TODO Fix up all the combinations here with slurm and directories/paths
 LOGGER.debug("Using method: %s", args.method)
 if args.method == 'batch':
-    e = Experiment(cfg_paths, [("batch", "batch")], output=experiment_path / "results")
+    e = Experiment(cfg_paths, [("batch", "batch")], output=experiment_path.parent / "results",
+                   sched_args={"ignore_ingest": False, "use_workflow_dop": True},
+                   slurm=args.slurm)
+
 elif args.method == 'static':
     e = Experiment(cfg_paths, [("static", "dynamic_plan")], output=experiment_path.parent / "results",
-                   sched_args={"ignore_ingest": False, "use_workflow_dop": False},
+                   sched_args={"ignore_ingest": False, "use_workflow_dop": True},
                    slurm=args.slurm)
 else:
     e = Experiment(
