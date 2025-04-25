@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 import datetime
+import random
+import shutil
 import sys
 import numpy as np
 # import seaborn as sns
@@ -9,10 +11,10 @@ import matplotlib.pyplot as plt
 import json
 from pathlib import Path
 
+from matplotlib import axes
 from matplotlib.gridspec import GridSpec
 import matplotlib.ticker as ticker
 from matplotlib import rcParams
-
 
 # Setup all the visualisation nicities
 rcParams["text.usetex"] = False
@@ -30,6 +32,7 @@ rcParams["ytick.direction"] = "in"
 rcParams["ytick.minor.visible"] = True
 
 import logging
+
 logging.basicConfig(level="INFO")
 LOGGER = logging.getLogger()
 
@@ -142,10 +145,13 @@ def collate_simulation_results(result_path: Path, simulations: dict):
         parameters["schedule_length"] = len(df_sim)
         parameters["planning"] = df_sim["planning"]
         parameters["scheduling"] = df_sim["scheduling"]
-        parameters["running_tasks"] = df_sim["running_tasks"]
+        parameters["max_running_tasks"] = df_sim[
+            "running_tasks"].max()  # Can multiply each entry by 5 to get the time step to report on
+        parameters["min_running_tasks"] = df_sim["running_tasks"].min()
+        parameters["mean_running_tasks"] = df_sim["running_tasks"].mean()
         # TODO it's really inefficient having so many tables with the same number. consider a lookup table with these sorts
         # of global parameters per-config (Did I just invent a type of database???)
-        parameters["nodes"] = [nodes] *len(parameters["schedule_length"])
+        parameters["nodes"] = [json.dumps(nodes)] * len(parameters["schedule_length"])
 
         # Use simulation config to differentiate between different sims
         parameters["sim_cfg"] = cfg_path.name
@@ -189,11 +195,11 @@ def process_workflow_stats(cfg_path: Path, df_total: pd.DataFrame):
             return 0
         total_workflow_df = pd.read_csv(csv_path)
         if "total_compute" in total_workflow_df:
-            compute = sum(total_workflow_df["total_compute"])*duration
+            compute = sum(total_workflow_df["total_compute"]) * duration
             # This would be the compute for a given workflow
         else:
             # Pulsar is entire cost for the whole workflow
-            compute = total_workflow_df.iloc[0]['pulsar'] * duration / (10**15)
+            compute = total_workflow_df.iloc[0]['pulsar'] * duration / (10 ** 15)
 
         total_compute += compute
         peak_compute = max(max_compute, compute)
@@ -275,7 +281,7 @@ def pretty_print_simulation_results(simulations, key, verbose=False):
 
 
 def create_simulation_schedule_map(simulation):
-    df = simulation # Remove this at some point this
+    df = simulation  # Remove this at some point this
     actors = set(df["actor"])
     # Observation telescope, started/finished
     # observation buffer, start/end -> we don´t particularly care about buffer
@@ -285,18 +291,18 @@ def create_simulation_schedule_map(simulation):
     obs_d = {o: {} for o in obs}
     for o in obs_d:
         obs_d[o]["telescope"] = df[
-            (df["observation"] == o) & (df["actor"] == "instrument") & (df['resource'] =='telescope')
+            (df["observation"] == o) & (df["actor"] == "instrument") & (df['resource'] == 'telescope')
             ]
         obs_d[o]["buffer"] = df[
             (df["observation"] == o) & (df["actor"] == "buffer") & (
-                        df['resource'] == 'transfer')
+                    df['resource'] == 'transfer')
             ]
         obs_d[o]["scheduler"] = df[
             (df["observation"] == o) & (df["actor"] == "scheduler") & (df['resource'] == 'allocation')
             ]
 
     # begin, end = [], []
-    obs_list = [[],[], []]
+    obs_list = [[], [], []]
     scheduler_start = []
     scheduler_end = []
     buffer_start = []
@@ -314,7 +320,7 @@ def create_simulation_schedule_map(simulation):
         )
 
         # Buffer transfer events may not happen
-        obs_list[2].append(f"{o}") # Buffer
+        obs_list[2].append(f"{o}")  # Buffer
         bdf = obs_d[o]["buffer"]
         if bdf.empty:
             buffer_start.append(0)
@@ -327,7 +333,7 @@ def create_simulation_schedule_map(simulation):
                 start.append(bdf[bdf['event'] == 'started']['time'].iloc[i])
                 end.append(bdf[bdf['event'] == 'stopped']['time'].iloc[i])
             #
-            buffer_start.append(min(start) * 5 /3600)
+            buffer_start.append(min(start) * 5 / 3600)
             buffer_end.append(max(end) * 5 / 3600)
 
             # buffer_start.append(
@@ -346,7 +352,7 @@ def create_simulation_schedule_map(simulation):
             int(tdf[tdf["event"] == "finished"]["time"].iloc[0]) * 5 / 3600
         )
 
-    group_labels = ["Scheduler",  "Telescope", "Buffer"]
+    group_labels = ["Scheduler", "Telescope", "Buffer"]
     # import matplotlib.pyplot as plt
     fig, ax = plt.subplots()
     values = [[scheduler_start, scheduler_end], [telescope_start, telescope_end], [buffer_start, buffer_end]]
@@ -386,6 +392,7 @@ def calculate_low_percentages():
 def calculate_mid_percentages():
     pass
 
+
 def calculate_week_on_telescope_comparison_stats(plan_total_compute: float,
                                                  plan_peak_compute: float):
     """
@@ -423,8 +430,12 @@ def calculate_week_on_telescope_comparison_stats(plan_total_compute: float,
             "plan_peak_compute": plan_peak_compute,
             "relative_peak_compute": plan_peak_compute / (TOTAL_COMPUTE_LOW_HPSOS_FLOPS / 1e15)}
 
+
 def calculate_average_flops_in_plan(plan_total_compute,
-                                    schedule_length_seconds):
+                                    schedule_length_seconds,
+                                    average_flops,
+                                    average_running_tasks,
+                                    max_running_tasks):
     """
     The SDP estimates identified the minium average compute required as 13.6PFLOP/sec.
     They used this in their costing calculations as the lower bounds on the capacity a provisioned SDP
@@ -433,15 +444,40 @@ def calculate_average_flops_in_plan(plan_total_compute,
     We can take the plan_total_compute and find our own average compute based on the
     time taken to do the computing in our simulation.
 
-    From this, we can compare the plan_average_compute to the SDP average compute. This will (hopefully) help us
+    From this, we can compare the plan_average_compute_from_flops to the SDP average compute. This will (hopefully) help us
     explain _why_ the average compute is lower than what we would expect.
 
-    :return:  dictionary of the "plan_average_compute" and "plan_relative_average_compute" values.
+    :return:  dictionary of the "plan_average_compute_from_flops" and "plan_relative_average_compute" values.
     """
-    plan_average_compute = plan_total_compute / (schedule_length_seconds - (18000 * 2))
-    return {"plan_average_compute": plan_average_compute,
-            # TODO SDP_AVERAGE by petaflops
-            "relative_average_compute": plan_average_compute / (SDP_AVERAGE_COMPUTE_FLOPS / 1e15)}
+    plan_average_compute_from_flops = plan_total_compute / (schedule_length_seconds - (18000 * 2))
+    plan_average_compute_from_nodes = average_flops * average_running_tasks
+    plan_peak_compute_from_nodes = average_flops * max_running_tasks
+    return {"plan_average_compute_from_flops": plan_average_compute_from_flops,
+            "plan_average_compute_from_nodes": plan_average_compute_from_nodes / 1e15,
+            "plan_peak_compute_from_nodes": plan_peak_compute_from_nodes / 1e15,
+            "relative_average_compute": plan_average_compute_from_flops / (SDP_AVERAGE_COMPUTE_FLOPS / 1e15)}
+
+
+def get_compute_node_statisics(nodes):
+    """
+    There may be more than one type of compute node, which requires us to calculate the average computing available
+    across the whole simulation.
+
+    The data in nodes will look something like:
+
+        >>> [{'flops': 10726000000000.0,
+        >>>     'compute_bandwidth': 7530482700,
+        >>>     'memory': 320000000000}]
+
+    :param nodes: list
+    :return: mean_node_flops, mean_node_bandwidth
+    """
+    flops = [d["flops"] for d in nodes]
+    compute_data_bandwidth = [d["compute_bandwidth"] for d in nodes]
+    mean_node_flops = np.mean(flops)
+    mean_node_bandwidth = np.mean(compute_data_bandwidth)
+
+    return mean_node_flops, mean_node_bandwidth
 
 
 def get_observation_plan_percentage(df_total, results_path: Path, verbose=True):
@@ -454,6 +490,24 @@ def get_observation_plan_percentage(df_total, results_path: Path, verbose=True):
     This is to facilitate differentiating between various observation plan's use of the telescope.
 
     Currently this assumes LOW telescope
+
+    The following data is stored in the Data Frame:
+        cfg,
+        baseline,
+        demand_ratio,
+        channels_ratio,
+        data,
+        data_distribution,
+        success,
+        schedule_length,
+        success_ratio,
+        planning,
+        schedule_length_ratio,
+        total_compute,
+        average_compute,
+        computing_to_observation_length_ratio,
+        peak_compute,
+
     """
     max_channels = 128 * 256
     max_demand = 512
@@ -469,28 +523,38 @@ def get_observation_plan_percentage(df_total, results_path: Path, verbose=True):
         plan_demand = g["demand"].astype(int).sum()
         plan_channels = g["channels"].astype(int).sum()
         plan_total_compute, plan_peak_compute, baseline = process_workflow_stats(results_path, g)
+
         if plan_total_compute == 0:
             continue
 
+        nodes = json.loads(g["nodes"].iloc[0])
+        mean_node_flops, mean_node_bandwidth = get_compute_node_statisics(nodes)
         plan_statistics = {
-            "baseline": baseline, # TODO change to baseline ratio
+            "cfg": cfg,
+            "baseline": baseline,  # TODO change to baseline ratio
             "demand_ratio": round(plan_demand / (max_demand * len(g)), 2),
             "channels_ratio": round(plan_channels / (max_channels * len(g)), 2),
             "data": g["data"].iloc[0],
             "data_distribution": g["data_distribution"].iloc[0],
-            # "success": g["success"].iloc[0],
+            "max_running_tasks": g["max_running_tasks"].iloc[0],
+            "min_running_tasks": g["min_running_tasks"].iloc[0],
+            "mean_running_tasks": g["mean_running_tasks"].iloc[0],
             "schedule_length": g["schedule_length"].iloc[0],
             "planning": planning,
-            "computing_to_observation_length_ratio": (g["schedule_length"].iloc[0])/g["total_obs_duration"].iloc[0],
-            "cfg": cfg
+            "computing_to_observation_length_ratio": (g["schedule_length"].iloc[0]) / g["total_obs_duration"].iloc[0],
+
         }
         plan_statistics.update(calculate_week_on_telescope_comparison_stats(plan_total_compute,
                                                                             plan_peak_compute))
 
+        # TOOD plan statistics.update(calculate average and peak machine usage)
         # "Schedule length from simulation is time-step dependent, need to multiply by the timestep to get seconds
         schedule_length_seconds = int(g["schedule_length"].iloc[0]) * timestep
         plan_statistics.update(calculate_average_flops_in_plan(plan_total_compute,
-                                                               schedule_length_seconds))
+                                                               schedule_length_seconds,
+                                                               mean_node_flops,
+                                                               plan_statistics["mean_running_tasks"],
+                                                               plan_statistics["max_running_tasks"]))
 
         usage.append(plan_statistics)
         count += 1
@@ -525,19 +589,108 @@ def setup_axes(axes: list):
     return axes
 
 
-def plot_flops_scatter():
-    pass
+import matplotlib
 
 
-def plot_metric_histogram(metric: str):
+def plot_scatter_axis(usage: pd.DataFrame,
+                      ax: matplotlib.axes,
+                      algorithms: list,
+                      colors: list,
+                      xaxis: str = "computing_to_observation_length_ratio",
+                      yaxis: str = "plan_average_compute_from_flops"):
+    for i, planning in enumerate(algorithms):
+        # data_points = len(usage[usage["planning"] == planning])
+        result = usage[(usage["planning"] == planning)]
+        # for x in demand:
+        ax.scatter(
+            result[xaxis].to_numpy(),
+            result[yaxis].to_numpy(),
+            # label=[label],
+            marker='o',
+            s=50,
+            color=colors[i],
+            edgecolors='black'
+        )
+
+    cfgs = select_n_configs_by_key(usage, "demand_ratio", 0.31)
+
+    return ax
+
+
+def plot_histogram_axis(usage, ax, xaxis, algorithms, colors):
+    plot_data = []
+    for i, planning in enumerate(algorithms):
+        res = usage[(usage["planning"] == planning)]
+        plot_data.append(np.array(sorted(res[xaxis]), dtype='float').T)
+
+    ax.hist(
+        plot_data,
+        bins=np.arange(1, 5, 0.25),
+        # weights=np.ones_like(data) / len(data), # TODO Consider revisiting
+        # hatch="xx",histtype='bar',
+        facecolor=colors,
+        edgecolor='black',
+        stacked=True,
+        alpha=0.7
+    )
+
+    return ax
+
+
+def create_figure(nrows, ncols):
+    fig = plt.figure(figsize=(12, 6))
+    gs = GridSpec(
+        nrows, ncols, figure=fig, hspace=0.25, wspace=1
+    )  # , wspace=0.25) # , left=0.05, right=0.1, wspace=0.05)
+    return fig, gs
+
+
+def plot_single(usage,
+                data=True,
+                data_distribution="edges",
+                xaxis="computing_to_observation_length_ratio",
+                yaxis="plan_average_compute_from_flops",
+                plot_type="hist"):
+    """
+    :param usage:
+    :return:
+    """
+    colors = ["blue", "red"]
+    algorithms = ["batch", "heft"]  # ["BatchPlanning", "SHADOWPlanning"]
+
+    usage = usage[(usage["data"] == data) & (usage["data_distribution"] == data_distribution)]
+    fig, gs = create_figure(1, 1)
+    ax = fig.add_subplot(gs[0, 0])
+    if plot_type == "hist":
+        ax = plot_histogram_axis(usage, ax, xaxis, algorithms, colors)
+    if plot_type == "scatter":
+        ax = plot_scatter_axis(usage, ax, algorithms, colors, xaxis, yaxis)
+
+    ax.set_axisbelow(True)
+    ax.grid(True, "major", "both", ls="-", color="black")
+    ax.grid(True, "minor", "both", ls="--")
+
+    ax.set_xlabel(xaxis)
+    if plot_type == "hist":
+        ax.set_ylabel("# of Simulations")
+    if plot_type == "scatter":
+        ax.set_ylabel(f"{yaxis}")
+
+    # Select data points from data.
+
+    ax.legend()
+
+
+def plot_subplots():
+    # ncols = 8, nrows =8
     pass
+
 
 def plot_alternative_scatter(usage, data=True, data_distribution="edges", zoom=False):
-
     fig = plt.figure(figsize=(12, 6))
     # Show only the successful results for batch_planning
     success = True
-    algorithms = ["batch", "heft"] #["BatchPlanning", "SHADOWPlanning"]
+    algorithms = ["batch", "heft"]  # ["BatchPlanning", "SHADOWPlanning"]
     colors = ["blue", "red"]
     from textwrap import wrap
     average_flops_low = 13.8
@@ -547,7 +700,7 @@ def plot_alternative_scatter(usage, data=True, data_distribution="edges", zoom=F
     gs = GridSpec(
         8, 8, figure=fig, hspace=0.25, wspace=1
     )  # , wspace=0.25) # , left=0.05, right=0.1, wspace=0.05)
-    ax1 = fig.add_subplot(gs[2:,0:4])
+    ax1 = fig.add_subplot(gs[2:, 0:4])
     ax1.xaxis.set_minor_locator(ticker.MultipleLocator(0.25))
     ax2 = fig.add_subplot(gs[0:2, 0:4], sharex=ax1)
     plt.setp(ax2.get_xticklabels(), visible=False)
@@ -562,10 +715,10 @@ def plot_alternative_scatter(usage, data=True, data_distribution="edges", zoom=F
     usage = usage[(usage["data"] == data) & (usage["data_distribution"] == data_distribution)]
 
     boxes = []
-    data = []
+    plot_data = []
     for i, planning in enumerate(algorithms):
         res = usage[(usage["planning"] == planning)]
-        data.append(np.array(sorted(res[metric]), dtype='float').T)
+        plot_data.append(np.array(sorted(res[metric]), dtype='float').T)
 
     ### Plot histogram of each simulation and the resultant metric ###
     ### Metrics include: "schedule_length_ratio", "peak_compute", "observation_to_computing"
@@ -576,7 +729,7 @@ def plot_alternative_scatter(usage, data=True, data_distribution="edges", zoom=F
     # What I need is the number of machines used at every timestep, which is data I think I have.
 
     ax1.hist(
-        data,
+        plot_data,
         bins=np.arange(1, 5, 0.25),
         # weights=np.ones_like(data) / len(data), # TODO Consider revisiting
         # hatch="xx",histtype='bar',
@@ -596,7 +749,7 @@ def plot_alternative_scatter(usage, data=True, data_distribution="edges", zoom=F
         # data = np.array(sorted(result["schedule_length_ratio"]), dtype='float').T
         ax2.scatter(
             result['computing_to_observation_length_ratio'].to_numpy(),
-            result['plan_average_compute'].to_numpy(),
+            result['plan_average_compute_from_flops'].to_numpy(),
             label=["Demand ratio"],
             marker='o',
             s=50,
@@ -630,12 +783,12 @@ def plot_alternative_scatter(usage, data=True, data_distribution="edges", zoom=F
     # AX1 LABELS
     ax1.set_ylabel("Number of simulations")
     ax1.set_xlabel("Schedule length ratio")
-    ax1.set_xlim([0.5,5])
+    ax1.set_xlim([0.5, 5])
 
     # AX2 LABELS
     ax2.set_ylabel("Petaflops")
     ax2.legend(algorithms)
-    ax2.set_ylim([0,15])
+    ax2.set_ylim([0, 15])
     ax2.plot([0.0, 5.0], [average_flops_low, average_flops_low], "--",
              color="red",
              linewidth=3, zorder=-1)
@@ -676,7 +829,6 @@ def plot_alternative_scatter(usage, data=True, data_distribution="edges", zoom=F
         )
 
         ax1.indicate_inset_zoom(axins, edgecolor="black")
-
 
 
 def calculate_maximum_moving_average_for_observing_plan():
@@ -756,8 +908,18 @@ def get_config_parameters(config):
     pass
 
 
-def select_config_from_demand(demand: float, num_config=2):
-    pass
+def select_n_configs_by_key(usage_summary: pd.DataFrame, key: str, value: object, count=2):
+    """
+    Select 'n' number of config files based on key and value pair. Useful to get subset information
+    for more specific analysis or visualisiation.
+    """
+    demand_df = usage_summary[usage_summary[key] == value]
+    cfgs = set(demand_df["cfg"])  #
+
+    chosen_cfgs = random.sample(list(cfgs), count)
+
+    return chosen_cfgs
+
 
 def setup_parser():
     import argparse
@@ -767,6 +929,19 @@ def setup_parser():
     parser.add_argument("--summary_csv")
     parser.add_argument("--reprocess", default=False, action="store_true")
     return parser.parse_args()
+
+
+def gridspec_experiment():
+    fig = plt.figure()
+    gs = GridSpec(2, 2, fig)
+    ax1 = fig.add_subplot(gs[0:1, 0:1])
+    ax1.set_xlabel("Top Left")
+    ax2 = fig.add_subplot(gs[0:1, 1:2])
+    ax2.set_xlabel("TopRight")
+    ax3 = fig.add_subplot(gs[1:2, 0:1])
+    ax3.set_xlabel("BottomLeft")
+    ax4 = fig.add_subplot(gs[1:2, 1:2])
+    ax4.set_xlabel("BottomRight")
 
 
 PLOT_SIMULATION_MAPS = False
@@ -787,8 +962,9 @@ if __name__ == "__main__":
     df_total = None  # TODO rename
 
     simulation_summaries = []
-    fetch_summaries_only = False # Make this a CLI option
+    fetch_summaries_only = False  # Make this a CLI option
     if not df_total_path.exists() or args.reprocess:
+        df_total_path.unlink(missing_ok=True)
         for simulation_batch in extract_simulations_from_hdf5(RESULT_PATH, verbose=True):
             # if len(simulation_batch.keys()) > 10:
             #     break
@@ -801,11 +977,17 @@ if __name__ == "__main__":
             df_total = collate_simulation_results(RESULT_PATH, simulation_batch)
             df_total = convert_categorical_ints_to_str(df_total)
             if df_total_path.exists():
-                with df_total_path.open("a") as fp:
-                    df_total.to_csv(fp, mode='a', header=False)
+                try:
+                    with df_total_path.open("a") as fp:
+                        df_total.to_csv(fp, mode='a', header=False)
+                except pd.errors.ParserError:
+                    print(f"Simulation batch caused issues writing to file: {simulation_batch}")
             else:
-                with df_total_path.open("w") as fp:
-                    df_total.to_csv(fp)
+                try:
+                    with df_total_path.open("w") as fp:
+                        df_total.to_csv(fp)
+                except pd.errors.ParserError:
+                    print(f"Simulation batch caused issues writing to file: {simulation_batch}")
             simulation_batch = {}  # Memory management in Python
 
     df_total = pd.read_csv(df_total_path)
@@ -829,17 +1011,29 @@ if __name__ == "__main__":
     # # plot_success_histogram(usage_summary_dataframe)
     else:
         usage_summary_dataframe = pd.read_csv(summary_pathname)
-    plot_alternative_scatter(usage_summary_dataframe)
+
+    # Selection mechanisms for specific plans
+    # cfg_name = get_example_maximal_plans()
+    # cfg_A, cfg_B = get_plans_with_same_ratio()
+
+    # plot_alternative_scatter(usage_summary_dataframe)
     observation_plans = get_observation_plans(df_total=df_total,
                                               config_dir=RESULT_PATH.parent)
-    print(observation_plans)
-    # plot_histogram_of_success(usage_summary_dataframe)
-    # TODO CONSIDER
-    # Plot the different system utilisation of each observation plan for each parameter and match that to the SLR
-    # produce_scatterplot(df_total)
-    cfg = "skaworkflows_2024-12-14_05-49-06_0.json"
-    # for cfg in set(observation_plans['config']):
-    #     plan = observation_plans[(
-    #             observation_plans["config"] == cfg)]
-    #     plot_observation_plan(plan)
+
+    plot_single(usage=usage_summary_dataframe, data=True, data_distribution="edges", plot_type="hist")
+    plot_single(usage=usage_summary_dataframe, data=True, data_distribution="edges", plot_type="scatter")
+    plot_single(usage=usage_summary_dataframe, data=True, data_distribution="edges", plot_type="scatter",
+                yaxis="plan_average_compute_from_nodes")
+
     plt.show()
+    # print(observation_plans)
+    # # plot_histogram_of_success(usage_summary_dataframe)
+    # # TODO CONSIDER
+    # # Plot the different system utilisation of each observation plan for each parameter and match that to the SLR
+    # # produce_scatterplot(df_total)
+    # cfg = "skaworkflows_2024-12-14_05-49-06_0.json"
+    # # for cfg in set(observation_plans['config']):
+    # #     plan = observation_plans[(
+    # #             observation_plans["config"] == cfg)]
+    # #     plot_observation_plan(plan)
+    # plt.show()
