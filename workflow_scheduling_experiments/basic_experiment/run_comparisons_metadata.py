@@ -50,17 +50,21 @@ def run_shadow(params: dict, tup: tuple):
     workflow = Workflow(wf_path)
     workflow.add_environment(env)
     LOGGER.info(
-        "Running FCFS for observation %s using %s",
+        "Running heft for observation %s using %s",
         params['observation'], params['workflow']
     )
-    params['method'] = 'heft'
-    params['time'] = heft(workflow).makespan
-    params["graph_type"] = ".".join(params["graph_type"])
+    final_params = deepcopy(params)
+    # TODO change to FCFS at some point too
+    heft_result = heft(workflow)
+    final_params['method'] = 'heft'
+    final_params['time'] = heft_result.makespan
+    final_params["graph_type"] = ".".join(params["graph_type"])
     # # heft_res = None
-    output_params = {k: i for k, i in params.items() if k != 'cfg'}
+    output_params = {k: i for k, i in final_params.items() if k != 'cfg'}
     for k, i in output_params.items():
         LOGGER.debug("Param: %s, Value: %s", k, i)
     LOGGER.debug("Graph type: %s", output_params["graph_type"])
+
     res_str_fcfs = ','.join([str(x) for x in output_params.values()])
     LOGGER.info("FCFS result: %s", res_str_fcfs)
 
@@ -155,8 +159,8 @@ if __name__ == "__main__":
     except IndexError:
         LOGGER.warning("Could not set log level, using default 'Warning'. ")
 
-    params = []
-    shadow_config = {}
+    all_params = []
+    # shadow_config = {}
     total_config = 0
     for cfg_path in os.listdir(BASE_DIR):
         if (BASE_DIR / cfg_path).is_dir():
@@ -164,8 +168,9 @@ if __name__ == "__main__":
         print(BASE_DIR / cfg_path)
         total_config += 1
         # Setup for SHADOW config
-        timesteps = [1,5,15,30,60]
-        for t in timesteps: 
+        timesteps = [1,60] #[1] #,5,15,30,60]
+        for t in timesteps:
+            params = []
             shadow_config = config_to_shadow(BASE_DIR / cfg_path)
             for machine,compute in shadow_config["system"]["resources"].items():
                 compute['flops'] = compute['flops'] * t
@@ -204,7 +209,9 @@ if __name__ == "__main__":
                     observation['graph_type'] = workflows
                 params.append(observation)
             for o in params:
-                o["cfg"] = shadow_config
+                o["cfg"] = deepcopy(shadow_config)
+
+            all_params.extend(params)
         # break # We only care about a single config file.
 
     LOGGER.info("Total configs processed: %d", total_config)
@@ -231,5 +238,5 @@ if __name__ == "__main__":
 
         # with Pool(processes=1) as pool:
         #     pool.starmap(run_parametric, product(params, [(output, lock)]))
-        with Pool(processes=3) as pool:
+        with Pool(processes=1) as pool:
             pool.starmap(run_shadow, product(params, [(output, lock)]))
