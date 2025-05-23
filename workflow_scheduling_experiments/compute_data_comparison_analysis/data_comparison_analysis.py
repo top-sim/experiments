@@ -343,45 +343,53 @@ def save_processed_workflow_data(workflow_data: pd.DataFrame, source_dir: str):
 
 
 def plot_product_cost_variation(df: pd.DataFrame):
-    fig = plt.figure()
-    gs = GridSpec(1,2, width_ratios=[0.1,0.85])
+    fig = plt.figure(1, (6, 12))
+    gs = GridSpec(1,2)# , width_ratios=[0.1,0.85])
     # ax.spines['left'].set_position(('data', 1))
     comp_df = create_computation_dataframe(df)
     data_df = create_data_dataframe(df)
     comp_df, data_df = calculate_comp_to_data_ratio(comp_df, data_df)
 
-    telescope = {512:{}, 197: {}}
+    ax1 = fig.add_subplot(gs[0:1])
+    ax2 = fig.add_subplot(gs[1:2])
+    telescope = {512:{"ax": ax1, "products":{} }, 197: {"ax": ax2, "products":{}}}
     # TODO Group by Telescope!
-
+    legend = []
     for group, sub_df in comp_df.groupby(["demand", "workflow_type","product"]):
         demand, workflow_type, product = group
         xaxis_data = sub_df["Ratio"].to_numpy()
         yaxis_data = product
-        if workflow_type in telescope[demand]:
-            telescope[demand][workflow_type]['x'].append(xaxis_data)
-            telescope[demand][workflow_type]['y'].append(yaxis_data)
+        legend.append(workflow_type)
+        # telescope[demand]["products"][workflow_type].update({product: xaxis_data})
+        if workflow_type in telescope[demand]["products"]:
+            telescope[demand]["products"][workflow_type].update({product: xaxis_data})
+            # telescope[demand]["products"][workflow_type]['y'].append(yaxis_data)
         else:
-            telescope[demand][workflow_type]={'x': [xaxis_data], 'y': [yaxis_data]}
+            telescope[demand]["products"][workflow_type] = {product: xaxis_data}
 
 
-    ax = fig.add_subplot(gs[1])
     # Setup colors using LogNorm
     from matplotlib.colors import SymLogNorm, LogNorm, CenteredNorm
 
     y = []
     x = np.array([])
     bplot_arrays = []
-    for i, y_elem in enumerate(yaxis_data):
-        bplot_arrays.append(xaxis_data[i])
-        x = np.append(x,xaxis_data[i])
-        y.extend([y_elem] * len(xaxis_data[i]))
-
     # res = ax.boxplot(bplot_arrays,tick_labels=yaxis_data, vert=False,patch_artist=True, boxprops={"facecolor": "bisque"})
-    res = ax.scatter(x, y, c=x, cmap="coolwarm",
-                     edgecolors="black")
-    ax.set_xscale("log")
-    # fig.tight_layout()
-    # fig.colorbar(res, ax=ax)
+    for t, results in telescope.items():
+        ax = results["ax"]
+        for wf, xy in results["products"].items():
+            for y, x in xy.items():
+                x = x
+                y = [y]*len(x)
+                ax.scatter(x, y,  edgecolors="black")
+        ax.set_xscale("log")
+        ax.vlines(1,0,13,linestyle="dashed")
+        ax.set_xbound(1e-3,100)
+        ax.set_title(f"{t}: TelescopeAntennas")
+        ax.legend(legend)
+        # fig.tight_layout()
+        # fig.colorbar(res, ax=ax)
+
     plt.show()
 
 
