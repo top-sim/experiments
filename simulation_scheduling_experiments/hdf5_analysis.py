@@ -602,6 +602,7 @@ def plot_scatter_axis(usage: pd.DataFrame,
                       xaxis: str = "computing_to_observation_length_ratio",
                       yaxis: str = "plan_average_compute_from_flops", **kwargs):
     algorithms = kwargs.get('algorithms')
+    fill_plots = kwargs.get('fill', False)
     for i, planning in enumerate(algorithms):
         # data_points = len(usage[usage["planning"] == planning])
         result = usage[(usage["planning"] == planning)]
@@ -622,12 +623,16 @@ def plot_scatter_axis(usage: pd.DataFrame,
             # result[yaxis].to_numpy(),
             # label=[label],
             s=50,
-            marker=markers,
+            marker=markers[i],
             color=colors[i],
             label= labels[i] if labels else "",
             edgecolors='black'
         )
-        ax.fill(hull_points[:,0], hull_points[:,1], colors[i], alpha=0.1)
+
+        # Plot uses marker face color
+
+        if fill_plots:
+            ax.fill(hull_points[:,0], hull_points[:,1], colors[i], alpha=0.25)
 
     return ax
 
@@ -635,6 +640,9 @@ def plot_scatter_axis(usage: pd.DataFrame,
 def plot_histogram_axis(usage, ax, xaxis, **kwargs):
     plot_data = []
     algorithms = kwargs.get('algorithms')
+    zorder = [2,1]
+    alpha = [0.5, 1]
+    linewidth=[2,1]
     labels = kwargs.get('labels')
     for i, planning in enumerate(algorithms):
         res = usage[(usage["planning"] == planning)]
@@ -646,10 +654,12 @@ def plot_histogram_axis(usage, ax, xaxis, **kwargs):
             facecolor=labels['color'][i],
             label=labels['labels'][i],
             edgecolor='black',
+            zorder=zorder[i],
+            linewidth=linewidth[i],
             # edgecolor=labels['color'][i],
             # stacked=False,
             # fill=False,
-            alpha=0.5,
+            alpha=alpha[i]
         )
 
     return ax
@@ -658,7 +668,7 @@ def plot_histogram_axis(usage, ax, xaxis, **kwargs):
 def create_figure(nrows, ncols):
     fig = plt.figure(figsize=(12, 6))
     gs = GridSpec(
-        nrows, ncols, figure=fig, hspace=0.25, #wspace=1
+        nrows, ncols, figure=fig, hspace=0.25, bottom=0.14, right=0.8, left=0.15
     )  # , wspace=0.25) # , left=0.05, right=0.1, wspace=0.05)
     return fig, gs
 
@@ -668,7 +678,7 @@ def plot_with_dataframe(usage, fig=None, gs=None, axis=None,
                         data_distribution="edges",
                         xaxis="computing_to_observation_length_ratio",
                         yaxis="plan_average_compute_from_flops",
-                        plot_type="hist", title="Plot titles", **kwargs):
+                        plot_type="hist", **kwargs):
     """
     :param usage:
     :return:
@@ -701,10 +711,9 @@ def plot_with_dataframe(usage, fig=None, gs=None, axis=None,
     if plot_type == "scatter":
         ax.set_ylabel(f"{yaxis}")
 
-    ax.set_title(f"{title}")
     # Select data points from data.
 
-    ax.legend()
+    # ax.legend()
     return fig, gs, ax
 
 
@@ -1021,7 +1030,7 @@ def plot_flops_vs_demand(usage_summary_dataframe):
                              xaxis="demand_ratio",
                              yaxis="average_plus_ingest", title="demonstrate averate compute from nodes",
                              algorithms=['heft'],
-                             labels={"Ave. FLOPS per Observation": "blue"})
+                             labels={"Ave. FLOPS": "blue"})
     usage_summary_dataframe["peak_plus_ingest"]=usage_summary_dataframe["plan_peak_compute_from_nodes"] + ((node_flops*LOW_REALTIME_RESOURCES) / 1e15)
     fig, gs, ax = plot_with_dataframe(usage=usage_summary_dataframe,
                              axis=ax, fig=fig, gs=gs,
@@ -1029,40 +1038,65 @@ def plot_flops_vs_demand(usage_summary_dataframe):
                              xaxis="demand_ratio",
                              yaxis="peak_plus_ingest", title="demonstrate averate compute from nodes",
                              algorithms=['heft'],
-                             labels={"Ave. FLOPS per Observation": "red"})
+                             labels={"Max. FLOPS": "red"})
     fig, gs, ax = plot_with_dataframe(usage=usage_summary_dataframe,
                              axis=ax, fig=fig, gs=gs,
                              data=True, data_distribution="edges", plot_type="scatter",
                              xaxis="demand_ratio",
                              yaxis="mean_ingest_flops", title="demonstrate averate compute from nodes",
                              algorithms=['heft'],
-                             labels={"Ave. Ingest FLOPS per Observation": "blue"}, markers='x')
+                             labels={"Ave. Ingest FLOPS": "blue"}, markers='x')
     fig, gs, ax = plot_with_dataframe(usage=usage_summary_dataframe,
                              axis=ax,fig=fig, gs=gs,
                              data=True, data_distribution="edges", plot_type="scatter",
                              xaxis="demand_ratio",
                              yaxis="max_ingest_flops", title="demonstrate averate compute from nodes",
                              algorithms=['heft'],
-                             labels={"Max Ingest FLOPS per Observation": "red"}, markers='x')
-    ax.legend()
+                             labels={"Max Ingest FLOPS": "red"}, markers='x')
+    ax.legend(title="Per-Observing plan:", bbox_to_anchor=(1,0.7))
     ax.set_ylim((0, 11))
+    ax.set_ylabel("PetaFLOPs 'acheived'")
+    ax.set_xlabel("Demand Ratio\n(# stations used across the observing plan / Total possible number of stations)")
     ax.set_xlim((0, 0.5))
     ax.plot([0.0, 5.0], [LOW_SDP_AVERAGE_COMPUTE_FLOPS_UPDATED, LOW_SDP_AVERAGE_COMPUTE_FLOPS_UPDATED],
-            color="red", linestyle='--', linewidth=3, zorder=-1)
+            color="red", linestyle='--', linewidth=3, zorder=-1) #, text="Updated estimated for SDP maximum compute")
+    from matplotlib.patches import FancyArrowPatch
+    arr = FancyArrowPatch((.4, 11), (.3, 10),
+                                   arrowstyle='->,head_width=.15', mutation_scale=20)
+    # ax.add_patch(arr)
+    fig.text(0.805, .73,"SDP Total Compute \n Adjusted Estimates\n")
     reserved_ingest= ((node_flops * LOW_REALTIME_RESOURCES) / 1e15)
     ax.plot([0.0, 5.0], [reserved_ingest, reserved_ingest],
             color="grey", linestyle='--', linewidth=3, zorder=-1)
+    ax.fill_between((0,0.5),y1=0, y2=reserved_ingest, color='grey', alpha=0.3, zorder=-1)
+    fig.text(0.805, .2,"SDP Ingest\n Adjusted Estimates\n")
+    fig.text(0.16, .14,"Ingest-reserved\n resources\n")
 
 def plot_histogram_observing_computing_ratio(usage_summary_dataframe):
     fig, gs, ax1 = plot_with_dataframe(usage=usage_summary_dataframe, data=True, data_distribution="standard", plot_type="hist",
                               algorithms=['batch', 'heft'],
-                              labels={'labels': ['Batch', 'HEFT'], 'hatch': ['x', ''], 'color': ['grey', 'blue']}, columns=2)
-    ax1.legend()
+                              labels={'labels': ['Batch', 'HEFT'], 'hatch': ['x', ''], 'color': ['silver', 'slateblue']}, columns=2)
+    ax1.set_xlabel("Computing time to observing time ratio")
     ax1.set_title("Without edge data")
     fig, gs, ax2=plot_with_dataframe(usage=usage_summary_dataframe, fig=fig, gs=gs, data=True, data_distribution="edges", plot_type="hist",
                             algorithms=['batch', 'heft'],
-                            labels={'labels':['Batch', 'HEFT'], 'hatch': ['x', ''], 'color':['grey', 'blue']}, columns=2, gs_position=(0,1))
+                            labels={'labels':['Batch', 'HEFT'], 'hatch': ['x', ''], 'color':['silver', 'slateblue']}, columns=2, gs_position=(0,1))
+    # ax1.legend()
     ax2.set_title("With edge data")
+    ax2.set_xlabel("Computing time to observing time ratio")
+
+    handles, labels = [], []
+    for ax in [ax1, ax2]:
+        h, l = ax.get_legend_handles_labels()
+        handles.extend(h)
+        labels.extend(l)
+    from collections import OrderedDict
+    unique = OrderedDict(zip(labels, handles))
+
+    fig.legend(unique.values(), unique.keys(), handleheight=3, handlelength=3, bbox_to_anchor=(0.9, 0.88))
+    # fig.supxlabel('Test')
+    # fig.supylabel('Y Test')
+    # Establish limits based on maximum of two axes
     ax1_lim = ax1.get_ylim()
     ax2_lim = ax2.get_ylim()
     lim = max(ax1_lim[1], ax2_lim[1])
@@ -1074,10 +1108,11 @@ def plot_histogram_observing_computing_ratio(usage_summary_dataframe):
 def plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe):
     fig, gs, ax_scatter = plot_with_dataframe(usage=usage_summary_dataframe, data=True, data_distribution="edges", plot_type="scatter",
                                      xaxis="demand_ratio", yaxis='computing_to_observation_length_ratio',
-                                     algorithms=['batch', 'heft'], labels={'Batch': 'red', 'HEFT': 'blue'})
-    ax_scatter.set_title("Comparing the effect of static scheduling heuristic on the observation-computing duration ratio, as a product of the average telescope demand across the observing plan.")
-    ax_scatter.set_xlabel("Demand Ratio (% of #stations used across the observing plan)")
-    ax_scatter.set_ylabel("Observation-Computing Ration (Computing time / Observation plan (~7days))")
+                                     algorithms=['batch', 'heft'], labels={'Batch': 'silver', 'HEFT': 'slateblue'}, markers=['v', 'o'] ,fill=True)
+    # ax_scatter.set_title("Comparing the effect of static scheduling heuristic on the observation-computing duration ratio\n as a product of the average telescope demand across the observing plan.")
+    ax_scatter.set_xlabel("Demand Ratio\n(# stations used across the observing plan / Total possible number of stations)")
+    ax_scatter.set_ylabel("Observation-Computing Ratio\n (Computing time / Observing time (~7days))")
+    ax_scatter.legend()
 
 if __name__ == "__main__":
     pd.set_option("display.max_columns", None)
@@ -1121,8 +1156,11 @@ if __name__ == "__main__":
     plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe)
     plot_flops_vs_demand(usage_summary_dataframe)
 
-    observation_plans = get_observation_plans(df_total=df_total,
-                                              config_dir=result_path.parent)
+    # observation_plans = get_observation_plans(df_total=df_total,
+    #                                           config_dir=result_path.parent)
+
+    # SHOW CONFIGS
+
     # cfgs = select_n_configs_by_key(usage_summary_dataframe, "demand_ratio", 0.3, count=1)
     # plan = observation_plans[(
     #         observation_plans["config"] == cfgs[0])]
