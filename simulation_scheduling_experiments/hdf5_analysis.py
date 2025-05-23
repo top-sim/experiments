@@ -1156,15 +1156,15 @@ if __name__ == "__main__":
     plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe)
     plot_flops_vs_demand(usage_summary_dataframe)
 
-    # observation_plans = get_observation_plans(df_total=df_total,
-    #                                           config_dir=result_path.parent)
+    observation_plans = get_observation_plans(df_total=df_total,
+                                              config_dir=result_path.parent)
 
     # SHOW CONFIGS
 
-    # cfgs = select_n_configs_by_key(usage_summary_dataframe, "demand_ratio", 0.3, count=1)
-    # plan = observation_plans[(
-    #         observation_plans["config"] == cfgs[0])]
-    # plot_observation_plan(plan)
+    cfgs = select_n_configs_by_key(usage_summary_dataframe, "demand_ratio", 0.3, count=1)
+    plan = observation_plans[(
+            observation_plans["config"] == cfgs[0])]
+    plot_observation_plan(plan)
 
     # Simulation maps - currently bug in TopSim that prevents this from being useful.
     # s = simulation_summaries[cfgs[0]]
