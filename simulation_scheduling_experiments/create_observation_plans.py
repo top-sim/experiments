@@ -81,6 +81,7 @@ def spread_observations_across_demand(number, demand_pool):
 
 
 def calc_demand_ratio(hpso_demand, telescope):
+    # TODO re-calculate this using the new approach
     total_obs = sum([sum(x.values()) for x in hpso_demand.values()])
     total_demand = total_obs * telescope.max_stations
     cumulative_demand = 0

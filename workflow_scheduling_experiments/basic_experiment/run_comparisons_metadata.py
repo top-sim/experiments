@@ -36,10 +36,11 @@ from skaworkflows.parametric_runner import calculate_parametric_runtime_estimate
 #     LOW_HPSO_PATHS, MID_HPSO_PATHS)
 logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
-PAR_MODEL_SIZING = Path(
-    "/home/rwb/github/skaworkflows/skaworkflows/data/sdp-par-model_output/.archive/2021"
-    "-06-02_long_HPSOs.csv"
-)
+# PAR_MODEL_SIZING = Path(
+#     "/home/rwb/github/skaworkflows/skaworkflows/data/sdp-par-model_output/.archive/2021"
+#     "-06-02_long_HPSOs.csv"
+# )
+PAR_MODEL_SIZING = Path("/home/rwb/github/sdp-par-model/data/csv/2021-02-03-895254e_hpsos.csv")
 
 TESTING = False
 
@@ -168,7 +169,7 @@ if __name__ == "__main__":
         print(BASE_DIR / cfg_path)
         total_config += 1
         # Setup for SHADOW config
-        timesteps = [1,60] #[1] #,5,15,30,60]
+        timesteps = [1,5,15,30,60]
         for t in timesteps:
             params = []
             shadow_config = config_to_shadow(BASE_DIR / cfg_path)
@@ -216,15 +217,15 @@ if __name__ == "__main__":
 
     LOGGER.info("Total configs processed: %d", total_config)
     # sys.exit()
-    LOGGER.info("Number of observations added %d", len(params))
+    LOGGER.info("Number of observations added %d", len(all_params))
     for i, p in enumerate(params):
         p['time'] = i
 
-    if not params:
+    if not all_params:
         LOGGER.warning("No inputs provided, will not run scheduling")
         sys.exit()
 
-    header = ','.join([p for p in params[0].keys() if p != 'cfg'])
+    header = ','.join([p for p in all_params[0].keys() if p != 'cfg'])
 
     manager = Manager()
     queue = manager.Queue()
@@ -236,7 +237,7 @@ if __name__ == "__main__":
         fo.flush()
         from itertools import product
 
-        # with Pool(processes=1) as pool:
-        #     pool.starmap(run_parametric, product(params, [(output, lock)]))
         with Pool(processes=1) as pool:
-            pool.starmap(run_shadow, product(params, [(output, lock)]))
+            pool.starmap(run_parametric, product(all_params, [(output, lock)]))
+        with Pool(processes=4) as pool:
+            pool.starmap(run_shadow, product(all_params, [(output, lock)]))
