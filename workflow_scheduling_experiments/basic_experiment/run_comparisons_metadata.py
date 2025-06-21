@@ -107,7 +107,7 @@ def run_parametric(params: dict, tup: tuple, test=False):
         "Running Parametrics for observation %s using %s",
         params['observation'], params['workflow']
     )
-    params['method'] = 'heft'
+    params['method'] = 'parametric'
 
     # Extract observation from params and fetch the SDP Parametric model runtime estimates
     # For maximal use case
@@ -115,7 +115,7 @@ def run_parametric(params: dict, tup: tuple, test=False):
     result = calculate_parametric_runtime_estimates(
         PAR_MODEL_SIZING, params['telescope'], [observation], params['graph_type']
     )
-    duration = result[observation]["total_flops"] / (result[observation]["batch_flops"]),
+    duration = result[observation]["total_flops"] / (result[observation]["batch_flops"])
     params['time'] = duration
 
     # Ensure workflows is not separated by comma, so as to avoid CSV compatibility issues
@@ -147,6 +147,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(Path(__file__).name,)
     parser.add_argument('path')
     parser.add_argument('-v', '--verbose')
+    parser.add_argument("--parametric",action="store_true")
 
     args = parser.parse_args()
     BASE_DIR = Path(args.path)
@@ -163,13 +164,17 @@ if __name__ == "__main__":
     all_params = []
     # shadow_config = {}
     total_config = 0
+    curr_telescope = None
     for cfg_path in os.listdir(BASE_DIR):
         if (BASE_DIR / cfg_path).is_dir():
             continue
         print(BASE_DIR / cfg_path)
         total_config += 1
         # Setup for SHADOW config
-        timesteps = [1,5,15,30,60]
+        if args.parametric:
+            timesteps = [1]
+        else:
+            timesteps = [1,5,15,30,60]
         for t in timesteps:
             params = []
             shadow_config = config_to_shadow(BASE_DIR / cfg_path)
@@ -213,20 +218,20 @@ if __name__ == "__main__":
                 o["cfg"] = deepcopy(shadow_config)
 
             all_params.extend(params)
-        # break # We only care about a single config file.
 
     LOGGER.info("Total configs processed: %d", total_config)
     # sys.exit()
     LOGGER.info("Number of observations added %d", len(all_params))
-    for i, p in enumerate(params):
-        p['time'] = i
+    for _, p in enumerate(all_params):
+        p['method'] = ''
+        p['time'] = 0
 
     if not all_params:
         LOGGER.warning("No inputs provided, will not run scheduling")
         sys.exit()
 
     header = ','.join([p for p in all_params[0].keys() if p != 'cfg'])
-
+    # header += ',time'
     manager = Manager()
     queue = manager.Queue()
     lock = manager.Lock()
@@ -237,7 +242,9 @@ if __name__ == "__main__":
         fo.flush()
         from itertools import product
 
-        with Pool(processes=1) as pool:
-            pool.starmap(run_parametric, product(all_params, [(output, lock)]))
-        with Pool(processes=4) as pool:
-            pool.starmap(run_shadow, product(all_params, [(output, lock)]))
+        if args.parametric:
+            with Pool(processes=1) as pool:
+                pool.starmap(run_parametric, product(all_params, [(output, lock)]))
+        else:
+            with Pool(processes=4) as pool:
+                pool.starmap(run_shadow, product(all_params, [(output, lock)]))

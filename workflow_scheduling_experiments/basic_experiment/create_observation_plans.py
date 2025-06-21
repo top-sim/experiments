@@ -101,7 +101,7 @@ def maximal_low_obs_plan():
             },
             {
                 "count": 1,
-                "hpso": "hpso02a",
+                "hpso": "hpso02b",
                 "duration": LOW_OBSERVATIONS['hpso02b']['duration'],
                 "workflows": LOW_OBSERVATIONS['hpso02b']['workflows'],
                 "demand": max_demand,  # demand * 1,

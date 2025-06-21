@@ -307,6 +307,7 @@ def create_simulation_schedule_map(simulation):
             (df["observation"] == o) & (df["actor"] == "scheduler") & (df['resource'] == 'allocation')
             ]
 
+    simulation_total_time = 0
     # begin, end = [], []
     obs_list = [[], [], []]
     scheduler_start = []
@@ -378,6 +379,7 @@ def create_simulation_schedule_map(simulation):
         #         left=np.array(begin), edgecolor='black')
     ax.legend()
     # plt.savefig(f"ScheduleMap_{hash(key)}.png")
+    return simulation_total_time
 
 
 def get_observation_duration(df):
@@ -1232,7 +1234,7 @@ if __name__ == "__main__":
     # plot_observation_plan(plan, 0.12)
 
     s = simulation_summaries[cfgs[0]]
-    # create_simulation_schedule_map(pd.read_csv(StringIO(s)))
+    create_simulation_schedule_map(pd.read_csv(StringIO(s)))
 
     cfgs = select_n_configs_by_key(usage_summary_dataframe, "demand_ratio", 0.38, count=1)
     # plan = observation_plans[(

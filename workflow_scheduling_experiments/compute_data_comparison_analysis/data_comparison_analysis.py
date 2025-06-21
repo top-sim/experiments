@@ -29,7 +29,7 @@ matplotlib.use("TkAgg")
 # rcParams["text.usetex"] = True
 rcParams["font.family"] = "serif"
 # rcParams["font.serif"] = "computer modern roman"
-rcParams["font.size"] = 12.0
+rcParams["font.size"] = 6.0
 
 rcParams["axes.linewidth"] = 1
 
@@ -116,9 +116,13 @@ def load_machine_spec_from_config(path: Path) -> list[dict]:
     resources = system_config["cluster"]["system"]["resources"]
 
     str_resources = set([json.dumps(v) for v in resources.values()])
-
     return [json.loads(s) for s in str_resources]
 
+def load_system_bandwidth(path: Path):
+    system_config = {}
+    with path.open() as fp:
+        system_config = json.load(fp)
+    return system_config["cluster"]["system"]['system_bandwidth']
 
 def extract_parameters_from_json():
     pass
@@ -238,6 +242,13 @@ def calc_data_time(df: pd.DataFrame):
 
     return np.ceil(df["fraction_data_cost"] * df["duration"] * data_unit / compute_bandwidth)
 
+def calc_transfer_time(df: pd.DataFrame):
+    """
+    Transfer time
+    :param df:
+    :return:
+    """
+    return np.ceil(df['fraction_data_cost'] * df["duration"]* data_unit / compute_bandwidth)
 
 def retrieve_workflow_stats(wf_params: dict):
     """
@@ -342,56 +353,133 @@ def save_processed_workflow_data(workflow_data: pd.DataFrame, source_dir: str):
     """
 
 
-def plot_product_cost_variation(df: pd.DataFrame):
-    fig = plt.figure(1, (6, 12))
-    gs = GridSpec(1,2)# , width_ratios=[0.1,0.85])
+def plot_product_cost_variation(df: pd.DataFrame, twocolumn=True):
+    if twocolumn:
+        fig = plt.figure(figsize=(6, 4), dpi=300,)
+    else:
+        fig = plt.figure(figsize=(10/3, 3), dpi=300, )
+
     # ax.spines['left'].set_position(('data', 1))
     comp_df = create_computation_dataframe(df)
     data_df = create_data_dataframe(df)
     comp_df, data_df = calculate_comp_to_data_ratio(comp_df, data_df)
 
-    ax1 = fig.add_subplot(gs[0:1])
-    ax2 = fig.add_subplot(gs[1:2])
-    telescope = {512:{"ax": ax1, "products":{} }, 197: {"ax": ax2, "products":{}}}
+
+    comp_df = comp_df.drop_duplicates()
+
+    # telescope = {512:{"ax": ax1, "products":{}}, 197: {"ax": ax2, "products":{}}}
     # TODO Group by Telescope!
-    legend = []
-    for group, sub_df in comp_df.groupby(["demand", "workflow_type","product"]):
-        demand, workflow_type, product = group
-        xaxis_data = sub_df["Ratio"].to_numpy()
-        yaxis_data = product
-        legend.append(workflow_type)
-        # telescope[demand]["products"][workflow_type].update({product: xaxis_data})
-        if workflow_type in telescope[demand]["products"]:
-            telescope[demand]["products"][workflow_type].update({product: xaxis_data})
-            # telescope[demand]["products"][workflow_type]['y'].append(yaxis_data)
-        else:
-            telescope[demand]["products"][workflow_type] = {product: xaxis_data}
+    import matplotlib.colors as mcolors
+    css_colors = list(mcolors.CSS4_COLORS.keys())
+    workflows = ["DPrepA", "DPrepB", "DPrepC", "DPrepD", "ICAL"]
+    # NEED TO SPLIT BY HPSO
+
+    _legend = workflows
+    incr = len(mcolors.CSS4_COLORS) % len(workflows)
+    legend_colors = {}
+    for i in range(len(_legend)):
+        legend_colors[_legend[i]] = css_colors[i * incr]
+
+    # group by telescope:
+
+    low_df = comp_df[comp_df['demand'] == 512]
+    mid_df = comp_df[comp_df['demand'] == 197]
+
+    count = 0
+
+    gs = GridSpec(2, 3, right=0.875, hspace=0.3, wspace=0.2) #, hspace=0.5, top=0.9, wspace=0, right=0.85)  # , width_ratios=[0.1,0.85]
+    curr_handles = {}
+    for hpso in comp_df.groupby('observation'):
+        hpso, group_df = hpso
+        ax = fig.add_subplot(gs[count])
+
+        results = {}
+        for group, sub_df in group_df.groupby(["workflow_type","product"]):
+            workflow_type, product = group
+            xaxis_data = sub_df["Ratio"].to_numpy()
+            split_product = product.split(" ")
+            if len(split_product) > 1:
+                product = split_product[0]+"*"
+            if "LSM" in product:
+                product = "Update*"
+            if workflow_type in results:
+                if product in results[workflow_type]:
+                    results[workflow_type][product].append(xaxis_data)
+                else:
+                    results[workflow_type][product] =  xaxis_data
+            else:
+                results[workflow_type] = {product:xaxis_data}
 
 
-    # Setup colors using LogNorm
-    from matplotlib.colors import SymLogNorm, LogNorm, CenteredNorm
+        for wf, xy in results.items():
+            # Sort the keys (y-values)
+            sorted_items = sorted(xy.items())  # Sorted by y-value alphabetically
 
-    y = []
-    x = np.array([])
-    bplot_arrays = []
-    # res = ax.boxplot(bplot_arrays,tick_labels=yaxis_data, vert=False,patch_artist=True, boxprops={"facecolor": "bisque"})
-    for t, results in telescope.items():
-        ax = results["ax"]
-        for wf, xy in results["products"].items():
-            for y, x in xy.items():
-                x = x
-                y = [y]*len(x)
-                ax.scatter(x, y,  edgecolors="black")
+            # Unpack into sorted y and x values
+            y = [k for k, v in sorted_items]
+            x = [v[0] for k, v in sorted_items]
+            # for i, _y in enumerate(y_sorted):
+            #     x = x_sorted[i]
+            #     y = [_y]*len(x)
+            x.reverse()
+            y.reverse()
+            ax.scatter(x, y, label=wf, color=legend_colors[wf], edgecolors='black',linewidth=1, s=15)
+
+        if count%3 > 0 :
+            ax.get_yaxis().set_visible(False)
+
+
         ax.set_xscale("log")
-        ax.vlines(1,0,13,linestyle="dashed")
+        ax.vlines(1,0,13,linestyle="dashed", color= "grey", zorder=-1)
         ax.set_xbound(1e-3,100)
-        ax.set_title(f"{t}: TelescopeAntennas")
-        ax.legend(legend)
-        # fig.tight_layout()
-        # fig.colorbar(res, ax=ax)
+        ax.set_title(f"{hpso.upper()}")
+        h, l = ax.get_legend_handles_labels()
+        by_label = dict(zip(l, h))
+        if len(by_label) > len(curr_handles):
+            curr_handles = by_label
 
+        count+=1
+        # ax.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+
+    plt.legend(curr_handles.values(), curr_handles.keys(), fontsize='small', bbox_to_anchor=(1.5,1.5 ))
+        # handles, labels = plt.gca().get_legend_handles_labels()
+
+            # fig.tight_layout()
+            # fig.colorbar(res, ax=ax)
+
+    plt.savefig('product_cost_var.png')
+
+
+def plot_supporting_data_variation(df: pd.DataFrame, twocolumn=False):
+    if twocolumn:
+        fig = plt.figure(figsize=(6, 4), dpi=300,)
+    else:
+        fig = plt.figure(figsize=(10/3, 3), dpi=300, )
+
+    # ax.spines['left'].set_position(('data', 1))
+    comp_df = create_computation_dataframe(df)
+    data_df = create_data_dataframe(df)
+    comp_df, data_df = calculate_comp_to_data_ratio(comp_df, data_df)
+    comp_df = comp_df.drop_duplicates()
+
+    comp_df['transfer_data_time'] = calc_transfer_time(comp_df)
+
+    df_comp = comp_df.sort_values(by='observation')
+    df_comp_dataintensive = df_comp[df_comp['Ratio'] >= 1]
+    df_comp_dprepb = df_comp_dataintensive[df_comp_dataintensive['transfer_data_time'] >= 1]
+
+    ax = fig.add_subplot()
+    y = []
+    x = []
+    for hpso, group in df_comp_dprepb.groupby("observation"):
+        x.append(hpso)
+        # x.extend([hpso] * len(group)) # uncomment if you want scatter
+        y.append(group['transfer_data_time'])
+    ax.violinplot(y, showmedians=True) #whis=(0, 100))
+    ax.set_yscale("log")
+    ax.set_xticks(np.arange(1, len(x) + 1), labels=x)
+    plt.savefig('supporting_data.png')
     plt.show()
-
 
 
 if __name__ == "__main__":
@@ -412,8 +500,8 @@ if __name__ == "__main__":
 
     LOGGER.info("Loading machine config...")
     machine_specs = load_machine_spec_from_config(RESULT_PATH)
-    flops, compute_bandwidth, memory = machine_specs[-1].values()
-    # TODO get workflows from the path in the system config
+    flops, compute_bandwidth, memory= machine_specs[-1].values()
+    system_transfer_bandwidth = load_system_bandwidth(RESULT_PATH)
     # workflow = Path()
     LOGGER.info("Loading workflows...")
     all_workflows = load_workflows_from_csvs(RESULT_PATH.parent)
@@ -424,4 +512,5 @@ if __name__ == "__main__":
     # Can colour data too? Red is data-intensive, Blue is compute intensive?
     # Use diverging colourscheme
 
-    plot_product_cost_variation(all_workflows)
+    # plot_product_cost_variation(all_workflows)
+    plot_supporting_data_variation(all_workflows)
