@@ -32,9 +32,6 @@ LOGGER = logging.getLogger(__name__)
 
 LOW_OBSERVATION_DEFAULTS = load_observation_defaults("SKALow")
 
-# TODO These defaults really should be stored in SKAWorkflows and referenced exclusively
-# there until the end of time. Bonus points for wrapping the SDP parametric model
-
 MID_OBSERVATIONS_DEFAULTS = load_observation_defaults("SKAMid")
 
 

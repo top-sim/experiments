@@ -359,9 +359,12 @@ def create_simulation_schedule_map(simulation):
             int(tdf[tdf["event"] == "finished"]["time"].iloc[0]) * 5 / 3600
         )
 
+    # TODO mark pulsars as scatter plot values and overlay on axis. Makes it a lot easier to see
     group_labels = ["Scheduler", "Telescope", "Buffer"]
     # import matplotlib.pyplot as plt
-    fig, ax = plt.subplots()
+    fig = plt.figure(figsize=(6, 4), dpi=300)
+    ax = fig.subplots()
+    # fig, ax = plt.subplots()
     values = [[scheduler_start, scheduler_end], [telescope_start, telescope_end], [buffer_start, buffer_end]]
     for i, (actor, group_label) in enumerate(zip(values, group_labels)):
         start, end = actor
@@ -626,7 +629,7 @@ import matplotlib
 def plot_scatter_axis(usage: pd.DataFrame,
                       ax: matplotlib.axes,
                       xaxis: str = "computing_to_observation_length_ratio",
-                      yaxis: str = "plan_average_compute_from_flops", **kwFalseargs):
+                      yaxis: str = "plan_average_compute_from_flops", **kwargs):
     algorithms = kwargs.get('algorithms')
     markers = kwargs.get("markers", {'default': 'o'})
     fill_plots = kwargs.get('fill', False)
@@ -646,7 +649,7 @@ def plot_scatter_axis(usage: pd.DataFrame,
 
     legend_elements.append(plt.Line2D([0], [0], linestyle='none', label='I/O'))
     for val, color in colors.items():
-        legend_elements.append(plt.Line2D([0], [0], color=color, lw=2, label=f'val={val}'))
+        legend_elements.append(plt.Line2D([0], [0], color=color, lw=2, label=f'x{val}'))
 
 
     # plot_io_variation = kwargs.get('all_io', False)
@@ -679,11 +682,11 @@ def plot_scatter_axis(usage: pd.DataFrame,
                 ax.fill(hull_points[:,0], hull_points[:,1], colors[io], alpha=0.25)
         io_idx+=1
 
-    legend = ax.legend(handles=legend_elements, loc='upper left', frameon=True, handlelength=2,fontsize='small')
+    legend = ax.legend(handles=legend_elements, alignment='left', loc='upper left', frameon=True, handlelength=2,fontsize='small')
     for text in legend.get_texts():
         if text.get_text() in ['Algorithms', 'I/O']:
-            # text.set_weight('bold')
-            text.set_ha("left")
+            text.set_weight('bold')
+    #         text.set_ha("left")
     return ax
 
 
@@ -974,12 +977,12 @@ def plot_observation_plan(observation_plan: pd.DataFrame, demand: float):
     - instrument_demand
     """
 
-    fig = plt.figure(figsize=(12, 6))
+    fig = plt.figure(figsize=(12, 6), dpi=300)
     gs = GridSpec(
         1, 1, figure=fig
     )  # , wspace=0.25) # , left=0.05, right=0.1, wspace=0.05)
     ax1 = fig.add_subplot(gs[0, 0])
-    ax1 = setup_axes([ax1])[-1]
+    # ax1 = setup_axes([ax1])[-1]
     # Need to map width to the right
     y = np.array(observation_plan['instrument_demand'])
     x = np.array(observation_plan['start'])
@@ -1228,13 +1231,13 @@ if __name__ == "__main__":
 
     # SHOW CONFIGS
 
-    cfgs = select_n_configs_by_key(usage_summary_dataframe, "demand_ratio", 0.12, count=1)
-    # plan = observation_plans[(
-    #         observation_plans["config"] == cfgs[0])]
-    # plot_observation_plan(plan, 0.12)
+    cfgs = select_n_configs_by_key(usage_summary_dataframe, "demand_ratio", 0.30, count=1)
+    plan = observation_plans[(
+            observation_plans["config"] == cfgs[0])]
+    plot_observation_plan(plan, 0.30)
 
-    s = simulation_summaries[cfgs[0]]
-    create_simulation_schedule_map(pd.read_csv(StringIO(s)))
+    # s = simulation_summaries[cfgs[0]]
+    # create_simulation_schedule_map(pd.read_csv(StringIO(s)))
 
     cfgs = select_n_configs_by_key(usage_summary_dataframe, "demand_ratio", 0.38, count=1)
     # plan = observation_plans[(

@@ -24,6 +24,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
 
 import matplotlib
+
 matplotlib.use("TkAgg")
 # Setup all the visualisation nicities
 # rcParams["text.usetex"] = True
@@ -51,8 +52,8 @@ pipeline_names = ["ICAL", "DPrepA", "DPrepB", "DPrepC", "DPrepD"]
 # mid_hpsos = {'hpso13': 28800 ,'hpso15':15840 , 'hpso22':28800, 'hpso32':7920}
 
 # Setup multipler for a given observation
-compute_unit = 10**15  # Peta flop
-data_unit = 10**6  # per million visibilites
+compute_unit = 10 ** 15  # Peta flop
+data_unit = 10 ** 6  # per million visibilites
 bytes_per_vis = 12
 
 
@@ -118,11 +119,13 @@ def load_machine_spec_from_config(path: Path) -> list[dict]:
     str_resources = set([json.dumps(v) for v in resources.values()])
     return [json.loads(s) for s in str_resources]
 
+
 def load_system_bandwidth(path: Path):
     system_config = {}
     with path.open() as fp:
         system_config = json.load(fp)
     return system_config["cluster"]["system"]['system_bandwidth']
+
 
 def extract_parameters_from_json():
     pass
@@ -242,13 +245,15 @@ def calc_data_time(df: pd.DataFrame):
 
     return np.ceil(df["fraction_data_cost"] * df["duration"] * data_unit / compute_bandwidth)
 
+
 def calc_transfer_time(df: pd.DataFrame):
     """
     Transfer time
     :param df:
     :return:
     """
-    return np.ceil(df['fraction_data_cost'] * df["duration"]* data_unit / compute_bandwidth)
+    return np.ceil(df['fraction_data_cost'] * df["duration"] * data_unit / system_transfer_bandwidth)
+
 
 def retrieve_workflow_stats(wf_params: dict):
     """
@@ -308,7 +313,7 @@ def create_data_dataframe(df):
     """
     new_df = df.copy()
     data_time = calc_data_time(new_df)
-    data_time = data_time[data_time !=0.00]
+    data_time = data_time[data_time != 0.00]
     new_df["Time (s)"] = data_time.clip(1)
     return new_df
 
@@ -355,15 +360,14 @@ def save_processed_workflow_data(workflow_data: pd.DataFrame, source_dir: str):
 
 def plot_product_cost_variation(df: pd.DataFrame, twocolumn=True):
     if twocolumn:
-        fig = plt.figure(figsize=(6, 4), dpi=300,)
+        fig = plt.figure(figsize=(6, 4), dpi=300, )
     else:
-        fig = plt.figure(figsize=(10/3, 3), dpi=300, )
+        fig = plt.figure(figsize=(10 / 3, 3), dpi=300, )
 
     # ax.spines['left'].set_position(('data', 1))
     comp_df = create_computation_dataframe(df)
     data_df = create_data_dataframe(df)
     comp_df, data_df = calculate_comp_to_data_ratio(comp_df, data_df)
-
 
     comp_df = comp_df.drop_duplicates()
 
@@ -387,29 +391,29 @@ def plot_product_cost_variation(df: pd.DataFrame, twocolumn=True):
 
     count = 0
 
-    gs = GridSpec(2, 3, right=0.875, hspace=0.3, wspace=0.2) #, hspace=0.5, top=0.9, wspace=0, right=0.85)  # , width_ratios=[0.1,0.85]
+    gs = GridSpec(2, 3, right=0.875, hspace=0.3,
+                  wspace=0.2)  # , hspace=0.5, top=0.9, wspace=0, right=0.85)  # , width_ratios=[0.1,0.85]
     curr_handles = {}
     for hpso in comp_df.groupby('observation'):
         hpso, group_df = hpso
         ax = fig.add_subplot(gs[count])
 
         results = {}
-        for group, sub_df in group_df.groupby(["workflow_type","product"]):
+        for group, sub_df in group_df.groupby(["workflow_type", "product"]):
             workflow_type, product = group
             xaxis_data = sub_df["Ratio"].to_numpy()
             split_product = product.split(" ")
             if len(split_product) > 1:
-                product = split_product[0]+"*"
+                product = split_product[0] + "*"
             if "LSM" in product:
                 product = "Update*"
             if workflow_type in results:
                 if product in results[workflow_type]:
                     results[workflow_type][product].append(xaxis_data)
                 else:
-                    results[workflow_type][product] =  xaxis_data
+                    results[workflow_type][product] = xaxis_data
             else:
-                results[workflow_type] = {product:xaxis_data}
-
+                results[workflow_type] = {product: xaxis_data}
 
         for wf, xy in results.items():
             # Sort the keys (y-values)
@@ -423,38 +427,39 @@ def plot_product_cost_variation(df: pd.DataFrame, twocolumn=True):
             #     y = [_y]*len(x)
             x.reverse()
             y.reverse()
-            ax.scatter(x, y, label=wf, color=legend_colors[wf], edgecolors='black',linewidth=1, s=15)
+            ax.scatter(x, y, label=wf, color=legend_colors[wf], edgecolors='black', linewidth=1, s=15)
 
-        if count%3 > 0 :
+        if count % 3 > 0:
             ax.get_yaxis().set_visible(False)
 
-
         ax.set_xscale("log")
-        ax.vlines(1,0,13,linestyle="dashed", color= "grey", zorder=-1)
-        ax.set_xbound(1e-3,100)
+        ax.vlines(1, 0, 13, linestyle="dashed", color="grey", zorder=-1)
+        ax.set_xbound(1e-3, 100)
         ax.set_title(f"{hpso.upper()}")
+        ax.set_xlabel("Time (s)")
+        ax.set_ylable("Algorithm")
         h, l = ax.get_legend_handles_labels()
         by_label = dict(zip(l, h))
         if len(by_label) > len(curr_handles):
             curr_handles = by_label
 
-        count+=1
+        count += 1
         # ax.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
 
-    plt.legend(curr_handles.values(), curr_handles.keys(), fontsize='small', bbox_to_anchor=(1.5,1.5 ))
-        # handles, labels = plt.gca().get_legend_handles_labels()
+    plt.legend(curr_handles.values(), curr_handles.keys(), fontsize='small', bbox_to_anchor=(1.5, 1.5))
+    # handles, labels = plt.gca().get_legend_handles_labels()
 
-            # fig.tight_layout()
-            # fig.colorbar(res, ax=ax)
+    # fig.tight_layout()
+    # fig.colorbar(res, ax=ax)
 
     plt.savefig('product_cost_var.png')
 
 
 def plot_supporting_data_variation(df: pd.DataFrame, twocolumn=False):
     if twocolumn:
-        fig = plt.figure(figsize=(6, 4), dpi=300,)
+        fig = plt.figure(figsize=(6, 4), dpi=300, )
     else:
-        fig = plt.figure(figsize=(10/3, 3), dpi=300, )
+        fig = plt.figure(figsize=(10 / 3, 3), dpi=300, )
 
     # ax.spines['left'].set_position(('data', 1))
     comp_df = create_computation_dataframe(df)
@@ -466,19 +471,87 @@ def plot_supporting_data_variation(df: pd.DataFrame, twocolumn=False):
 
     df_comp = comp_df.sort_values(by='observation')
     df_comp_dataintensive = df_comp[df_comp['Ratio'] >= 1]
-    df_comp_dprepb = df_comp_dataintensive[df_comp_dataintensive['transfer_data_time'] >= 1]
+    df_comp_dataonly = df_comp_dataintensive[df_comp_dataintensive['transfer_data_time'] >= 1]
 
     ax = fig.add_subplot()
     y = []
     x = []
-    for hpso, group in df_comp_dprepb.groupby("observation"):
-        x.append(hpso)
-        # x.extend([hpso] * len(group)) # uncomment if you want scatter
-        y.append(group['transfer_data_time'])
-    ax.violinplot(y, showmedians=True) #whis=(0, 100))
+    hpsos = set()
+    x_jitter = []
+    hpsos = sorted(df_comp_dataonly['observation'].unique())
+    category_to_x = {hpso: i for i, hpso in enumerate(hpsos)}
+    for hpso, group in df_comp_dataonly.groupby("observation"):
+        # x.append(hpso.upper()) # uncomment if you want box
+        xpos = category_to_x[hpso]
+        jitter = np.random.normal(loc=0, scale=0.1, size=len(group))
+        x_jitter.extend(xpos + jitter)
+        y.extend(group['transfer_data_time'])
+        # y.append(group['transfer_data_time'])
+    # bplot = ax.boxplot(y, patch_artist=True, tick_labels=x, whis=(0, 100))
+    ax.scatter(x_jitter, y, color="lightgrey", edgecolor='black', s=15)
+    # for patch, color in zip(bplot['boxes'], colors*len(bplot['boxes'])):
+    #     patch.set_facecolor(color)
+
+    # for pc in parts['bodies']:
+    #     pc.set_facecolor('grey')
+    #     pc.set_edgecolor('black')
+    #     pc.set_alpha(1)
+
+    ax.set_xlabel("Observation type")
+    ax.set_ylabel("Time (s)")
     ax.set_yscale("log")
-    ax.set_xticks(np.arange(1, len(x) + 1), labels=x)
-    plt.savefig('supporting_data.png')
+    plt.xticks(ticks=range(len(hpsos)),
+               labels=[hp.upper() for hp in hpsos])
+    plt.savefig('supporting_data_runtime.png')
+    plt.show()
+
+
+def plot_scheduling_comparisons():
+    df = pd.read_csv("workflow_scheduling_experiments/basic_experiment/results_2025-06-09.csv", index_col=False)
+    df = df.drop_duplicates()
+    df_par = pd.read_csv("workflow_scheduling_experiments/basic_experiment/results_2025-06-18.csv", index_col=False)
+    df_par = df_par.drop_duplicates()
+    fig = plt.figure(figsize=(10 / 3, 3), dpi=300, )
+    ax = fig.subplots()
+    i = 0
+    df = df.sort_values(by=['data_distribution'], ascending=False)
+    # nfig = plt.figure(figsize=(10/3, 3), dpi=300)
+    # alt_ax = nfig.subplots()
+    width = 0.20
+    for group, group_df in df.groupby(['data_distribution', 'data']):
+        distribution, data = group
+        obs = []
+        y = []
+        par = []
+        for observation, ngroup_df in group_df.groupby('observation'):
+            ngroup_df.sort_values(by=['timestep'])
+            base_time = ngroup_df[group_df['timestep'] == 1]['time'].iloc[0]
+            timestep = ngroup_df['timestep']
+            time = ngroup_df['time'] * timestep
+            difference = ((time - base_time) / base_time)
+            # if distribution == 'standard' and data:
+            #     alt_ax.scatter(x=timestep, y=difference, label=observation)
+            #     alt_ax.legend()
+            # ax.scatter(x=[observation], y=base_time, label=observation, marker='o')
+            par_time = df_par[(df_par['data'] == data) & (df_par['data_distribution'] == distribution) & (
+                        df_par['observation'] == observation)]['time'].iloc[0]
+            par.append(1.0)
+            obs.append(observation.upper())
+            y.append(base_time / par_time)
+            # ax.scatter(x=[observation], y=par_time, label=observation, marker='v')
+            # ax.set_title(f"{data} + {distribution}")
+        x = np.arange(len(obs))
+        if i == 0:
+            offset = width * i
+            ax.bar(x=x + offset, height=par, width=width, label=f"Par Model")
+            i+=1
+        offset = width * i
+        ax.bar(x=x + offset, height=y, width=width, label=f"{data} + {distribution}")
+        ax.set_xticks(x+width, obs)
+        ax.legend()
+        i += 1
+
+    plt.savefig('base_scheduling_results.png')
     plt.show()
 
 
@@ -500,7 +573,7 @@ if __name__ == "__main__":
 
     LOGGER.info("Loading machine config...")
     machine_specs = load_machine_spec_from_config(RESULT_PATH)
-    flops, compute_bandwidth, memory= machine_specs[-1].values()
+    flops, compute_bandwidth, memory = machine_specs[-1].values()
     system_transfer_bandwidth = load_system_bandwidth(RESULT_PATH)
     # workflow = Path()
     LOGGER.info("Loading workflows...")
@@ -514,3 +587,4 @@ if __name__ == "__main__":
 
     # plot_product_cost_variation(all_workflows)
     plot_supporting_data_variation(all_workflows)
+    # plot_scheduling_comparisons()

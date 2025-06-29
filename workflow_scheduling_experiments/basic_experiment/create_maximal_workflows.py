@@ -23,33 +23,16 @@ import numpy as np
 VERBOSE = False
 logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
+from skaworkflows.observation.observation import HPSOParameter, ObservationPlan
 
 from skaworkflows.config_generator import create_config
+from skaworkflows import common
+from skaworkflows.observation.parameters import load_observation_defaults
 
-LOW_OBSERVATIONS= {'hpso01': {"duration": 18000,
-                  'workflows': ["ICAL", "DPrepA", "DPrepB",  "DPrepC", "DPrepD"]},
-       'hpso02a': {"duration": 18000,
-                   'workflows': ["ICAL", "DPrepA", "DPrepB", "DPrepC", "DPrepD"]},
-       'hpso02b': {"duration": 18000,
-                   'workflows': ["ICAL", "DPrepA", "DPrepB", "DPrepC", "DPrepD"]}}
+LOW_OBSERVATION_DEFAULTS = load_observation_defaults("SKALow")
 
-# TODO These defaults really should be stored in SKAWorkflows and referenced exclusively
-# there until the end of time. Bonus points for wrapping the SDP parametric model
+MID_OBSERVATIONS_DEFAULTS = load_observation_defaults("SKAMid")
 
-MID_OBSERVATIONS= {
-    'hpso13': {'duration': 28800,
-               'baseline': 35000,
-               'workflows': ["ICAL", "DPrepA", "DPrepB", "DPrepC"]},
-    'hpso15': {'duration': 15840,
-               'baseline': 15000,
-               'workflows': ["ICAL", "DPrepA", "DPrepB", "DPrepC"]},
-    'hpso22': {'duration': 28800,
-               'baseline': 150000,
-               'workflows': ["ICAL", "DPrepA", "DPrepB"]},
-    'hpso32': {'duration': 7920,
-               'baseline': 20000,
-               'workflows': ["ICAL", "DPrepB"]}
-}
 
 channel_multiplier = 128
 
@@ -72,48 +55,41 @@ def maximal_low_obs_plan():
     LOGGER.info("Preparing maximal output for LOW telescope\n"
                 "Nodes: %i\n Stations/Antennas:%i\nChannels: %s\n Baseline: %ikm",
                 nodes, max_demand, max_channels, max_baseline)
-    observation = {
-        "nodes": nodes,
-        "infrastructure": "parametric",
-        "telescope": "low",
-        "items": [
-            {
-                "count": 1,
-                "hpso": "hpso01",
-                "duration": LOW_OBSERVATIONS['hpso01']['duration'],
-                "workflows": LOW_OBSERVATIONS['hpso01']['workflows'],
-                "demand": max_demand,  # demand * 1,
-                "channels": max_demand * channel_multiplier,
-                "coarse_channels": nodes,  # parallel channels,
-                "baseline": max_baseline,
-                "telescope": "low"
-            },
-            {
-                "count": 1,
-                "hpso": "hpso02a",
-                "duration": LOW_OBSERVATIONS['hpso02a']['duration'],
-                "workflows": LOW_OBSERVATIONS['hpso02a']['workflows'],
-                "demand": max_demand,  # demand * 1,
-                "channels": max_channels * channel_multiplier,
-                "coarse_channels": nodes,  # parallel channels,
-                "baseline": max_baseline,
-                "telescope": "low"
-            },
-            {
-                "count": 1,
-                "hpso": "hpso02b",
-                "duration": LOW_OBSERVATIONS['hpso02b']['duration'],
-                "workflows": LOW_OBSERVATIONS['hpso02b']['workflows'],
-                "demand": max_demand,  # demand * 1,
-                "channels": max_channels * channel_multiplier,
-                "coarse_channels": nodes,  # parallel channels,
-                "baseline": max_baseline,
-                "telescope": "low"
-            }
-        ]
-    }
-    params.append(observation)
-
+    plan = ObservationPlan("low")
+    plan.add_observation(HPSOParameter(
+               count= 1,
+                hpso= "hpso01",
+                duration= LOW_OBSERVATION_DEFAULTS["hpsos"]['hpso01']['duration'],
+                workflows= LOW_OBSERVATION_DEFAULTS["hpsos"]['hpso01']['workflows'],
+                demand= max_demand,  # demand * 1,
+                channels= max_channels * channel_multiplier,
+                workflow_parallelism=nodes,
+                baseline= max_baseline,
+                telescope= str(plan.telescope)
+    ))
+    plan.add_observation(HPSOParameter(
+                count= 1,
+                hpso="hpso02a",
+                duration= LOW_OBSERVATION_DEFAULTS["hpsos"]['hpso02a']['duration'],
+                workflows= LOW_OBSERVATION_DEFAULTS["hpsos"]['hpso02a']['workflows'],
+                demand= max_demand,  # demand * 1,
+                channels= max_channels * channel_multiplier,
+                workflow_parallelism=nodes,
+                baseline= max_baseline,
+                telescope= "low"
+    ))
+    plan.add_observation(HPSOParameter(
+                count= 1,
+                hpso= "hpso02b",
+                duration= LOW_OBSERVATION_DEFAULTS["hpsos"]['hpso02b']['duration'],
+                workflows= LOW_OBSERVATION_DEFAULTS["hpsos"]['hpso02b']['workflows'],
+                demand= max_demand,  # demand * 1,
+                channels= max_channels * channel_multiplier,
+                workflow_parallelism= nodes,  # parallel channels,
+                baseline= max_baseline,
+                telescope= "low"
+    ))
+    params.append(plan.to_json())
     return params
 
 
@@ -143,60 +119,52 @@ def maximal_mid_obs_plan():
     LOGGER.info("Preparing maximal output for LOW telescope\n"
                 "Nodes: %i\n Stations/Antennas:%i\nChannels: %s\n Baseline: Various",
                 nodes, max_demand, max_channels)
-    observation = {
-        "nodes": nodes,
-        "infrastructure": "parametric",
-        "telescope": "mid",
-        "items": [
-            {
-                "count": 1,
-                "hpso": "hpso13",
-                "duration": MID_OBSERVATIONS['hpso13']['duration'],
-                "workflows": MID_OBSERVATIONS['hpso13']['workflows'],
-                "demand": max_demand,
-                "channels": max_channels * channel_multiplier,
-                "coarse_channels": nodes,
-                "baseline": MID_OBSERVATIONS['hpso13']['baseline'],
-                "telescope": "mid"
-            },
-            {
-                "count": 1,
-                "hpso": 'hpso15',
-                "duration": MID_OBSERVATIONS['hpso15']['duration'],
-                "workflows": MID_OBSERVATIONS['hpso15']['workflows'],
-                "demand": max_demand,
-                "channels": max_channels * channel_multiplier,
-                "coarse_channels": nodes,
-                "baseline": MID_OBSERVATIONS['hpso15']['baseline'],
-                "telescope": "mid"
-            },
-            {
-                "count": 1,
-                "hpso": 'hpso22',
-                "duration": MID_OBSERVATIONS['hpso22']['duration'],
-                "demand": max_demand
-                ,
-                "workflows": MID_OBSERVATIONS['hpso22']['workflows'],
-                "channels": max_channels * channel_multiplier,
-                "coarse_channels": nodes,
-                "baseline": MID_OBSERVATIONS['hpso22']['baseline'],
-                "telescope": "mid"
-            },
-            {
-                "count": 1,
-                "hpso": 'hpso32',
-                "duration": MID_OBSERVATIONS['hpso32']['duration'],
-                "demand": max_demand,
-                "workflows": MID_OBSERVATIONS['hpso32']['workflows'],
-                "channels": max_channels * channel_multiplier,
-                "coarse_channels": nodes,
-                "baseline": MID_OBSERVATIONS['hpso32']['baseline'],
-                "telescope": "mid"
-            }
-        ]
-    }
-
-    params.append(observation)
+    plan = ObservationPlan("mid")
+    plan.add_observation(HPSOParameter(
+        count=1,
+        hpso="hpso13",
+        duration=MID_OBSERVATIONS_DEFAULTS['hpsos']['hpso13']['duration'],
+        workflows=MID_OBSERVATIONS_DEFAULTS['hpsos']['hpso13']['workflows'],
+        demand=max_demand,
+        channels=max_channels * channel_multiplier,
+        workflow_parallelism=nodes,
+        baseline=MID_OBSERVATIONS_DEFAULTS['hpsos']['hpso13']['baseline'],
+        telescope="mid"
+    ))
+    plan.add_observation(HPSOParameter(
+        count= 1,
+        hpso= 'hpso15',
+        duration=MID_OBSERVATIONS_DEFAULTS['hpsos']['hpso15']['duration'],
+        workflows=MID_OBSERVATIONS_DEFAULTS['hpsos']['hpso15']['workflows'],
+        demand=max_demand,
+        channels=max_channels * channel_multiplier,
+        workflow_parallelism= nodes,
+        baseline=MID_OBSERVATIONS_DEFAULTS['hpsos']['hpso15']['baseline'],
+        telescope="mid"
+    ))
+    plan.add_observation(HPSOParameter(
+        count= 1,
+        hpso= 'hpso22',
+        duration= MID_OBSERVATIONS_DEFAULTS['hpsos']['hpso22']['duration'],
+        demand= max_demand,
+        workflows= MID_OBSERVATIONS_DEFAULTS['hpsos']['hpso22']['workflows'],
+        channels= max_channels * channel_multiplier,
+        workflow_parallelism=nodes,
+        baseline=MID_OBSERVATIONS_DEFAULTS['hpsos']['hpso22']['baseline'],
+        telescope="mid"
+    ))
+    plan.add_observation(HPSOParameter(
+        count= 1,
+        hpso= 'hpso32',
+        duration= MID_OBSERVATIONS_DEFAULTS['hpsos']['hpso32']['duration'],
+        demand= max_demand,
+        workflows= MID_OBSERVATIONS_DEFAULTS['hpsos']['hpso32']['workflows'],
+        channels= max_channels * channel_multiplier,
+        workflow_parallelism=nodes,
+        baseline= MID_OBSERVATIONS_DEFAULTS['hpsos']['hpso32']['baseline'],
+        telescope= "mid"
+    ))
+    params.append(plan.to_json())
     return params
 
 def minimal_low_obs_plan():
