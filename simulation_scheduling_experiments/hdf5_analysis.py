@@ -146,7 +146,7 @@ def collate_simulation_results(result_path: Path, simulations: dict):
         # TODO consider getting the schedule length the same we get the obs_durations, so it's purely reflecting
         # The time each workflow was computing.
         # The only problem here is we will need to ensure we don't double count overlapping workflows.
-        parameters["schedule_length"] = len(df_sim)
+        parameters["schedule_length"] = calculate_total_computing_time(df, timestep) # len(df_sim)
         parameters["planning"] = df_sim["planning"]
         parameters["scheduling"] = df_sim["scheduling"]
         parameters["max_running_tasks"] = df_sim[
@@ -166,6 +166,50 @@ def collate_simulation_results(result_path: Path, simulations: dict):
         df_total = pd.concat([df_total, parameters], ignore_index=True)
 
     return df_total
+
+def calculate_total_computing_time(simulation_df, timestep):
+    scheduler_start = []
+    scheduler_finish = []
+    obs = set(simulation_df["observation"])
+    obs_d = {o: {} for o in obs}
+    obs_list = [[], [], []]
+    for o in obs_d:
+        obs_d[o]["scheduler"] = simulation_df[
+            (simulation_df["observation"] == o) & (simulation_df["actor"] == "scheduler") & (simulation_df['resource'] == 'allocation')
+            ]
+
+    for o in sorted(obs):
+        obs_list[0].append(f"{o}")  # Scheduler
+        sdf = obs_d[o]["scheduler"]
+        scheduler_start.append(
+            int(sdf[sdf["event"] == "started"]["time"].iloc[0])
+        )
+        scheduler_finish.append(
+            int(sdf[sdf["event"] == "stopped"]["time"].iloc[0])
+        )
+
+    intervals = list(zip(scheduler_start, scheduler_finish))
+
+    # Sanity check
+    if not intervals:
+        return 0
+
+    # Sort by start time
+    intervals.sort(key=lambda x: x[0])
+
+    merged = [intervals[0]]
+
+    for current_start, current_end in intervals[1:]:
+        last_start, last_end = merged[-1]
+        if current_start <= last_end:
+            # Overlapping → merge
+            merged[-1] = (last_start, max(last_end, current_end))
+        else:
+            # No overlap → add new interval
+            merged.append((current_start, current_end))
+
+    # Sum total duration of merged intervals
+    return sum([end - start for start, end in merged])
 
 
 def process_workflow_stats(cfg_path: Path, df_total: pd.DataFrame):
@@ -286,25 +330,25 @@ def pretty_print_simulation_results(simulations, key, verbose=False):
     return parameters
 
 
-def create_simulation_schedule_map(simulation):
-    df = simulation  # Remove this at some point this
-    actors = set(df["actor"])
+def create_simulation_schedule_map(simulation_df):
+    simulation_df = simulation_df  # Remove this at some point this
+    actors = set(simulation_df["actor"])
     # Observation telescope, started/finished
     # observation buffer, start/end -> we don´t particularly care about buffer
     # observation scheduler, added/removed
-    obs = set(df["observation"])
+    obs = set(simulation_df["observation"])
     inst, sched = {}, {}
     obs_d = {o: {} for o in obs}
     for o in obs_d:
-        obs_d[o]["telescope"] = df[
-            (df["observation"] == o) & (df["actor"] == "instrument") & (df['resource'] == 'telescope')
+        obs_d[o]["telescope"] = simulation_df[
+            (simulation_df["observation"] == o) & (simulation_df["actor"] == "instrument") & (simulation_df['resource'] == 'telescope')
             ]
-        obs_d[o]["buffer"] = df[
-            (df["observation"] == o) & (df["actor"] == "buffer") & (
-                    df['resource'] == 'transfer')
+        obs_d[o]["buffer"] = simulation_df[
+            (simulation_df["observation"] == o) & (simulation_df["actor"] == "buffer") & (
+                    simulation_df['resource'] == 'transfer')
             ]
-        obs_d[o]["scheduler"] = df[
-            (df["observation"] == o) & (df["actor"] == "scheduler") & (df['resource'] == 'allocation')
+        obs_d[o]["scheduler"] = simulation_df[
+            (simulation_df["observation"] == o) & (simulation_df["actor"] == "scheduler") & (simulation_df['resource'] == 'allocation')
             ]
 
     simulation_total_time = 0
@@ -362,7 +406,7 @@ def create_simulation_schedule_map(simulation):
     # TODO mark pulsars as scatter plot values and overlay on axis. Makes it a lot easier to see
     group_labels = ["Scheduler", "Telescope", "Buffer"]
     # import matplotlib.pyplot as plt
-    fig = plt.figure(figsize=(6, 4), dpi=300)
+    fig = plt.figure(figsize=(6, 6), dpi=300)
     ax = fig.subplots()
     # fig, ax = plt.subplots()
     values = [[scheduler_start, scheduler_end], [telescope_start, telescope_end], [buffer_start, buffer_end]]
@@ -1197,9 +1241,9 @@ if __name__ == "__main__":
         sys.exit()
     print(df_total_path, result_path)
 
-    df_total, simulation_summaries = generate_total_dataframe(df_total_path, result_path, args.reprocess)
-    if df_total is None:
-        df_total = pd.read_csv(df_total_path)
+    _, simulation_summaries = generate_total_dataframe(df_total_path, result_path, args.reprocess)
+    # if df_total is None:
+    df_total = pd.read_csv(df_total_path)
     if not simulation_summaries:
         with open("simulation_summaries.json") as fp:
             simulation_summaries = json.load(fp)
@@ -1223,7 +1267,7 @@ if __name__ == "__main__":
     #################################################################################
 
     # plot_histogram_observing_computing_ratio(usage_summary_dataframe)
-    plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe)
+    # plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe)
     # plot_flops_vs_demand(usage_summary_dataframe)
 
     observation_plans = get_observation_plans(df_total=df_total,
@@ -1231,15 +1275,15 @@ if __name__ == "__main__":
 
     # SHOW CONFIGS
 
-    cfgs = select_n_configs_by_key(usage_summary_dataframe, "demand_ratio", 0.30, count=1)
+    cfgs = select_n_configs_by_key(usage_summary_dataframe, "demand_ratio", 0.14, count=1)
     plan = observation_plans[(
             observation_plans["config"] == cfgs[0])]
-    plot_observation_plan(plan, 0.30)
+    plot_observation_plan(plan, 0.14)
 
-    # s = simulation_summaries[cfgs[0]]
-    # create_simulation_schedule_map(pd.read_csv(StringIO(s)))
+    s = simulation_summaries[cfgs[0]]
+    create_simulation_schedule_map(pd.read_csv(StringIO(s)))
 
-    cfgs = select_n_configs_by_key(usage_summary_dataframe, "demand_ratio", 0.38, count=1)
+    # cfgs = select_n_configs_by_key(usage_summary_dataframe, "demand_ratio", 0.38, count=1)
     # plan = observation_plans[(
     #         observation_plans["config"] == cfgs[0])]
     # plot_observation_plan(plan, 0.1)

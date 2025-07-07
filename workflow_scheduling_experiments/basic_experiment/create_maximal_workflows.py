@@ -63,7 +63,7 @@ def maximal_low_obs_plan():
                 workflows= LOW_OBSERVATION_DEFAULTS["hpsos"]['hpso01']['workflows'],
                 demand= max_demand,  # demand * 1,
                 channels= max_channels * channel_multiplier,
-                workflow_parallelism=nodes,
+                workflow_parallelism=  nodes,
                 baseline= max_baseline,
                 telescope= str(plan.telescope)
     ))
@@ -74,7 +74,7 @@ def maximal_low_obs_plan():
                 workflows= LOW_OBSERVATION_DEFAULTS["hpsos"]['hpso02a']['workflows'],
                 demand= max_demand,  # demand * 1,
                 channels= max_channels * channel_multiplier,
-                workflow_parallelism=nodes,
+                workflow_parallelism= nodes,
                 baseline= max_baseline,
                 telescope= "low"
     ))
@@ -340,7 +340,7 @@ if __name__ == '__main__':
     else:
         logging.info("Creating plans for all telescopes")
         all_params.append(maximal_low_obs_plan())
-        all_params.append(maximal_mid_obs_plan())
+        # all_params.append(maximal_mid_obs_plan())
 
     low_path = Path(args.path) / args.telescope
 
