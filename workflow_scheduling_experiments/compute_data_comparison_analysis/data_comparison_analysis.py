@@ -15,10 +15,10 @@ from matplotlib.gridspec import GridSpec
 from skaworkflows.common import SI
 
 # This will store the parameters we used to generate the workflow files
-from workflow_scheduling_experiments.basic_experiment.create_observation_plans import (
-    LOW_OBSERVATIONS,
-    MID_OBSERVATIONS,
-)
+# from workflow_scheduling_experiments.basic_experiment.create_observation_plans import (
+#     LOW_OBSERVATIONS,
+#     MID_OBSERVATIONS,
+# )
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
@@ -518,6 +518,7 @@ def plot_scheduling_comparisons():
     # nfig = plt.figure(figsize=(10/3, 3), dpi=300)
     # alt_ax = nfig.subplots()
     width = 0.20
+    difference_dict ={}
     for group, group_df in df.groupby(['data_distribution', 'data']):
         distribution, data = group
         obs = []
@@ -538,6 +539,10 @@ def plot_scheduling_comparisons():
             par.append(1.0)
             obs.append(observation.upper())
             y.append(base_time / par_time)
+            if f"{data}_{distribution}" in difference_dict:
+                difference_dict[f"{data}_{distribution}"].append(base_time/par_time)
+            else:
+                difference_dict[f"{data}_{distribution}"] = [(base_time / par_time)]
             # ax.scatter(x=[observation], y=par_time, label=observation, marker='v')
             # ax.set_title(f"{data} + {distribution}")
         x = np.arange(len(obs))
@@ -553,6 +558,9 @@ def plot_scheduling_comparisons():
 
     plt.savefig('base_scheduling_results.png')
     plt.show()
+
+    difference_dict['obs'] = obs
+    pd.DataFrame(difference_dict).to_csv('Difference_Schedule.csv')
 
 
 if __name__ == "__main__":
@@ -586,5 +594,5 @@ if __name__ == "__main__":
     # Use diverging colourscheme
 
     # plot_product_cost_variation(all_workflows)
-    plot_supporting_data_variation(all_workflows)
-    # plot_scheduling_comparisons()
+    # plot_supporting_data_variation(all_workflows)
+    plot_scheduling_comparisons()

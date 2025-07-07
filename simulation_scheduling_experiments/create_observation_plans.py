@@ -45,7 +45,7 @@ def values_to_nparray(value_map, key):
     return np.fromiter((y[key] for x, y in value_map.items()), int)
 
 
-def spread_observations_across_demand(number, demand_pool):
+def spread_observations_across_demand(number, demand_pool, seed=None):
     """
     Given the number of observations and a 'demand pool' of resources (e.g. [64, 128]), spread
     the number of observations across that pool of resources.
@@ -58,23 +58,50 @@ def spread_observations_across_demand(number, demand_pool):
     :param demand_pool:
     :return: observations for each resource amount
     """
-    count = 0
-    obs = []
-    while number > 0:
-        nobs = random.randint(0, number)
-        if count < len(demand_pool) - 1:
-            obs.append(nobs)
-            number -= nobs
-        else:
-            obs.append(number)
-            number = 0
-        count += 1
-    length = len(obs)
-    demand_length = len(demand_pool)
-    if length < demand_length:
-        obs.extend(0 for x in range(demand_length - length))
 
-    return obs  # Enumerate over this with the demand dictionary
+    if seed is not None:
+        random.seed(seed)
+
+    fraction = demand_pool.get('ratio', {})
+    baselines = list(demand_pool.get('baseline', {}).keys())
+
+    if not fraction or not baselines:
+        raise ValueError("Both 'ratio' and 'baseline' must be provided and non-empty.")
+
+    station_types = list(fraction.keys())
+    station_counts = {}
+    allocated = 0
+
+    # Step 1: Allocate number of stations per ratio
+    for i, s in enumerate(station_types):
+        if i == len(station_types) - 1:
+            count = number - allocated
+        else:
+            count = int(round(number * fraction[s]))
+            allocated += count
+        station_counts[s] = count
+
+    # Step 2: Track unique (station, baseline) combinations manually
+    grouped = {}
+    for station, count in station_counts.items():
+        for _ in range(count):
+            baseline = random.choice(baselines)
+            key = (station, baseline)
+            if key in grouped:
+                grouped[key] += 1
+            else:
+                grouped[key] = 1
+
+    # Step 3: Format the output
+    result = []
+    for (station, baseline), count in grouped.items():
+        result.append({
+            'stations': station,
+            'baseline': baseline,
+            'num': count
+        })
+
+    return result
 
 
 def calc_demand_ratio(hpso_demand, telescope):
@@ -93,52 +120,50 @@ def permute_low_observation_plans(n=1):
     max_largest_demand = 2
     random.seed(100)
     telescope = common.SKALow()
-    final_set = {}
-    for g in range(100):
-        hpso_demand = {key: {} for key in LOW_OBSERVATION_DEFAULTS["hpsos"]}
-        # hpso_demand = {"hpso01": {}, "hpso02a": {}, "hpso02b": {}, "hpso04a": {}, "hpso05a": {}}
-        for i, antenna in enumerate(telescope.stations):
-            for hpso in hpso_demand:
-                for j in telescope.stations[0:i + 1]:
-                    hpso_demand[hpso].update({j: 0})
-            # DEMAND POOL slowly gets bigger
-            number_obs = values_to_nparray(LOW_OBSERVATION_DEFAULTS["hpsos"], "observing_ratio") * n
-            for j, items in enumerate(hpso_demand.items()):
-                hpso, demand = items
-                obs = spread_observations_across_demand(number_obs[j],
-                                                        hpso_demand[hpso])
-                prev_d = []
-                # Allocate demand across antenna options
-                for i, d in enumerate(demand):
-                    if d == 512:
-                        tmp = obs[i]
-                        leftover = tmp - max_largest_demand
-                        if leftover > 0:
-                            demand[d] = max_largest_demand
-                            intermediate_obs = {p: 0 for p in prev_d}
-                            int_obs = spread_observations_across_demand(
-                                leftover, intermediate_obs)
-                            for x, key in enumerate(intermediate_obs):
-                                demand[key] += int_obs[x]
-                        else:
-                            demand[d] = obs[i]
-                    else:
-                        demand[d] = obs[i]
-                    if d > 64:
-                        prev_d.append(d)
+    final_set = []
+    final_d = {}
+    ratios = [
+        [
+            {64: 1},
+            {64: 0.75, 128: 0.25},
+            {64: 0.5, 128: 0.25, 256: 0.25},
+            {64: 0.5, 128: 0.25, 256: 0.2, 512: 0.05}
+        ],
+        [
+            {64: 0.9, 128: 0.1},
+            {64: 0.5, 128: 0.5},
+            {64: 0.5, 128: 0.35, 256: 0.15},
+            {64: 0.5, 128: 0.35, 256: 0.10, 512: 0.05}
+        ],
+        [
+            {64: 0.8, 128: 0.2},
+            {64: 0.4, 128: 0.6},
+            {64: 0.4, 128: 0.4, 256: 0.2},
+            {64: 0.5, 128: 0.4, 256: 0.05, 512: 0.05}
+        ],
+    ]
+    hpso_demand = {key: {'stations':{}, 'baseline':{}} for key in LOW_OBSERVATION_DEFAULTS["hpsos"]}
+    for r in ratios:
+        for _ in range(5):
+            for i, baseline in enumerate(telescope.baselines):
+                for hpso in hpso_demand:
+                    for j in telescope.stations[0:i+1]:
+                        hpso_demand[hpso]['stations'].update({j: 0})
+                    for j in telescope.baselines[0:i+1]:
+                        hpso_demand[hpso]['baseline'].update({j:0})
+                    hpso_demand[hpso]['ratio'] = r[min(i, len(telescope.stations)-1)]
+                # DEMAND POOL slowly gets bigger
+                pname = 'ratios' + ''.join(f"_{k}-{v}" for k, v in ratios[0][2].items())
+                number_obs = values_to_nparray(LOW_OBSERVATION_DEFAULTS["hpsos"], "observing_ratio") * n
+                observations = {}
+                for j, items in enumerate(hpso_demand.items()):
+                    hpso, demand = items
+                    obs = spread_observations_across_demand(number_obs[j],
+                                                            hpso_demand[hpso])
+                    observations[hpso] = obs
 
-            tmp = {}
-            demand_ratio = np.round(calc_demand_ratio(hpso_demand, telescope), 2)
-            if demand_ratio in final_set:
-                continue
-            for hpso, demand in hpso_demand.items():
-                tmp[hpso] = []
-                for antenna, obs in demand.items():
-                    tmp[hpso].append({
-                        "demand": antenna,
-                        "num_obs": obs
-                    })
-            final_set[demand_ratio] = tmp
+                final_d[pname] = observations
+                # final_set.append(observations)
 
     return final_set
 
@@ -302,25 +327,25 @@ def standard_low_obs_plan(
     -------
 
     """
-    params = {}
+    params = []
 
     channels_demand = 128
-    for demand, hpso_numbers in num_obs_repeats.items():
+    for combination in num_obs_repeats:
         plan = ObservationPlan("low")
-        for hpso, items in hpso_numbers.items():
+        for hpso, items in combination.items():
             for el in items:
                 plan.add_observation(HPSOParameter(
-                    count=el["num_obs"],
+                    count=el["num"],
                     hpso=hpso,
                     duration=LOW_OBSERVATION_DEFAULTS["hpsos"][hpso]["duration"],
                     workflows=LOW_OBSERVATION_DEFAULTS["hpsos"][hpso]["workflows"],
-                    demand=el["demand"],
+                    demand=el["stations"],
                     channels=channels_demand * plan.telescope.channels_multiplier,
-                    workflow_parallelism=el["demand"],
-                    baseline=LOW_OBSERVATION_DEFAULTS["hpsos"][hpso]["baseline"],
+                    workflow_parallelism=el["stations"],
+                    baseline=el['baseline'],
                     telescope=str(plan.telescope))
                 )
-        params[demand] = plan.to_json()
+        params.append(plan.to_json())
 
     if VERBOSE:
         print(json.dumps(params, indent=2, cls=common.NpEncoder, sort_keys=True))
@@ -374,10 +399,10 @@ if __name__ == "__main__":
     print("Creating config")
     # sys.exit()
     for ap in all_params:
-        sorted_keys = sorted(ap.keys())
-        for demand in sorted_keys:
-            print(f"Creating plan with demand: {demand}")
-            plan = ap[demand]
+        # sorted_keys = sorted(ap)
+        for plan in ap:
+            # print(f"Creating plan with demand: {demand}")
+            # plan = demand]
             create_config(
                 plan,
                 low_path,
