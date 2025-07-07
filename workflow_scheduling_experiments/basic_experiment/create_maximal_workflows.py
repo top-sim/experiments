@@ -343,31 +343,28 @@ if __name__ == '__main__':
         all_params.append(maximal_mid_obs_plan())
 
     low_path = Path(args.path) / args.telescope
+    
+    def run_config(data, data_distribution):
+        create_config(
+                plan,
+                low_path,
+                WORKFLOW_TYPE_MAP,
+                timestep=5,
+                data=data,
+                data_distribution=data_distribution,
+                multiple_plans=False)
 
+    configs = [
+        {'data':False, 'data_distribution':'standard'},
+        {'data': True, 'data_distribution':'standard'}, 
+        {'data': True, 'data_distribution':'edges'}, 
+    ]
+    
+    from multiprocessing import Process
     print("Creating config")
     for ap in all_params:
         for plan in ap:
-            create_config(
-                plan,
-                low_path,
-                WORKFLOW_TYPE_MAP,
-                timestep=5,
-                data=False,
-                data_distribution='standard',
-                multiple_plans=False)
-            create_config(
-                plan,
-                low_path,
-                WORKFLOW_TYPE_MAP,
-                timestep=5,
-                data=True,
-                data_distribution='standard',
-                multiple_plans=False)
-            create_config(
-                plan,
-                low_path,
-                WORKFLOW_TYPE_MAP,
-                timestep=5,
-                data=True,
-                data_distribution='edges',
-                multiple_plans=False)
+            for cfg in configs:
+               p = Process(target=run_config, kwargs=cfg) 
+               p.start()
+               p.join()
