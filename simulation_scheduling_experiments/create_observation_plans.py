@@ -26,7 +26,7 @@ from skaworkflows.config_generator import create_config
 from skaworkflows import common
 from skaworkflows.observation.parameters import load_observation_defaults
 
-VERBOSE = True
+VERBOSE = False
 logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
@@ -144,16 +144,18 @@ def permute_low_observation_plans(n=1):
     ]
     hpso_demand = {key: {'stations':{}, 'baseline':{}} for key in LOW_OBSERVATION_DEFAULTS["hpsos"]}
     for r in ratios:
-        for _ in range(5):
+        for x in range(5):
             for i, baseline in enumerate(telescope.baselines):
+                _ratio = r[min(i, len(telescope.stations)-1)]
+                pname = f"ratios_{x}" + ''.join(f"_{k}-{v}" for k, v in _ratio.items())
+                LOGGER.info("Ratio: %s", pname)
                 for hpso in hpso_demand:
                     for j in telescope.stations[0:i+1]:
                         hpso_demand[hpso]['stations'].update({j: 0})
                     for j in telescope.baselines[0:i+1]:
                         hpso_demand[hpso]['baseline'].update({j:0})
-                    hpso_demand[hpso]['ratio'] = r[min(i, len(telescope.stations)-1)]
-                # DEMAND POOL slowly gets bigger
-                pname = 'ratios' + ''.join(f"_{k}-{v}" for k, v in ratios[0][2].items())
+                    hpso_demand[hpso]['ratio'] = _ratio
+                    # DEMAND POOL slowly gets bigger
                 number_obs = values_to_nparray(LOW_OBSERVATION_DEFAULTS["hpsos"], "observing_ratio") * n
                 observations = {}
                 for j, items in enumerate(hpso_demand.items()):
@@ -161,11 +163,10 @@ def permute_low_observation_plans(n=1):
                     obs = spread_observations_across_demand(number_obs[j],
                                                             hpso_demand[hpso])
                     observations[hpso] = obs
-
                 final_d[pname] = observations
                 # final_set.append(observations)
-
-    return final_set
+    LOGGER.info("Final set #: %d", len(final_d))
+    return final_d
 
 
 def calc_n_for_given_time_in_seconds(time: int, durations: np.array, ratios: np.array):
@@ -327,11 +328,12 @@ def standard_low_obs_plan(
     -------
 
     """
-    params = []
+    params = {}
 
     channels_demand = 128
-    for combination in num_obs_repeats:
+    for name, combination in num_obs_repeats.items():
         plan = ObservationPlan("low")
+        LOGGER.info("Generating plan for: %s", name)
         for hpso, items in combination.items():
             for el in items:
                 plan.add_observation(HPSOParameter(
@@ -345,11 +347,12 @@ def standard_low_obs_plan(
                     baseline=el['baseline'],
                     telescope=str(plan.telescope))
                 )
-        params.append(plan.to_json())
+        params[name] = plan.to_json()
 
     if VERBOSE:
         print(json.dumps(params, indent=2, cls=common.NpEncoder, sort_keys=True))
 
+    LOGGER.info("Plans created: %s", params.keys())
     return params
 
 
@@ -391,42 +394,42 @@ if __name__ == "__main__":
 
         sys.exit(0)
 
-    all_params = []
-    all_params.append(create_week_plan(args.telescope))
+    # all_params = []
+    all_params = create_week_plan(args.telescope)
 
     low_path = Path(args.path) / args.telescope
 
     print("Creating config")
     # sys.exit()
-    for ap in all_params:
+    print(f"Total plans: {len(all_params)}")
+    # for ap in all_params:
         # sorted_keys = sorted(ap)
-        for plan in ap:
-            # print(f"Creating plan with demand: {demand}")
-            # plan = demand]
-            create_config(
-                plan,
-                low_path,
-                WORKFLOW_TYPE_MAP,
-                timestep=5,
-                data=False,
-                data_distribution="standard",
-                multiple_plans=False,
-            )
-            create_config(
-                plan,
-                low_path,
-                WORKFLOW_TYPE_MAP,
-                timestep=5,
-                data=True,
-                data_distribution="standard",
-                multiple_plans=False,
-            )
-            create_config(
-                plan,
-                low_path,
-                WORKFLOW_TYPE_MAP,
-                timestep=5,
-                data=True,
-                data_distribution="edges",
-                multiple_plans=False,
-            )
+    for name, plan in all_params.items():
+        print(f"Creating plan with demand: {name}")
+        create_config(
+            plan,
+            low_path,
+            WORKFLOW_TYPE_MAP,
+            timestep=5,
+            data=False,
+            data_distribution="standard",
+            multiple_plans=False,
+        )
+        create_config(
+            plan,
+            low_path,
+            WORKFLOW_TYPE_MAP,
+            timestep=5,
+            data=True,
+            data_distribution="standard",
+            multiple_plans=False,
+        )
+        create_config(
+            plan,
+            low_path,
+            WORKFLOW_TYPE_MAP,
+            timestep=5,
+            data=True,
+            data_distribution="edges",
+            multiple_plans=False,
+        )

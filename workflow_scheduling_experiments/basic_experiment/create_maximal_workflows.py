@@ -63,7 +63,7 @@ def maximal_low_obs_plan():
                 workflows= LOW_OBSERVATION_DEFAULTS["hpsos"]['hpso01']['workflows'],
                 demand= max_demand,  # demand * 1,
                 channels= max_channels * channel_multiplier,
-                workflow_parallelism=  nodes,
+                workflow_parallelism=nodes,
                 baseline= max_baseline,
                 telescope= str(plan.telescope)
     ))
@@ -326,7 +326,7 @@ if __name__ == '__main__':
         "DPrepC": args.graph_type,
         "DPrepD": args.graph_type,
     }
-
+    print("Type: ", args.graph_type)
     all_params = []
     if args.scale == 'minimal':
         all_params.append(minimal_low_obs_plan())
@@ -340,7 +340,7 @@ if __name__ == '__main__':
     else:
         logging.info("Creating plans for all telescopes")
         all_params.append(maximal_low_obs_plan())
-        # all_params.append(maximal_mid_obs_plan())
+        all_params.append(maximal_mid_obs_plan())
 
     low_path = Path(args.path) / args.telescope
     
@@ -365,6 +365,7 @@ if __name__ == '__main__':
     for ap in all_params:
         for plan in ap:
             for cfg in configs:
-               p = Process(target=run_config, kwargs=cfg) 
-               p.start()
-               p.join()
+                run_config(**cfg)
+            #    p = Process(target=run_config, kwargs=cfg) 
+            #    p.start()
+            #    p.join()
