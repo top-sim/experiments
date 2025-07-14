@@ -28,23 +28,24 @@ from shadow.models.workflow import Workflow
 from shadow.models.environment import Environment
 from shadow.algorithms.heuristic import heft, fcfs
 
-sys.path.append("/home/rwb/github/skaworkflows")
+sys.path.append("/home/rbunney/github/skaworkflows")
 from skaworkflows.config_generator import config_to_shadow
 from skaworkflows.parametric_runner import calculate_parametric_runtime_estimates
 
 # from chapter5.parametric_model_baselines.generate_data import (
 #     LOW_HPSO_PATHS, MID_HPSO_PATHS)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger(__name__)
 # PAR_MODEL_SIZING = Path(
 #     "/home/rwb/github/skaworkflows/skaworkflows/data/sdp-par-model_output/.archive/2021"
 #     "-06-02_long_HPSOs.csv"
 # )
-PAR_MODEL_SIZING = Path("/home/rwb/github/sdp-par-model/data/csv/2021-02-03-895254e_hpsos.csv")
+# PAR_MODEL_SIZING = Path("/home/rwb/github/sdp-par-model/data/csv/2021-02-03-895254e_hpsos.csv")
 
 TESTING = False
+import time
 
-def run_shadow(params: dict, tup: tuple):
+def run_heft(params: dict, tup: tuple):
     output, lock = tup
     env = Environment(params["cfg"], dictionary=True)
     wf_path = Path(params["dir"]) / params["workflow"]
@@ -56,6 +57,7 @@ def run_shadow(params: dict, tup: tuple):
     )
     final_params = deepcopy(params)
     # TODO change to FCFS at some point too
+    st = time.time()
     heft_result = heft(workflow)
     final_params['method'] = 'heft'
     final_params['time'] = heft_result.makespan
@@ -67,7 +69,11 @@ def run_shadow(params: dict, tup: tuple):
     LOGGER.debug("Graph type: %s", output_params["graph_type"])
 
     res_str_fcfs = ','.join([str(x) for x in output_params.values()])
-    LOGGER.info("FCFS result: %s", res_str_fcfs)
+    LOGGER.info("HEFT result: %s", res_str_fcfs)
+
+    ft = time.time()
+    
+    LOGGER.info("Scheduling took: %f hrs",(ft-st)/3600)
 
     if not TESTING:
         lock.acquire()
@@ -80,6 +86,46 @@ def run_shadow(params: dict, tup: tuple):
             lock.release()
         return
 
+def run_fcfs(params: dict, tup: tuple):
+    output, lock = tup
+    env = Environment(params["cfg"], dictionary=True)
+    wf_path = Path(params["dir"]) / params["workflow"]
+    workflow = Workflow(wf_path)
+    workflow.add_environment(env)
+    LOGGER.info(
+        "Running fcfs for observation %s using %s",
+        params['observation'], params['workflow']
+    )
+    final_params = deepcopy(params)
+    # TODO change to FCFS at some point too
+    st = time.time()
+    heft_result = fcfs(workflow)
+    final_params['method'] = 'fcfs'
+    final_params['time'] = heft_result.makespan
+    final_params["graph_type"] = ".".join(params["graph_type"])
+    # # heft_res = None
+    output_params = {k: i for k, i in final_params.items() if k != 'cfg'}
+    for k, i in output_params.items():
+        LOGGER.debug("Param: %s, Value: %s", k, i)
+    LOGGER.debug("Graph type: %s", output_params["graph_type"])
+
+    res_str_fcfs = ','.join([str(x) for x in output_params.values()])
+    LOGGER.info("FCFS result: %s", res_str_fcfs)
+
+    ft = time.time()
+    
+    LOGGER.info("Scheduling took: %f hrs",(ft-st)/3600)
+
+    if not TESTING:
+        lock.acquire()
+        try:
+            with output.open('a') as f:
+                # time.sleep(1)
+                f.write(f"{res_str_fcfs}\n")
+                f.flush()
+        finally:
+            lock.release()
+        return
 
 def run_parametric(params: dict, tup: tuple, test=False):
     """
@@ -139,6 +185,7 @@ def run_parametric(params: dict, tup: tuple, test=False):
         finally:
             lock.release()
         return
+    sys.exit()
 
 
 if __name__ == "__main__":
@@ -174,14 +221,10 @@ if __name__ == "__main__":
         if args.parametric:
             timesteps = [1]
         else:
-            timesteps = [1,5,15,30,60]
+            timesteps = [1] #,5,15,30,60]
         for t in timesteps:
             params = []
             shadow_config = config_to_shadow(BASE_DIR / cfg_path)
-            for machine,compute in shadow_config["system"]["resources"].items():
-                compute['flops'] = compute['flops'] * t
-                compute['compute_bandwidth'] = compute['compute_bandwidth'] * t
-            shadow_config["system"]["system_bandwidth"] = shadow_config["system"]["system_bandwidth"]  * t
             # Retrieve workflow parameters
 
             # TODO consider adding this to SKAWorkflows library
@@ -246,5 +289,6 @@ if __name__ == "__main__":
             with Pool(processes=1) as pool:
                 pool.starmap(run_parametric, product(all_params, [(output, lock)]))
         else:
-            with Pool(processes=4) as pool:
-                pool.starmap(run_shadow, product(all_params, [(output, lock)]))
+            with Pool(processes=1) as pool:
+                # pool.starmap(run_fcfs, product(all_params, [(output, lock)]))
+                pool.starmap(run_heft, product(all_params, [(output, lock)]))
