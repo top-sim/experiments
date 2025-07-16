@@ -357,6 +357,38 @@ def save_processed_workflow_data(workflow_data: pd.DataFrame, source_dir: str):
 
     """
 
+def calculate_total_cost_with_data(df: pd.DataFrame, twocolumn=True):
+    """
+    Using the parametrics method, but using either data-intensive or the compute intensive cost values.
+
+    The expectation is this will give us a large value, and we can cross-check this with the estimates we get for the workflow scheduling.
+    :param df:
+    :param twocolumn:
+    :return:
+    """
+    if twocolumn:
+        fig = plt.figure(figsize=(6, 4), dpi=300, )
+    else:
+        fig = plt.figure(figsize=(10 / 3, 3), dpi=300, )
+
+    # ax.spines['left'].set_position(('data', 1))
+    comp_df = create_computation_dataframe(df)
+    data_df = create_data_dataframe(df)
+    comp_df, data_df = calculate_comp_to_data_ratio(comp_df, data_df)
+
+    comp_df = comp_df.drop_duplicates()
+    data_df = data_df.drop_duplicates()
+    comp_df['Final Time'] = np.where(comp_df['Time (s)'] > data_df['Time (s)'], comp_df['Time (s)'], data_df['Time (s)']) * comp_df['num_tasks']
+    df_par = pd.read_csv("workflow_scheduling_experiments/basic_experiment/results_2025-06-18.csv", index_col=False)
+    df_par = df_par.drop_duplicates()
+
+    for hpso, hpso_df in comp_df.groupby('observation'):
+        par = df_par[df_par['observation'] == hpso].iloc[0]
+        cost = sum(hpso_df['Final Time'] / par['coarse_channels'])
+        print(hpso, par['time'], cost)
+
+
+
 
 def plot_product_cost_variation(df: pd.DataFrame, twocolumn=True):
     if twocolumn:
@@ -519,8 +551,21 @@ def plot_scheduling_comparisons():
     # alt_ax = nfig.subplots()
     width = 0.20
     difference_dict ={}
-    for group, group_df in df.groupby(['data_distribution', 'data']):
-        distribution, data = group
+    import matplotlib.colors as mcolors
+    css_colors = list(mcolors.CSS4_COLORS.keys())
+    # NEED TO SPLIT BY HPSO
+
+    incr = len(mcolors.CSS4_COLORS) % 5
+    colors = css_colors[10::4]
+
+    # for group, group_df in df.groupby(['data_distribution', 'data']):
+    groups = []
+    groups.append((('standard', False), df[(df['data_distribution'] == "standard") & (df['data'] == False)]))
+    groups.append((('standard', True), df[(df['data_distribution'] == "standard") & (df['data'] == True)]))
+    groups.append((('edges', True), df[(df['data_distribution'] == "edges") & (df['data'] == True)]))
+    for g in groups:
+        type, group_df = g
+        distribution, data = type
         obs = []
         y = []
         par = []
@@ -548,11 +593,12 @@ def plot_scheduling_comparisons():
         x = np.arange(len(obs))
         if i == 0:
             offset = width * i
-            ax.bar(x=x + offset, height=par, width=width, label=f"Par Model")
+            ax.bar(x=x + offset, height=par, width=width, label=f"Par Model", facecolor=colors[i], edgecolor='black')
             i+=1
         offset = width * i
-        ax.bar(x=x + offset, height=y, width=width, label=f"{data} + {distribution}")
+        ax.bar(x=x + offset, height=y, width=width, label=f"{data} + {distribution}", facecolor=colors[i], edgecolor='black')
         ax.set_xticks(x+width, obs)
+        ax.set_ylabel("Final Schedule (s): Parametric Estimate (s)")
         ax.legend()
         i += 1
 
@@ -595,4 +641,5 @@ if __name__ == "__main__":
 
     # plot_product_cost_variation(all_workflows)
     # plot_supporting_data_variation(all_workflows)
-    plot_scheduling_comparisons()
+    # plot_scheduling_comparisons()
+    calculate_total_cost_with_data(all_workflows)

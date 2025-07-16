@@ -60,7 +60,6 @@ def run_heft(params: dict, tup: tuple):
         params['observation'], params['workflow']
     )
     final_params = deepcopy(params)
-    # TODO change to FCFS at some point too
     st = time.time()
     heft_result = heft(workflow)
     final_params['method'] = 'heft'
@@ -101,11 +100,10 @@ def run_fcfs(params: dict, tup: tuple):
         params['observation'], params['workflow']
     )
     final_params = deepcopy(params)
-    # TODO change to FCFS at some point too
     st = time.time()
-    heft_result = fcfs(workflow)
+    fcfs_result = fcfs(workflow)
     final_params['method'] = 'fcfs'
-    final_params['time'] = heft_result.makespan
+    final_params['time'] = fcfs_result.makespan
     final_params["graph_type"] = ".".join(params["graph_type"])
     # # heft_res = None
     output_params = {k: i for k, i in final_params.items() if k != 'cfg'}
@@ -272,6 +270,15 @@ if __name__ == "__main__":
             all_params.extend(params)
 
     LOGGER.info("Total configs processed: %d", total_config)
+    baselines = {}
+    # for params in all_params:
+    #     if 'baseline' in params:
+    #         baselines[params['observation']] =  params['baseline']
+    #
+    # for params in all_params:
+    #     if 'baseline' not in params:
+    #         params['baseline'] = baselines[params['observation']]
+
     # sys.exit()
     LOGGER.info("Number of observations added %d", len(all_params))
     for _, p in enumerate(all_params):

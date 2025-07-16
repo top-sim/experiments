@@ -1030,7 +1030,12 @@ def plot_observation_plan(observation_plan: pd.DataFrame, demand: float):
     # Need to map width to the right
     y = np.array(observation_plan['instrument_demand'])
     x = np.array(observation_plan['start'])
-    color_map = {"hpso01": "red", "hpso02a": "blue", "hpso02b": "yellow", "hpso04a":"green", "hpso05a": "orange"}
+
+    import matplotlib.colors as mcolors
+    css_colors = list(mcolors.CSS4_COLORS.keys())
+    color_map = {"hpso01": css_colors[5], "hpso02a": css_colors[12], "hpso02b": css_colors[19], "hpso04a":css_colors[128]
+    , "hpso05a": css_colors[80]}
+
     dur = np.array(observation_plan['duration'])
     observation_plan.loc[:, 'color'] = observation_plan.loc[:, 'type'].map(color_map)
     colors = np.array(observation_plan['color'])
@@ -1045,6 +1050,7 @@ def plot_observation_plan(observation_plan: pd.DataFrame, demand: float):
     ax1.xaxis.set_major_locator(MultipleLocator(86400))
     ax1.xaxis.set_major_formatter(FuncFormatter(seconds_to_days))
     ax1.set_ylim(0, 512)
+    ax1.legend()
     fig.suptitle(f"{demand}")
 
 
@@ -1267,7 +1273,7 @@ if __name__ == "__main__":
     #################################################################################
 
     # plot_histogram_observing_computing_ratio(usage_summary_dataframe)
-    # plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe)
+    plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe)
     # plot_flops_vs_demand(usage_summary_dataframe)
 
     observation_plans = get_observation_plans(df_total=df_total,
@@ -1280,13 +1286,13 @@ if __name__ == "__main__":
             observation_plans["config"] == cfgs[0])]
     plot_observation_plan(plan, 0.14)
 
-    s = simulation_summaries[cfgs[0]]
-    create_simulation_schedule_map(pd.read_csv(StringIO(s)))
+    # s = simulation_summaries[cfgs[0]]
+    # create_simulation_schedule_map(pd.read_csv(StringIO(s)))
 
-    # cfgs = select_n_configs_by_key(usage_summary_dataframe, "demand_ratio", 0.38, count=1)
-    # plan = observation_plans[(
-    #         observation_plans["config"] == cfgs[0])]
-    # plot_observation_plan(plan, 0.1)
+    cfgs = select_n_configs_by_key(usage_summary_dataframe, "demand_ratio", 0.33, count=1)
+    plan = observation_plans[(
+            observation_plans["config"] == cfgs[0])]
+    plot_observation_plan(plan, 0.33)
 
     s = simulation_summaries[cfgs[0]]
     # create_simulation_schedule_map(pd.read_csv(StringIO(s)))
