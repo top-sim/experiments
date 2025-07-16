@@ -40,7 +40,11 @@ LOGGER = logging.getLogger(__name__)
 #     "/home/rwb/github/skaworkflows/skaworkflows/data/sdp-par-model_output/.archive/2021"
 #     "-06-02_long_HPSOs.csv"
 # )
-PAR_MODEL_SIZING = Path("/home/rwb/github/sdp-par-model/data/csv/2021-02-03-895254e_hpsos.csv")
+# TODO UPDATE THIS SIZING TO RECENT ONE
+# PAR_MODEL_SIZING = Path("/home/rwb/github/sdp-par-model/data/csv/2021-02-03-895254e_hpsos.csv")
+PAR_SIZING_LOW = Path("/home/rwb/github/skaworkflows/skaworkflows/data/sdp-par-model_output/ParametricOutput_Low_antenna-512_channels-32768-baseline_65.csv")
+PAR_SIZING_MID = Path("/home/rwb/github/skaworkflows/skaworkflows/data/sdp-par-model_output/ParametricOutput_Mid_antenna-197_channels-65536_baseline-150.csv")
+
 
 TESTING = False
 
@@ -112,8 +116,9 @@ def run_parametric(params: dict, tup: tuple, test=False):
     # Extract observation from params and fetch the SDP Parametric model runtime estimates
     # For maximal use case
     observation = params['observation']
+    sizing = PAR_SIZING_LOW if 'low' in params['telescope'] else PAR_SIZING_MID
     result = calculate_parametric_runtime_estimates(
-        PAR_MODEL_SIZING, params['telescope'], [observation], params['graph_type']
+        sizing, params['telescope'], [observation], params['graph_type']
     )
     duration = result[observation]["total_flops"] / (result[observation]["batch_flops"])
     params['time'] = duration
