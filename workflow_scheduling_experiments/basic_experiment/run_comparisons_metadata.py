@@ -34,7 +34,7 @@ from skaworkflows.parametric_runner import calculate_parametric_runtime_estimate
 
 # from chapter5.parametric_model_baselines.generate_data import (
 #     LOW_HPSO_PATHS, MID_HPSO_PATHS)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger(__name__)
 # PAR_MODEL_SIZING = Path(
 #     "/home/rwb/github/skaworkflows/skaworkflows/data/sdp-par-model_output/.archive/2021"
@@ -47,8 +47,9 @@ PAR_SIZING_MID = Path("/home/rwb/github/skaworkflows/skaworkflows/data/sdp-par-m
 
 
 TESTING = False
+import time
 
-def run_shadow(params: dict, tup: tuple):
+def run_heft(params: dict, tup: tuple):
     output, lock = tup
     env = Environment(params["cfg"], dictionary=True)
     wf_path = Path(params["dir"]) / params["workflow"]
@@ -60,6 +61,7 @@ def run_shadow(params: dict, tup: tuple):
     )
     final_params = deepcopy(params)
     # TODO change to FCFS at some point too
+    st = time.time()
     heft_result = heft(workflow)
     final_params['method'] = 'heft'
     final_params['time'] = heft_result.makespan
@@ -71,7 +73,11 @@ def run_shadow(params: dict, tup: tuple):
     LOGGER.debug("Graph type: %s", output_params["graph_type"])
 
     res_str_fcfs = ','.join([str(x) for x in output_params.values()])
-    LOGGER.info("FCFS result: %s", res_str_fcfs)
+    LOGGER.info("HEFT result: %s", res_str_fcfs)
+
+    ft = time.time()
+
+    LOGGER.info("Scheduling took: %f hrs",(ft-st)/3600)
 
     if not TESTING:
         lock.acquire()
@@ -84,6 +90,46 @@ def run_shadow(params: dict, tup: tuple):
             lock.release()
         return
 
+def run_fcfs(params: dict, tup: tuple):
+    output, lock = tup
+    env = Environment(params["cfg"], dictionary=True)
+    wf_path = Path(params["dir"]) / params["workflow"]
+    workflow = Workflow(wf_path)
+    workflow.add_environment(env)
+    LOGGER.info(
+        "Running fcfs for observation %s using %s",
+        params['observation'], params['workflow']
+    )
+    final_params = deepcopy(params)
+    # TODO change to FCFS at some point too
+    st = time.time()
+    heft_result = fcfs(workflow)
+    final_params['method'] = 'fcfs'
+    final_params['time'] = heft_result.makespan
+    final_params["graph_type"] = ".".join(params["graph_type"])
+    # # heft_res = None
+    output_params = {k: i for k, i in final_params.items() if k != 'cfg'}
+    for k, i in output_params.items():
+        LOGGER.debug("Param: %s, Value: %s", k, i)
+    LOGGER.debug("Graph type: %s", output_params["graph_type"])
+
+    res_str_fcfs = ','.join([str(x) for x in output_params.values()])
+    LOGGER.info("FCFS result: %s", res_str_fcfs)
+
+    ft = time.time()
+
+    LOGGER.info("Scheduling took: %f hrs",(ft-st)/3600)
+
+    if not TESTING:
+        lock.acquire()
+        try:
+            with output.open('a') as f:
+                # time.sleep(1)
+                f.write(f"{res_str_fcfs}\n")
+                f.flush()
+        finally:
+            lock.release()
+        return
 
 def run_parametric(params: dict, tup: tuple, test=False):
     """
@@ -144,6 +190,7 @@ def run_parametric(params: dict, tup: tuple, test=False):
         finally:
             lock.release()
         return
+    sys.exit()
 
 
 if __name__ == "__main__":
@@ -179,7 +226,7 @@ if __name__ == "__main__":
         if args.parametric:
             timesteps = [1]
         else:
-            timesteps = [1,5,15,30,60]
+            timesteps = [1] #,5,15,30,60]
         for t in timesteps:
             params = []
             shadow_config = config_to_shadow(BASE_DIR / cfg_path)
@@ -251,5 +298,6 @@ if __name__ == "__main__":
             with Pool(processes=1) as pool:
                 pool.starmap(run_parametric, product(all_params, [(output, lock)]))
         else:
-            with Pool(processes=4) as pool:
-                pool.starmap(run_shadow, product(all_params, [(output, lock)]))
+            with Pool(processes=1) as pool:
+                # pool.starmap(run_fcfs, product(all_params, [(output, lock)]))
+                pool.starmap(run_heft, product(all_params, [(output, lock)]))
