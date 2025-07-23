@@ -305,6 +305,6 @@ if __name__ == "__main__":
             with Pool(processes=1) as pool:
                 pool.starmap(run_parametric, product(all_params, [(output, lock)]))
         else:
-            with Pool(processes=1) as pool:
-                # pool.starmap(run_fcfs, product(all_params, [(output, lock)]))
+            with Pool(processes=16) as pool:
+                pool.starmap(run_fcfs, product(all_params, [(output, lock)]))
                 pool.starmap(run_heft, product(all_params, [(output, lock)]))

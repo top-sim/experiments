@@ -25,7 +25,7 @@ LOGGER.setLevel(logging.INFO)
 
 import matplotlib
 
-matplotlib.use("TkAgg")
+# matplotlib.use("TkAgg")
 # Setup all the visualisation nicities
 # rcParams["text.usetex"] = True
 rcParams["font.family"] = "serif"
@@ -379,13 +379,16 @@ def calculate_total_cost_with_data(df: pd.DataFrame, twocolumn=True):
     comp_df = comp_df.drop_duplicates()
     data_df = data_df.drop_duplicates()
     comp_df['Final Time'] = np.where(comp_df['Time (s)'] > data_df['Time (s)'], comp_df['Time (s)'], data_df['Time (s)']) * comp_df['num_tasks']
-    df_par = pd.read_csv("workflow_scheduling_experiments/basic_experiment/results_2025-06-18.csv", index_col=False)
-    df_par = df_par.drop_duplicates()
+    print(comp_df)
+    # df_par = pd.read_csv("workflow_scheduling_experiments/basic_experiment/results_2025-06-18.csv", index_col=False)
+    # df_par = df_par.drop_duplicates()
 
     for hpso, hpso_df in comp_df.groupby('observation'):
-        par = df_par[df_par['observation'] == hpso].iloc[0]
-        cost = sum(hpso_df['Final Time'] / par['coarse_channels'])
-        print(hpso, par['time'], cost)
+        # par = df_par[df_par['observation'] == hpso].iloc[0]
+        cost = sum(hpso_df['Final Time'] / 786) #par['coarse_channels'])
+        print(hpso, cost)
+
+        # print(hpso, par['time'], cost)
 
 
 
@@ -627,7 +630,8 @@ if __name__ == "__main__":
 
     LOGGER.info("Loading machine config...")
     machine_specs = load_machine_spec_from_config(RESULT_PATH)
-    flops, compute_bandwidth, memory = machine_specs[-1].values()
+    print(machine_specs)
+    count, flops, compute_bandwidth, memory = machine_specs[-1].values()
     system_transfer_bandwidth = load_system_bandwidth(RESULT_PATH)
     # workflow = Path()
     LOGGER.info("Loading workflows...")
