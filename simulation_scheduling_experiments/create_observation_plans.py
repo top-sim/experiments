@@ -16,19 +16,20 @@
 import json
 import random
 import sys
-from pathlib import path
+from pathlib import Path
 import logging
 
 import numpy as np
-from skaworkflows.observation.observation import hpsoparameter, observationplan
+import pandas as pd
 
+from skaworkflows.observation.observation import HPSOParameter, ObservationPlan
 from skaworkflows.config_generator import create_config
 from skaworkflows import common
 from skaworkflows.observation.parameters import load_observation_defaults
 
-verbose = false
-logging.basicconfig(level=logging.info)
-logger = logging.getlogger(__name__)
+verbose = False
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 low_observation_defaults = load_observation_defaults("skalow")
 
@@ -45,7 +46,7 @@ def values_to_nparray(value_map, key):
     return np.fromiter((y[key] for x, y in value_map.items()), int)
 
 
-def spread_observations_across_demand(number, demand_pool, seed=none):
+def spread_observations_across_demand(number, demand_pool, seed=None):
     """
     given the number of observations and a 'demand pool' of resources (e.g. [64, 128]), spread
     the number of observations across that pool of resources.
@@ -59,14 +60,14 @@ def spread_observations_across_demand(number, demand_pool, seed=none):
     :return: observations for each resource amount
     """
 
-    if seed is not none:
+    if seed is not None:
         random.seed(seed)
 
     fraction = demand_pool.get('ratio', {})
     baselines = list(demand_pool.get('baseline', {}).keys())
 
     if not fraction or not baselines:
-        raise valueerror("both 'ratio' and 'baseline' must be provided and non-empty.")
+        raise ValueError("both 'ratio' and 'baseline' must be provided and non-empty.")
 
     station_types = list(fraction.keys())
     station_counts = {}
@@ -119,7 +120,7 @@ def calc_demand_ratio(hpso_demand, telescope):
 def permute_low_observation_plans(n=1):
     max_largest_demand = 2
     random.seed(100)
-    telescope = common.skalow()
+    telescope = common.SKALow()
     final_set = []
     final_d = {}
     ratios = [
@@ -142,29 +143,30 @@ def permute_low_observation_plans(n=1):
             {64: 0.5, 128: 0.4, 256: 0.05, 512: 0.05}
         ],
     ]
+    baseline_permutations = [telescope.baselines[:i+1] for i, e in enumerate(telescope.baselines)]
     hpso_demand = {key: {'stations':{}, 'baseline':{}} for key in low_observation_defaults["hpsos"]}
-    for r in ratios:
-        for x in range(5):
-            for i, baseline in enumerate(telescope.baselines):
-                _ratio = r[min(i, len(telescope.stations)-1)]
-                pname = f"ratios_{x}" + ''.join(f"_{k}-{v}" for k, v in _ratio.items())
-                logger.info("ratio: %s", pname)
-                for hpso in hpso_demand:
-                    for j in telescope.stations[0:i+1]:
-                        hpso_demand[hpso]['stations'].update({j: 0})
-                    for j in telescope.baselines[0:i+1]:
-                        hpso_demand[hpso]['baseline'].update({j:0})
-                    hpso_demand[hpso]['ratio'] = _ratio
-                    # demand pool slowly gets bigger
-                number_obs = values_to_nparray(low_observation_defaults["hpsos"], "observing_ratio") * n
-                observations = {}
-                for j, items in enumerate(hpso_demand.items()):
-                    hpso, demand = items
-                    obs = spread_observations_across_demand(number_obs[j],
-                                                            hpso_demand[hpso])
-                    observations[hpso] = obs
-                final_d[pname] = observations
-                # final_set.append(observations)
+    for i, _baseline in enumerate(baseline_permutations):
+        for r in ratios:
+            for x, _ in enumerate(telescope.stations):
+                    _ratio = r[min(x, len(telescope.stations)-1)]
+                    pname = f"ratios_{i}" + ''.join(f"_{k}-{v}" for k, v in _ratio.items())
+                    logger.info("ratio: %s", pname)
+                    for hpso in hpso_demand:
+                        for j in telescope.stations[0:i+1]:
+                            hpso_demand[hpso]['stations'].update({j: 0})
+                        for j in _baseline:
+                            hpso_demand[hpso]['baseline'].update({j:0})
+                        hpso_demand[hpso]['ratio'] = _ratio
+                        # demand pool slowly gets bigger
+                    number_obs = values_to_nparray(low_observation_defaults["hpsos"], "observing_ratio") * n
+                    observations = {}
+                    for j, items in enumerate(hpso_demand.items()):
+                        hpso, demand = items
+                        obs = spread_observations_across_demand(number_obs[j],
+                                                                hpso_demand[hpso])
+                        observations[hpso] = obs
+                    final_d[pname] = observations
+                    # final_set.append(observations)
     logger.info("final set #: %d", len(final_d))
     return final_d
 
@@ -182,6 +184,27 @@ def calc_n_for_given_time_in_seconds(time: int, durations: np.array, ratios: np.
     return n
 
 
+def generate_permutations_table(permutations: dict, index: int):
+    key = list(permutations.keys())[index]
+    d = permutations[key]
+    df_hpso_ratios = {}
+    for hpso, el in d.items():
+        df_hpso_ratios[hpso] = pd.DataFrame(el)
+    for hpso, df in df_hpso_ratios.items():
+        df = df.sort_values(by=['stations', 'baseline'])
+        df['hpso'] = hpso
+        df_hpso_ratios[hpso] = df
+    df = pd.concat(list(df_hpso_ratios.values()))
+    pivot = df.pivot_table(
+        index=['baseline', 'hpso'],
+        columns='stations',
+        values='num',
+        aggfunc='sum',  # sum in case of duplicates, or use 'first' if always unique
+        fill_value=""  # keep empty if no entry
+    )
+    # This is Ryan breaking his #1 rule of not encoding core information about a dataset in its file name.
+    pivot.to_csv(f"hpso_permutation_{key}_pivot.csv")
+
 def create_week_plan(telescope: str):
     """
     create a week's worth of observations
@@ -195,7 +218,11 @@ def create_week_plan(telescope: str):
             values_to_nparray(low_observation_defaults["hpsos"], "observing_ratio"),
         )
         logger.info("creating %d iterations of observations")
-        return standard_low_obs_plan(permute_low_observation_plans(n))
+        permutations = permute_low_observation_plans(n)
+        generate_permutations_table(permutations, 8)
+        generate_permutations_table(permutations, -6)
+
+        return standard_low_obs_plan(permutations)
     elif telescope == "mid":
         n = calc_n_for_given_time_in_seconds(
             duration,
@@ -205,7 +232,7 @@ def create_week_plan(telescope: str):
         logger.info("creating %d iterations of observations")
         return standard_mid_obs_plan(permute_mid_observation_plan(n))
     else:
-        return none
+        return None
 
 
 def permute_mid_observation_plan(n=1):
@@ -227,7 +254,7 @@ def permute_mid_observation_plan(n=1):
             # demand pool slowly gets bigger
             number_obs = values_to_nparray(mid_observations_defaults["hpsos"], "ratio") * n
             ## new code
-            prev_hpso = none
+            prev_hpso = None
             for j, items in enumerate(hpso_demand.items()):
                 hpso, demand = items
                 obs = spread_observations_across_demand(number_obs[j],
@@ -293,7 +320,7 @@ def standard_mid_obs_plan(num_obs_repeats: dict):
         plan = telescope.initialise_plan()
         for hpso, items in hpso_numbers.items():
             for el in items:
-                plan.add_observation(hpsoparameter(
+                plan.add_observation(HPSOParameter(
                     count=el["num_obs"],
                     hpso=hpso,
                     duration=mid_observations_defaults["hpsos"][hpso]["duration"],
@@ -332,11 +359,11 @@ def standard_low_obs_plan(
 
     channels_demand = 128
     for name, combination in num_obs_repeats.items():
-        plan = observationplan("low")
+        plan = ObservationPlan("low")
         logger.info("generating plan for: %s", name)
         for hpso, items in combination.items():
             for el in items:
-                plan.add_observation(hpsoparameter(
+                plan.add_observation(HPSOParameter(
                     count=el["num"],
                     hpso=hpso,
                     duration=low_observation_defaults["hpsos"][hpso]["duration"],
@@ -350,7 +377,7 @@ def standard_low_obs_plan(
         params[name] = plan.to_json()
 
     if verbose:
-        print(json.dumps(params, indent=2, cls=common.npencoder, sort_keys=true))
+        print(json.dumps(params, indent=2, cls=common.npencoder, sort_keys=True))
 
     logger.info("plans created: %s", params.keys())
     return params
@@ -360,13 +387,14 @@ import argparse
 
 if __name__ == "__main__":
 
-    parser = argparse.argumentparser(
-        path(__file__).name,
+    parser = argparse.ArgumentParser(
+        Path(__file__).name,
     )
     parser.add_argument("path")
     parser.add_argument("telescope", help="choose from 'low' or 'mid'")
     parser.add_argument("graph_type", help="prototype, parallel")
-    parser.add_argument("--test", default=false, action="store_true")
+    parser.add_argument("--test", default=False, action="store_true")
+    parser.add_argument("--tables", default=False, action="store_true", help='Generate tables and do not run config generation')
 
     # parser.add_argument() # todo num_observation_repeats, seed
     args = parser.parse_args()
@@ -382,7 +410,7 @@ if __name__ == "__main__":
 
     random.seed(2)
     if args.test:
-        verbose = true
+        verbose = True
         random.seed(0)
         n = calc_n_for_given_time_in_seconds(
             7 * 24 * 3600,
@@ -394,10 +422,11 @@ if __name__ == "__main__":
 
         sys.exit(0)
 
-    # all_params = []
     all_params = create_week_plan(args.telescope)
+    if args.tables:
+        sys.exit(0)
 
-    low_path = path(args.path) / args.telescope
+    low_path = Path(args.path) / args.telescope
 
     print("creating config")
     # sys.exit()
@@ -412,25 +441,25 @@ if __name__ == "__main__":
             low_path,
             workflow_type_map,
             timestep=5,
-            data=false,
+            data=False,
             data_distribution="standard",
-            multiple_plans=false,
+            multiple_plans=False,
         )
         create_config(
             plan,
             low_path,
             workflow_type_map,
             timestep=5,
-            data=true,
+            data=True,
             data_distribution="standard",
-            multiple_plans=false,
+            multiple_plans=False,
         )
         create_config(
             plan,
             low_path,
             workflow_type_map,
             timestep=5,
-            data=true,
+            data=True,
             data_distribution="edges",
-            multiple_plans=false,
+            multiple_plans=False,
         )
