@@ -153,8 +153,12 @@ def permute_low_observation_plans(n=1):
                     logger.info("ratio: %s", pname)
                     for hpso in hpso_demand:
                         for j in telescope.stations[0:i+1]:
+                            if j > 256 and hpso in ['hpso04a', 'hpso05a']:
+                                continue
                             hpso_demand[hpso]['stations'].update({j: 0})
                         for j in _baseline:
+                            if j > 32 and hpso in ['hpso04a', 'hpso05a']:
+                                continue
                             hpso_demand[hpso]['baseline'].update({j:0})
                         hpso_demand[hpso]['ratio'] = _ratio
                         # demand pool slowly gets bigger
@@ -167,6 +171,12 @@ def permute_low_observation_plans(n=1):
                         observations[hpso] = obs
                     final_d[pname] = observations
                     # final_set.append(observations)
+    dfs = []
+    for r in ratios:
+        df = pd.DataFrame(r)
+        dfs.append(df.replace(np.nan, "", regex=True))
+    df_ratios = pd.concat(dfs)
+    df_ratios.to_csv('hpso_ratios.csv')
     logger.info("final set #: %d", len(final_d))
     return final_d
 
@@ -202,8 +212,16 @@ def generate_permutations_table(permutations: dict, index: int):
         aggfunc='sum',  # sum in case of duplicates, or use 'first' if always unique
         fill_value=""  # keep empty if no entry
     )
+    pivot_station = df.pivot_table(
+        index=['stations', 'hpso'],
+        columns='baseline',
+        values='num',
+        aggfunc='sum',  # sum in case of duplicates, or use 'first' if always unique
+        fill_value=""  # keep empty if no entry
+    )
     # This is Ryan breaking his #1 rule of not encoding core information about a dataset in its file name.
     pivot.to_csv(f"hpso_permutation_{key}_pivot.csv")
+    pivot_station.to_csv(f"hpso_permutation_{key}_stations.csv")
 
 def create_week_plan(telescope: str):
     """
@@ -219,9 +237,10 @@ def create_week_plan(telescope: str):
         )
         logger.info("creating %d iterations of observations")
         permutations = permute_low_observation_plans(n)
-        generate_permutations_table(permutations, 8)
-        generate_permutations_table(permutations, -6)
-
+        generate_permutations_table(permutations, 1)
+        generate_permutations_table(permutations, 5)
+        generate_permutations_table(permutations, 10)
+        generate_permutations_table(permutations, 54)
         return standard_low_obs_plan(permutations)
     elif telescope == "mid":
         n = calc_n_for_given_time_in_seconds(

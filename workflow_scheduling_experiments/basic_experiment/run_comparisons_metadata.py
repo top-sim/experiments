@@ -101,9 +101,9 @@ def run_fcfs(params: dict, tup: tuple):
     )
     final_params = deepcopy(params)
     st = time.time()
-    fcfs_result = fcfs(workflow)
+    fcfs_results = fcfs(workflow)
     final_params['method'] = 'fcfs'
-    final_params['time'] = fcfs_result.makespan
+    final_params['time'] = fcfs_results.makespan
     final_params["graph_type"] = ".".join(params["graph_type"])
     # # heft_res = None
     output_params = {k: i for k, i in final_params.items() if k != 'cfg'}
