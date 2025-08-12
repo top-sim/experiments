@@ -46,6 +46,45 @@ def values_to_nparray(value_map, key):
     return np.fromiter((y[key] for x, y in value_map.items()), int)
 
 
+def normal_samples():
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    values = np.array([4, 16, 32, 64])
+
+    def build_discrete_normal_sampler(center, sigma, values=values):
+        # Compute discrete normal probabilities
+        unnorm = np.exp(-0.5 * ((values - center) / sigma) ** 2)
+        probs = unnorm / unnorm.sum()
+
+        def sampler(size=1):
+            return np.random.choice(values, size=size, p=probs)
+
+        # Also return the probs so you can visualize or inspect
+        return sampler, probs
+
+    # Example usage
+    center = 16
+    sigma = 10
+
+    sampler, probs = build_discrete_normal_sampler(center, sigma)
+    print(f"Discrete values: {values}")
+    print(f"Probabilities for center={center}, sigma={sigma}: {probs}")
+
+    samples = sampler(size=20)
+    print("Samples:", samples)
+    print("Sample mean:", np.mean(samples))
+
+    # Plot distribution
+    plt.bar(values, probs, width=6)
+    plt.xlabel("Value")
+    plt.ylabel("Probability")
+    plt.title(f"Discrete Normal Approximation (center={center}, sigma={sigma})")
+    plt.show()
+
+
+
 def spread_observations_across_demand(number, demand_pool, seed=None):
     """
     given the number of observations and a 'demand pool' of resources (e.g. [64, 128]), spread
@@ -419,12 +458,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     workflow_type_map = {
-        "ical": args.graph_type,
-        "dprepa": args.graph_type,
-        "dprepb": args.graph_type,
-        "dprepc": args.graph_type,
-        "dprepd": args.graph_type,
-        "pulsar": "pulsar",
+        "ICAL": args.graph_type,
+        "DPrepA": args.graph_type,
+        "DPrepB": args.graph_type,
+        "DPrepC": args.graph_type,
+        "DPrepD": args.graph_type,
+        "Pulsar": "pulsar",
     }
 
     random.seed(2)
