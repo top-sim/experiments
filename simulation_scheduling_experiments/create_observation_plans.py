@@ -21,6 +21,7 @@ import logging
 
 import numpy as np
 import pandas as pd
+from build.lib.skaworkflows.common import SKALow
 
 from skaworkflows.observation.observation import HPSOParameter, ObservationPlan
 from skaworkflows.config_generator import create_config
@@ -45,8 +46,32 @@ def values_to_nparray(value_map, key):
     """
     return np.fromiter((y[key] for x, y in value_map.items()), int)
 
+def create_baseline_sample(num_observations, alpha, baseline_limit):
+    values = [b for b in SKALow.baselines if b <=baseline_limit]
 
-def spread_observations_across_demand(number, demand_pool, seed=None):
+    def compute_weights(values, alpha):
+        normalized = [v / max(values) for v in values]
+        weights = [x ** alpha for x in normalized]
+        total = sum(weights)
+        return [w / total for w in weights]
+
+
+    weights = list(reversed(compute_weights(values, alpha)))
+    return random.choices(list(values), weights=list(weights), k=num_observations)
+    # experiments.append({
+    #         'experiment': i + 1,
+    #         'alpha': round(alpha, 2),
+    #         'weights': weights,
+    #         'sample': sample
+    #     })
+    #
+    # for exp in experiments:
+    #     print(f"Experiment {exp['experiment']} (alpha={exp['alpha']}):")
+    #     print(f"  Weights: {[round(w, 3) for w in exp['weights']]}")
+    #     print(f"  Sample: {exp['sample']}")
+    #     print()
+
+def spread_observations_across_demand(number_obs, demand_pool, alpha, baseline_limit, seed=None):
     """
     given the number of observations and a 'demand pool' of resources (e.g. [64, 128]), spread
     the number of observations across that pool of resources.
@@ -55,7 +80,7 @@ def spread_observations_across_demand(number, demand_pool, seed=None):
     to each resource amount, such that all numbers match the total number of observations
     required for that hpso in a given plan (based on the ratio).
 
-    :param number:
+    :param number_obs:
     :param demand_pool:
     :return: observations for each resource amount
     """
@@ -63,10 +88,12 @@ def spread_observations_across_demand(number, demand_pool, seed=None):
     if seed is not None:
         random.seed(seed)
 
-    fraction = demand_pool.get('ratio', {})
-    baselines = list(demand_pool.get('baseline', {}).keys())
+    # bl_weights = create_baseline_sample(number_obs)
 
-    if not fraction or not baselines:
+    fraction = demand_pool.get('ratio', {})
+    # baselines = list(demand_pool.get('baseline', {}).keys())
+
+    if not fraction: #or not baselines:
         raise ValueError("both 'ratio' and 'baseline' must be provided and non-empty.")
 
     station_types = list(fraction.keys())
@@ -76,17 +103,17 @@ def spread_observations_across_demand(number, demand_pool, seed=None):
     # step 1: allocate number of stations per ratio
     for i, s in enumerate(station_types):
         if i == len(station_types) - 1:
-            count = number - allocated
+            count = number_obs - allocated
         else:
-            count = int(round(number * fraction[s]))
+            count = int(round(number_obs * fraction[s]))
             allocated += count
         station_counts[s] = count
 
     # step 2: track unique (station, baseline) combinations manually
     grouped = {}
-    for station, count in station_counts.items():
-        for _ in range(count):
-            baseline = random.choice(baselines)
+    for station, num_obs in station_counts.items():
+        sample = create_baseline_sample(num_obs, alpha, baseline_limit)
+        for baseline in sample:
             key = (station, baseline)
             if key in grouped:
                 grouped[key] += 1
@@ -99,7 +126,8 @@ def spread_observations_across_demand(number, demand_pool, seed=None):
         result.append({
             'stations': station,
             'baseline': baseline,
-            'num': count
+            'num': count,
+            'alpha': alpha,
         })
 
     return result
@@ -133,42 +161,49 @@ def permute_low_observation_plans(n=1):
         [
             {64: 0.9, 128: 0.1},
             {64: 0.5, 128: 0.5},
-            {64: 0.5, 128: 0.35, 256: 0.15},
-            {64: 0.5, 128: 0.35, 256: 0.10, 512: 0.05}
+            {64: 0.5, 128: 0.30, 256: 0.20},
+            {64: 0.5, 128: 0.20, 256: 0.20, 512: 0.10}
         ],
         [
             {64: 0.8, 128: 0.2},
             {64: 0.4, 128: 0.6},
-            {64: 0.4, 128: 0.4, 256: 0.2},
-            {64: 0.5, 128: 0.4, 256: 0.05, 512: 0.05}
+            {64: 0.4, 128: 0.2, 256: 0.2},
+            {64: 0.5, 128: 0.2, 256: 0.2, 512: 0.2}
         ],
     ]
-    baseline_permutations = [telescope.baselines[:i+1] for i, e in enumerate(telescope.baselines)]
+
+    # baseline_permutations = [telescope.baselines[:i+1] for i, e in enumerate(telescope.baselines)]
+    num_baseline_permutations = 5
+    baseline_permutation_alphas = []
+    for i in range(num_baseline_permutations):
+        baseline_permutation_alphas.append(1 - (1 - ((num_baseline_permutations - i) / num_baseline_permutations)))
     hpso_demand = {key: {'stations':{}, 'baseline':{}} for key in low_observation_defaults["hpsos"]}
-    for i, _baseline in enumerate(baseline_permutations):
+    for i, alpha in enumerate(baseline_permutation_alphas):
         for r in ratios:
             for x, _ in enumerate(telescope.stations):
                     _ratio = r[min(x, len(telescope.stations)-1)]
-                    pname = f"ratios_{i}" + ''.join(f"_{k}-{v}" for k, v in _ratio.items())
+                    pname = f"ratios-{i}" + ''.join(f"_{k}-{v}" for k, v in _ratio.items()) + f"_alpha-{alpha:0.2f}"
                     logger.info("ratio: %s", pname)
                     for hpso in hpso_demand:
                         for j in telescope.stations[0:i+1]:
                             if j > 256 and hpso in ['hpso04a', 'hpso05a']:
                                 continue
                             hpso_demand[hpso]['stations'].update({j: 0})
-                        for j in _baseline:
-                            if j > 32 and hpso in ['hpso04a', 'hpso05a']:
-                                continue
-                            hpso_demand[hpso]['baseline'].update({j:0})
+                        # for j in alpha:
+                        #     if j > 32 and hpso in ['hpso04a', 'hpso05a']:
+                        #         continue
+                        #     hpso_demand[hpso]['baseline'].update({j:0})
                         hpso_demand[hpso]['ratio'] = _ratio
                         # demand pool slowly gets bigger
                     number_obs = values_to_nparray(low_observation_defaults["hpsos"], "observing_ratio") * n
                     observations = {}
                     for j, items in enumerate(hpso_demand.items()):
                         hpso, demand = items
+                        baseline_limit = 24 if hpso in ['hpso04a', 'hpso05a'] else 65
                         obs = spread_observations_across_demand(number_obs[j],
-                                                                hpso_demand[hpso])
+                                                                hpso_demand[hpso], alpha, baseline_limit)
                         observations[hpso] = obs
+                    # observations['alpha'] = alpha
                     final_d[pname] = observations
                     # final_set.append(observations)
     dfs = []
@@ -241,6 +276,7 @@ def create_week_plan(telescope: str):
         generate_permutations_table(permutations, 5)
         generate_permutations_table(permutations, 10)
         generate_permutations_table(permutations, 54)
+        generate_permutations_table(permutations, 59)
         return standard_low_obs_plan(permutations)
     elif telescope == "mid":
         n = calc_n_for_given_time_in_seconds(
