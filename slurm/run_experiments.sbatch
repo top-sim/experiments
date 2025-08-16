@@ -16,7 +16,7 @@ echo "SLURM_ARRAY_JOB_ID: " $SLURM_ARRAY_JOB_ID
 
 source /home/rbunney/github/topsim/venv/bin/activate
 
-input_dir="/scratch/rbunney/baseline_variation/low"
+input_dir="/scratch/rbunney/baseline_variation_prototype/low"
 
 input_files=($(ls $input_dir/*.json))
 

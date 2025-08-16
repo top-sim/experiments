@@ -455,12 +455,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     workflow_type_map = {
-        "ical": args.graph_type,
-        "dprepa": args.graph_type,
-        "dprepb": args.graph_type,
-        "dprepc": args.graph_type,
-        "dprepd": args.graph_type,
-        "pulsar": "pulsar",
+        "ICAL": args.graph_type,
+        "DPrepA": args.graph_type,
+        "DPrepB": args.graph_type,
+        "DPrepC": args.graph_type,
+        "DPrepD": args.graph_type,
+        "Pulsar": "pulsar",
     }
 
     random.seed(2)
