@@ -36,6 +36,33 @@ low_observation_defaults = load_observation_defaults("skalow")
 
 mid_observations_defaults = load_observation_defaults("skamid")
 
+RATIOS = [
+    [
+        {64: 1},
+        {64: 0.75, 128: 0.25},
+        {64: 0.5, 128: 0.25, 256: 0.25},
+        {64: 0.5, 128: 0.25, 256: 0.2, 512: 0.05}
+    ],
+    [
+        {64: 0.9, 128: 0.1},
+        {64: 0.5, 128: 0.5},
+        {64: 0.5, 128: 0.30, 256: 0.20},
+        {64: 0.5, 128: 0.20, 256: 0.20, 512: 0.10}
+    ],
+    [
+        {64: 0.8, 128: 0.2},
+        {64: 0.4, 128: 0.6},
+        {64: 0.4, 128: 0.2, 256: 0.2},
+        {64: 0.25, 128: 0.25, 256: 0.25, 512: 0.25}
+    ],
+]
+
+import itertools
+# Based on heatmap of pairs comparing PFLOPs of observations
+all_pairs = list(itertools.product(SKALow.baselines, SKALow.stations))
+SKALOW_LARGE_PAIRS = [(65, 256), (32.5, 512), (65, 512)]
+SKALOW_MED_PAIRS = [(65, 64), (65, 128),(32.5, 128), (32.5, 256), (16.25, 512), (16.25, 256), (8.125, 512)]
+SKALOW_SMALL_PAIRS = list(set(all_pairs) - set(SKALOW_MED_PAIRS) - set(SKALOW_LARGE_PAIRS))
 
 def values_to_nparray(value_map, key):
     """
@@ -71,7 +98,7 @@ def create_baseline_sample(num_observations, alpha, baseline_limit):
     #     print(f"  Sample: {exp['sample']}")
     #     print()
 
-def spread_observations_across_demand(number_obs, demand_pool, alpha, baseline_limit, seed=None):
+def spread_observations_across_demand(number_obs, demand_pool, pairs, baseline_limit, seed=None):
     """
     given the number of observations and a 'demand pool' of resources (e.g. [64, 128]), spread
     the number of observations across that pool of resources.
@@ -112,9 +139,12 @@ def spread_observations_across_demand(number_obs, demand_pool, alpha, baseline_l
     # step 2: track unique (station, baseline) combinations manually
     grouped = {}
     for station, num_obs in station_counts.items():
-        sample = create_baseline_sample(num_obs, alpha, baseline_limit)
-        for baseline in sample:
-            key = (station, baseline)
+        acceptable_pairs = [(y,x) for (x, y) in pairs if y == station]
+        # acceptable_baselines = list({x for (x, y) in acceptable_stations})
+        # sample = create_baseline_sample(num_obs, alpha, baseline_limit)
+        sample = random.choices(acceptable_pairs, k=num_obs)
+        for key in sample:
+            # key = (station, baseline)
             if key in grouped:
                 grouped[key] += 1
             else:
@@ -127,7 +157,7 @@ def spread_observations_across_demand(number_obs, demand_pool, alpha, baseline_l
             'stations': station,
             'baseline': baseline,
             'num': count,
-            'alpha': alpha,
+            'alpha': pairs,
         })
 
     return result
@@ -151,38 +181,21 @@ def permute_low_observation_plans(n=1):
     telescope = common.SKALow()
     final_set = []
     final_d = {}
-    ratios = [
-        [
-            {64: 1},
-            {64: 0.75, 128: 0.25},
-            {64: 0.5, 128: 0.25, 256: 0.25},
-            {64: 0.5, 128: 0.25, 256: 0.2, 512: 0.05}
-        ],
-        [
-            {64: 0.9, 128: 0.1},
-            {64: 0.5, 128: 0.5},
-            {64: 0.5, 128: 0.30, 256: 0.20},
-            {64: 0.5, 128: 0.20, 256: 0.20, 512: 0.10}
-        ],
-        [
-            {64: 0.8, 128: 0.2},
-            {64: 0.4, 128: 0.6},
-            {64: 0.4, 128: 0.2, 256: 0.2},
-            {64: 0.5, 128: 0.2, 256: 0.2, 512: 0.2}
-        ],
-    ]
 
     # baseline_permutations = [telescope.baselines[:i+1] for i, e in enumerate(telescope.baselines)]
     num_baseline_permutations = 5
-    baseline_permutation_alphas = []
-    for i in range(num_baseline_permutations):
-        baseline_permutation_alphas.append(1 - (1 - ((num_baseline_permutations - i) / num_baseline_permutations)))
+    # baseline_permutation_alphas = []
+    # for i in range(num_baseline_permutations):
+    #     baseline_permutation_alphas.append(1 - (1 - ((num_baseline_permutations - i) / num_baseline_permutations)))
     hpso_demand = {key: {'stations':{}, 'baseline':{}} for key in low_observation_defaults["hpsos"]}
-    for i, alpha in enumerate(baseline_permutation_alphas):
-        for r in ratios:
+    baseline_permutations = {"small": SKALOW_SMALL_PAIRS, "medium":SKALOW_MED_PAIRS, "large": SKALOW_LARGE_PAIRS}
+    current_perm = []
+    for i, blperm in enumerate(baseline_permutations):
+        current_perm.extend(baseline_permutations[blperm])
+        for r in RATIOS:
             for x, _ in enumerate(telescope.stations):
                     _ratio = r[min(x, len(telescope.stations)-1)]
-                    pname = f"ratios-{i}" + ''.join(f"_{k}-{v}" for k, v in _ratio.items()) + f"_alpha-{alpha:0.2f}"
+                    pname = f"ratios-{i}" + ''.join(f"_{k}-{v}" for k, v in _ratio.items()) + blperm
                     logger.info("ratio: %s", pname)
                     for hpso in hpso_demand:
                         for j in telescope.stations[0:i+1]:
@@ -201,13 +214,13 @@ def permute_low_observation_plans(n=1):
                         hpso, demand = items
                         baseline_limit = 24 if hpso in ['hpso04a', 'hpso05a'] else 65
                         obs = spread_observations_across_demand(number_obs[j],
-                                                                hpso_demand[hpso], alpha, baseline_limit)
+                                                                hpso_demand[hpso], current_perm, baseline_limit)
                         observations[hpso] = obs
                     # observations['alpha'] = alpha
                     final_d[pname] = observations
                     # final_set.append(observations)
     dfs = []
-    for r in ratios:
+    for r in RATIOS:
         df = pd.DataFrame(r)
         dfs.append(df.replace(np.nan, "", regex=True))
     df_ratios = pd.concat(dfs)
@@ -275,8 +288,8 @@ def create_week_plan(telescope: str):
         generate_permutations_table(permutations, 1)
         generate_permutations_table(permutations, 5)
         generate_permutations_table(permutations, 10)
-        generate_permutations_table(permutations, 54)
-        generate_permutations_table(permutations, 59)
+        generate_permutations_table(permutations, 35)
+        # generate_permutations_table(permutations, 59)
         return standard_low_obs_plan(permutations)
     elif telescope == "mid":
         n = calc_n_for_given_time_in_seconds(
