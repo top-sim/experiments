@@ -51,18 +51,27 @@ print(lattice60)
 
 
 types = {"A": 45, "B": 30, "C": 5, "D":5, "E": 5}
-for experiment in valid_lattice:
+for experiment in lattice60:
     rng = np.random.default_rng()
     observations=[]
     excluded = ["A","B"]
+    observations.extend(rng.choice(large, lattice60['large']).tolist())
+    observations.extend(rng.choice(medium,lattice60['medium']).tolist())
+    for t, count in types.items():
+       if not t in excluded:
+           print(f"Processing {t}")
+           print(rng.choice(observations, count, replace=False).tolist())
+    
+    observations.extend(rng.choice(small, lattice60['small']).tolist())
+    for t, count in types.items():
+        if t in excluded:
+            print(f"Processing {t}")
+            print(t, rng.choice(observations, count, replace=False).tolist())
 
-    observations.extend(rng.choice(small, lattice60['small'])).tolist()
-    observations.extend(rng.choice(medium,lattice60['medium'])).tolist()
-    observations.extend(rng.choice(large, lattice60['large'])).tolist()
 
-for t, count in types.items():
+""" for t, count in types.items():
    print(t, rng.choice(observations, count, replace=False).tolist())
-
+ """
 
 types = ["A", "B", "C", "D", "E"]
 
