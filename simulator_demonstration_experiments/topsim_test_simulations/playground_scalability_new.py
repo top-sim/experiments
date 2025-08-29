@@ -78,8 +78,9 @@ else:
     e = Experiment(
         cfg_paths,
         [("batch", "batch"), ("static", 'dynamic_plan')],
+        [(False, False), (True, False), (True, True)],
         output=experiment_path.parent / "results",
-        sched_args={"ignore_ingest": False, "use_workflow_dop": True} # This is what we want to use by 'defualt'
+        sched_args={"ignore_ingest": False, "use_workflow_dop": True} # This is what we want to use by 'default'
     )
 
 e.run()
