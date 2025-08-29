@@ -5,7 +5,8 @@ import random
 
 def make_lattice_tagged(N: int, step: int = 1, maximum_large: float = 1.0) -> pd.DataFrame:
     """
-    
+    Create ternary-style sequence of experiments with set-maximum value for the
+    number of "large" observations.
     """
     max_large = int(N * maximum_large)
     rows = []
@@ -43,30 +44,36 @@ print(valid_lattice)
 
 ra = 5
 small = [(x, ra-x) for x in range(0, ra+1)]
-medium = [(x, ra-x) for x in range(ra+1, 2*ra+1)]
-large = [(x, ra-x) for x in range(2*ra+1, 2*ra+5)]
+medium = [(x, x-ra) for x in range(2*ra+1, 2*ra+5)]
+large = [(x, x-ra) for x in range(10*ra+1, 10*ra+5)]
 
-lattice60 = valid_lattice.iloc[60]
+lattice60 = valid_lattice.iloc[83]
 print(lattice60)
 
-
+np.random.seed(1)
 types = {"A": 45, "B": 30, "C": 5, "D":5, "E": 5}
-for experiment in lattice60:
-    rng = np.random.default_rng()
-    observations=[]
-    excluded = ["A","B"]
-    observations.extend(rng.choice(large, lattice60['large']).tolist())
-    observations.extend(rng.choice(medium,lattice60['medium']).tolist())
-    for t, count in types.items():
-       if not t in excluded:
-           print(f"Processing {t}")
-           print(rng.choice(observations, count, replace=False).tolist())
-    
-    observations.extend(rng.choice(small, lattice60['small']).tolist())
-    for t, count in types.items():
-        if t in excluded:
-            print(f"Processing {t}")
-            print(t, rng.choice(observations, count, replace=False).tolist())
+# for experiment in lattice60:
+rng = np.random.default_rng()
+observations_options=[]
+excluded = ["A","B"]
+observations_options.extend(rng.choice(large, lattice60['large']).tolist())
+print(observations_options)
+for t, count in types.items():
+   if not t in excluded and observations_options:
+       print(f"Processing {t}")
+       print(rng.choice(observations_options, count, replace=False).tolist())
+
+observations_options.extend(rng.choice(medium, lattice60['medium']).tolist())
+for t, count in types.items():
+   if not t in excluded and observations_options:
+       print(f"Processing {t}")
+       print(rng.choice(observations_options, count, replace=False).tolist())
+
+observations_options.extend(rng.choice(small, lattice60['small']).tolist())
+for t, count in types.items():
+    if t in excluded and observations_options:
+        print(f"Processing {t}")
+        print(t, rng.choice(observations_options, count, replace=False).tolist())
 
 
 """ for t, count in types.items():
@@ -80,7 +87,6 @@ fig, ax = plt.subplots(figsize=(7,7))
 
 valid = lattice_tagged["status"] == "valid"
 excluded = lattice_tagged["status"] == "excluded"
-
 ax.scatter(x[excluded], y[excluded], c="lightgrey", s=60, label="excluded")
 ax.scatter(x[valid], y[valid], c="blue", s=60, label="valid")
 

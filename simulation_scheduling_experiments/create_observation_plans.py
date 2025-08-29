@@ -16,12 +16,15 @@
 import json
 import random
 import sys
-from pathlib import Path
 import logging
 
 import numpy as np
 import pandas as pd
-from build.lib.skaworkflows.common import SKALow
+
+from collections import Counter
+from pathlib import Path
+
+from skaworkflows.common import SKALow
 
 from skaworkflows.observation.observation import HPSOParameter, ObservationPlan
 from skaworkflows.config_generator import create_config
@@ -174,58 +177,100 @@ def calc_demand_ratio(hpso_demand, telescope):
 
     return cumulative_demand / total_demand
 
+def make_lattice_tagged(N: int, step: int = 1, maximum_large: float = 1.0) -> pd.DataFrame:
+    """
+    Create ternary-style sequence of experiments with set-maximum value for the
+    number of "large" observations.
+    """
+    max_large = int(N * maximum_large)
+    rows = []
+    for s in range(0, N + 1, step):
+        for m in range(0, N - s + 1, step):
+            l = N - s - m
+            status = "valid" if l <= max_large else "excluded"
+            rows.append({"small": s, "medium": m, "large": l, "status": status})
+    return pd.DataFrame(rows)
+
+def ternary_coordinates(df, N):
+    """
+    Convert (small, medium, large) counts to 2D coordinates for a ternary plot.
+    """
+    s = df["small"].to_numpy()
+    m = df["medium"].to_numpy()
+    l = df["large"].to_numpy()
+    x = 0.5 * (2*m + l) / N
+    y = (np.sqrt(3)/2) * l / N
+    return x, y
 
 def permute_low_observation_plans(n=1):
-    max_largest_demand = 2
-    random.seed(100)
-    telescope = common.SKALow()
-    final_set = []
-    final_d = {}
+    """
+    Create our experimental observing plans
 
-    # baseline_permutations = [telescope.baselines[:i+1] for i, e in enumerate(telescope.baselines)]
-    num_baseline_permutations = 5
-    # baseline_permutation_alphas = []
-    # for i in range(num_baseline_permutations):
-    #     baseline_permutation_alphas.append(1 - (1 - ((num_baseline_permutations - i) / num_baseline_permutations)))
-    hpso_demand = {key: {'stations':{}, 'baseline':{}} for key in low_observation_defaults["hpsos"]}
-    baseline_permutations = {"small": SKALOW_SMALL_PAIRS, "medium":SKALOW_MED_PAIRS, "large": SKALOW_LARGE_PAIRS}
-    current_perm = []
-    for i, blperm in enumerate(baseline_permutations):
-        current_perm.extend(baseline_permutations[blperm])
-        for r in RATIOS:
-            for x, _ in enumerate(telescope.stations):
-                    _ratio = r[min(x, len(telescope.stations)-1)]
-                    pname = f"ratios-{i}" + ''.join(f"_{k}-{v}" for k, v in _ratio.items()) + blperm
-                    logger.info("ratio: %s", pname)
-                    for hpso in hpso_demand:
-                        for j in telescope.stations[0:i+1]:
-                            if j > 256 and hpso in ['hpso04a', 'hpso05a']:
-                                continue
-                            hpso_demand[hpso]['stations'].update({j: 0})
-                        # for j in alpha:
-                        #     if j > 32 and hpso in ['hpso04a', 'hpso05a']:
-                        #         continue
-                        #     hpso_demand[hpso]['baseline'].update({j:0})
-                        hpso_demand[hpso]['ratio'] = _ratio
-                        # demand pool slowly gets bigger
-                    number_obs = values_to_nparray(low_observation_defaults["hpsos"], "observing_ratio") * n
-                    observations = {}
-                    for j, items in enumerate(hpso_demand.items()):
-                        hpso, demand = items
-                        baseline_limit = 24 if hpso in ['hpso04a', 'hpso05a'] else 65
-                        obs = spread_observations_across_demand(number_obs[j],
-                                                                hpso_demand[hpso], current_perm, baseline_limit)
-                        observations[hpso] = obs
-                    # observations['alpha'] = alpha
-                    final_d[pname] = observations
-                    # final_set.append(observations)
-    dfs = []
-    for r in RATIOS:
-        df = pd.DataFrame(r)
-        dfs.append(df.replace(np.nan, "", regex=True))
-    df_ratios = pd.concat(dfs)
-    df_ratios.to_csv('hpso_ratios.csv')
-    logger.info("final set #: %d", len(final_d))
+    :param n: This is the multiple of our time-on-sky ratios that are stored in low_observation_defaults
+
+    :return:
+    """
+    random.seed(100)
+    final_set = []
+
+    observation_amounts = {}
+    total_obs = 0
+    for hpso, d in low_observation_defaults['hpsos'].items():
+        tmp = d['observing_ratio']*n
+        observation_amounts[hpso] = tmp
+        total_obs+=tmp
+    lattice = make_lattice_tagged(N=total_obs, step=5, maximum_large=0.25)
+    experiments = lattice[lattice['status']=='valid']
+    excluded = ["hpso04a", "hpso05a"]
+    final_d = {}
+    for i, row in enumerate(experiments.iterrows()):
+        row_id, e = row
+        pname = f"experiment_" + ''.join(f"small-{e['small']}_medium-{e['medium']}_large-{e['large']}")
+        logger.info("Experiment params: %s", pname)
+        number_obs = {k: v for k, v in observation_amounts.items()}
+        rng = np.random.default_rng()
+        observations_options = []
+        observations_options.extend(rng.choice(SKALOW_LARGE_PAIRS, e['large']).tolist())
+        observations_options.extend(rng.choice(SKALOW_MED_PAIRS, e['medium']).tolist())
+
+        observation_pairs = {}
+        exhausted = False
+        hpsos = [h for h in list(number_obs.keys()) if h not in excluded]
+        while not exhausted:
+            for t in hpsos:
+                if t not in observation_pairs:
+                    observation_pairs[t] = []
+                if not observations_options:
+                    exhausted = True
+                    break
+                rint = rng.integers(low=0, high=len(observations_options), size=1)[0]
+                if observations_options:
+                    if len(observation_pairs[t]) < number_obs[t]:
+                        observation_pairs[t].append(tuple(observations_options.pop(rint)))
+                        # baseline, stations =   observations_options.pop(rint)
+                        # observation_pairs[t].append({'baseline':baseline, 'stations':stations})
+                    else:
+                        del number_obs[t]
+            # Either we're out of observation options or we've removed all the non-excluded HPSOs from our dictionary
+            if not observations_options or len(number_obs) < len(hpsos):
+                exhausted = True
+
+        observations_options.extend(rng.choice(SKALOW_SMALL_PAIRS, e['small']).tolist())
+        while observations_options:
+            for t in  list(number_obs.keys()):
+                if t not in observation_pairs:
+                    observation_pairs[t] = []
+                rint = rng.integers(low=0, high=len(observations_options), size=1)[0]
+                if observations_options:
+                    if len(observation_pairs[t]) < number_obs[t]:
+                        observation_pairs[t].append(tuple(observations_options.pop(rint)))
+                        # baseline, stations =   observations_options.pop(rint)
+                        # observation_pairs[t].append({'baseline':baseline, 'stations':stations})
+                if not observations_options:
+                    break
+
+
+        final_d[pname] = observation_pairs
     return final_d
 
 
@@ -246,13 +291,19 @@ def generate_permutations_table(permutations: dict, index: int):
     key = list(permutations.keys())[index]
     d = permutations[key]
     df_hpso_ratios = {}
+    counter = dict(Counter(df_hpso_ratios))
+    for pair, count in counter.items():
+        baseline, stations = pair
+
     for hpso, el in d.items():
-        df_hpso_ratios[hpso] = pd.DataFrame(el)
+        df_hpso_ratios[hpso] = pd.DataFrame(el, columns=['baseline', 'stations'])
     for hpso, df in df_hpso_ratios.items():
         df = df.sort_values(by=['stations', 'baseline'])
         df['hpso'] = hpso
+        df['num'] = 1
         df_hpso_ratios[hpso] = df
     df = pd.concat(list(df_hpso_ratios.values()))
+    df = df.groupby(["baseline", "stations", "hpso"])["num"].count().reset_index()
     pivot = df.pivot_table(
         index=['baseline', 'hpso'],
         columns='stations',
@@ -286,10 +337,10 @@ def create_week_plan(telescope: str):
         logger.info("creating %d iterations of observations")
         permutations = permute_low_observation_plans(n)
         generate_permutations_table(permutations, 1)
-        generate_permutations_table(permutations, 5)
-        generate_permutations_table(permutations, 10)
-        generate_permutations_table(permutations, 35)
-        # generate_permutations_table(permutations, 59)
+        # generate_permutations_table(permutations, 5)
+        # generate_permutations_table(permutations, 10)
+        # generate_permutations_table(permutations, 35)
+        generate_permutations_table(permutations, 84)
         return standard_low_obs_plan(permutations)
     elif telescope == "mid":
         n = calc_n_for_given_time_in_seconds(
@@ -424,22 +475,24 @@ def standard_low_obs_plan(
 
     """
     params = {}
-
+    from collections import Counter
     channels_demand = 128
     for name, combination in num_obs_repeats.items():
         plan = ObservationPlan("low")
         logger.info("generating plan for: %s", name)
         for hpso, items in combination.items():
-            for el in items:
+            counter = dict(Counter(items))
+            for pair, count in counter.items():
+                baseline, stations = pair
                 plan.add_observation(HPSOParameter(
-                    count=el["num"],
+                    count=count,
                     hpso=hpso,
                     duration=low_observation_defaults["hpsos"][hpso]["duration"],
                     workflows=low_observation_defaults["hpsos"][hpso]["workflows"],
-                    demand=el["stations"],
+                    demand=stations,
                     channels=channels_demand * plan.telescope.channels_multiplier,
-                    workflow_parallelism=el["stations"],
-                    baseline=el['baseline'],
+                    workflow_parallelism=stations,
+                    baseline=baseline,
                     telescope=str(plan.telescope))
                 )
         params[name] = plan.to_json()
@@ -447,7 +500,9 @@ def standard_low_obs_plan(
     if verbose:
         print(json.dumps(params, indent=2, cls=common.npencoder, sort_keys=True))
 
-    logger.info("plans created: %s", params.keys())
+    logger.info("Plans created:")
+    for key in params:
+        logger.info("\t %s", key)
     return params
 
 

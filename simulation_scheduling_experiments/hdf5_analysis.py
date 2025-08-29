@@ -9,13 +9,14 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import json
+import itertools
 from pathlib import Path
 from io import StringIO
 from matplotlib import axes
 from matplotlib.gridspec import GridSpec
 import matplotlib.ticker as ticker
 from matplotlib import rcParams
-from skaworkflows.common import Telescope
+from skaworkflows.common import SKALow, Telescope
 
 # Setup all the visualisation nicities
 rcParams["text.usetex"] = False
@@ -96,6 +97,27 @@ def extract_simulations_from_hdf5(result_path, verbose=True):
                 count -= 1
         yield simulations
 
+all_pairs = list(itertools.product(SKALow.baselines, SKALow.stations))
+SKALOW_LARGE_PAIRS = [(65, 256), (32.5, 512), (65, 512)]
+SKALOW_MED_PAIRS = [(65, 64), (65, 128),(32.5, 128), (32.5, 256), (16.25, 512), (16.25, 256), (8.125, 512)]
+SKALOW_SMALL_PAIRS = list(set(all_pairs) - set(SKALOW_MED_PAIRS) - set(SKALOW_LARGE_PAIRS))
+
+def get_observation_plan_size(df):
+    """
+    Determine if the dataframe demand tuples match the different 'size' types above.
+
+    We use the isdisjoint to determine if there are _any_ examples of the different tuples as
+    defined above.
+
+    :param df:
+    :return:
+    """
+    obs_set = set([tuple(row) for index, row in df[['baseline', 'demand']].iterrows()])
+    if not set(SKALOW_LARGE_PAIRS).isdisjoint(obs_set):
+        return "large"
+    if not set(SKALOW_MED_PAIRS).isdisjoint(obs_set):
+        return "med"
+    return "small"
 
 def collate_simulation_results(result_path: Path, simulations: dict):
     # TODO consider applying timesteps to everything here so we don't have to later
@@ -158,7 +180,7 @@ def collate_simulation_results(result_path: Path, simulations: dict):
         # TODO it's really inefficient having so many tables with the same number. consider a lookup table with these sorts
         # of global parameters per-config (Did I just invent a type of database???)
         parameters["nodes"] = [json.dumps(nodes)] * len(parameters["schedule_length"])
-
+        parameters["observation_size"] = get_observation_plan_size(parameters)
         # Use simulation config to differentiate between different sims
         parameters["sim_cfg"] = cfg_path.name
         parameters["total_obs_duration"] = sum(obs_durations)
@@ -615,6 +637,7 @@ def produce_summary_dataframe(df_total, results_path: Path, verbose=True):
         plan_statistics = {
             "cfg": cfg,
             "baselines":','.join(str(b) for b in sorted(g['baseline'].unique())) ,  # TODO change to baseline ratio
+            "observation_plan_size": g["observation_size"].iloc[0],
             "demand_ratio": round(plan_demand, 2),
             "channels_ratio": round(plan_channels / (max_channels * len(g)), 2),
             "data": g["data"].iloc[0],
@@ -692,9 +715,9 @@ def plot_scatter_axis(usage: pd.DataFrame,
     for algorithm, marker in markers.items():
         legend_elements.append(plt.Line2D([0], [0], marker=marker, color='black', linestyle='None', label=algorithms[algorithm]))
 
-    unique_io = usage['mean_node_bandwidth'].unique()
-    min_io = unique_io.min()
-    io_values = unique_io/min_io
+    # unique_io = usage['mean_node_bandwidth'].unique()
+    # min_io = unique_io.min()
+    # io_values = unique_io/min_io
     colors = kwargs.get('colors', {})
 
     # plot_io_variation = kwargs.get('all_io', False)
@@ -717,7 +740,7 @@ def plot_scatter_axis(usage: pd.DataFrame,
             # label=[label],
             s=20,
             marker=markers[planning],
-            color='lightblue',
+            color=colors[planning],
             label=algorithms[planning],
             edgecolors='black'
         )
@@ -1269,42 +1292,42 @@ def plot_histogram_observing_computing_ratio(usage_summary_dataframe):
 
 def plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe):
     import math
-    unique_baselines =usage_summary_dataframe['baselines'].unique()
+    unique_baselines = usage_summary_dataframe["observation_plan_size"].unique()
     nbaselines = len(unique_baselines)
     k = math.ceil((-1 + math.sqrt(1 + 8 * nbaselines)) / 2)
 
     fig = plt.figure(figsize=(6, 4),dpi=300)
-    gs = GridSpec(k, k-1, figure = fig, hspace = 0.5, wspace=0.2, bottom = 0.10, right = 0.85, left = 0.1,)
+    gs = GridSpec(3, 1, figure = fig, hspace = 0.5, wspace=0.2, bottom = 0.10, right = 0.85, left = 0.1,)
                   # )  # k rows, k columns to be safe
     plot_index = 0
     handles = []
     labels=[]
     handles_labels_collected = False  # Flag to only collect once
-    for row in range(k):
-        num_cols = row + 1  # increasing number of columns per row
-        col_offset = (k-num_cols) // 2
-        for col in range(num_cols):
-            if plot_index >= nbaselines:
-                break
-            baselines = unique_baselines[plot_index]
-            usage = usage_summary_dataframe[usage_summary_dataframe['baselines']==baselines]
-            fig, gs, ax = scatter_plot_with_dataframe(
-                usage=usage,fig=fig, gs=gs, data=True, data_distribution="edges", plot_type="scatter",
-                xaxis="demand_ratio", yaxis='computing_to_observation_length_ratio',
-                algorithms={'batch': "Batch", 'heft': "HEFT"}, colors={1.0: 'silver'}, #, 2.0: 'slateblue', 5.0: 'lightsalmon' },
-                markers={"batch":'v', "heft": 'o'}, fill=True, k=k, col=col, row=row
-            )
-            if row != k-1:
-                ax.tick_params(labelbottom=False)
-            ax.set_title(f"{baselines}", fontsize=8)
-            ax.set_ylim([0.5,3.5])
-            ax.set_xlim([0.1,0.4])
-            ax.xaxis.label.set_visible(False)
-            ax.yaxis.label.set_visible(False)
-            plot_index+=1
-            if not handles_labels_collected:
-                handles, labels = ax.get_legend_handles_labels()
-                handles_labels_collected = True
+    for row in range(3):
+        # num_cols = row + 1  # increasing number of columns per row
+        # col_offset = (k-num_cols) // 2
+        # for col in range(num_cols):
+        #     if plot_index >= nbaselines:
+        #         break
+        baselines = unique_baselines[plot_index]
+        usage = usage_summary_dataframe[usage_summary_dataframe["observation_plan_size"]==baselines]
+        fig, gs, ax = scatter_plot_with_dataframe(
+            usage=usage,fig=fig, gs=gs, data=True, data_distribution="edges", plot_type="scatter",
+            xaxis="demand_ratio", yaxis='computing_to_observation_length_ratio',
+            algorithms={'batch': "Batch", 'heft': "HEFT"}, colors={'batch':'red', 'heft': 'blue'}, #, 2.0: 'slateblue', 5.0: 'lightsalmon' },
+            markers={"batch":'v', "heft": 'o'}, fill=False, gs_position=(row, 0)
+        )
+
+            # ax.tick_params(labelbottom=False)
+        ax.set_title(f"{baselines}", fontsize=8)
+        ax.set_ylim([0.5,6])
+        ax.set_xlim([0.1,0.6])
+        ax.xaxis.label.set_visible(False)
+        ax.yaxis.label.set_visible(False)
+        plot_index+=1
+        if not handles_labels_collected:
+            handles, labels = ax.get_legend_handles_labels()
+            handles_labels_collected = True
     fig.legend(
         handles,
         labels,
@@ -1375,7 +1398,7 @@ if __name__ == "__main__":
     ######                          MAKE PLOTS
     #################################################################################
 
-    plot_histogram_observing_computing_ratio(usage_summary_dataframe)
+    # plot_histogram_observing_computing_ratio(usage_summary_dataframe)
     plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe)
     # plot_flops_vs_demand(usage_summary_dataframe)
 
