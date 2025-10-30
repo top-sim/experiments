@@ -336,11 +336,11 @@ def create_week_plan(telescope: str):
         )
         logger.info("creating %d iterations of observations")
         permutations = permute_low_observation_plans(n)
-        generate_permutations_table(permutations, 1)
-        # generate_permutations_table(permutations, 5)
-        # generate_permutations_table(permutations, 10)
-        # generate_permutations_table(permutations, 35)
-        generate_permutations_table(permutations, 84)
+        # generate_permutations_table(permutations, 1)
+        # # generate_permutations_table(permutations, 5)
+        # # generate_permutations_table(permutations, 10)
+        # # generate_permutations_table(permutations, 35)
+        # generate_permutations_table(permutations, 84)
         return standard_low_obs_plan(permutations)
     elif telescope == "mid":
         n = calc_n_for_given_time_in_seconds(
@@ -492,7 +492,7 @@ def standard_low_obs_plan(
                     demand=stations,
                     channels=channels_demand * plan.telescope.channels_multiplier,
                     workflow_parallelism=stations,
-                    baseline=baseline,
+                    baseline=baseline*1000, # convert to meters
                     telescope=str(plan.telescope))
                 )
         params[name] = plan.to_json()
