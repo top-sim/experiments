@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 import datetime
+import logging
 import random
 import shutil
 import sys
@@ -16,7 +17,13 @@ from matplotlib import axes
 from matplotlib.gridspec import GridSpec
 import matplotlib.ticker as ticker
 from matplotlib import rcParams
+from sympy.solvers.diophantine.diophantine import find_DN
+
 from skaworkflows.common import SKALow, Telescope
+
+###########################################################
+# PLOTTING PARARMETERS
+###########################################################
 
 # Setup all the visualisation nicities
 rcParams["text.usetex"] = False
@@ -33,7 +40,9 @@ rcParams["xtick.minor.visible"] = True
 rcParams["ytick.direction"] = "in"
 rcParams["ytick.minor.visible"] = True
 
-import logging
+###########################################################
+# GLOBALs
+###########################################################
 
 logging.basicConfig(level="INFO")
 LOGGER = logging.getLogger()
@@ -59,43 +68,49 @@ class TopSimResult:
         observation_plan: pd.DataFrame = None
 
 
-def extract_simulations_from_hdf5(result_path, verbose=True):
-    if not result_path.exists():
-        print("HDF5 file does not exist, leaving")
+###########################################################
+# DATA
+###########################################################
+
+def extract_simulations_from_hdf5(result_paths, verbose=True):
 
     simulations = {}
-    if result_path.is_dir():
-        count = 5
-        for p in result_path.iterdir():
-            if count < 0:
-                yield simulations
-                simulations = {}
-                count = 10
-            else:
-                # TODO if this is a folder iterate through all hdf5 files
-                tmp_simulations = {}
-                store = pd.HDFStore(str(p))
-                keysplit = []
-                for k in store.keys():
-                    keysplit.append(k.split("/"))
-                store.close()
-                if verbose:
-                    print(p, keysplit)
-                dataset_types = ["sim", "summary", "params"]
-                tmp_simulations.update(
-                    {f"{e[1]}/{e[2]}": {d: None for d in dataset_types} for e in keysplit}
-                )
-                for simulation, dtype in tmp_simulations.items():
-                    for dst in dataset_types:
-                        tmp_simulations[simulation][dst] = pd.read_hdf(
-                            p, key=f"{simulation}/{dst}"
-                        )
-                simulations.update(tmp_simulations)
-                if verbose:
-                    for keys in tmp_simulations.keys():
-                        print(keys)
-                count -= 1
-        yield simulations
+    for result_path in result_paths:
+        if not result_path.exists():
+            raise FileNotFoundError(f"{result_path}")
+
+        if result_path.is_dir():
+            count = 5
+            for p in result_path.iterdir():
+                if count < 0:
+                    yield simulations
+                    simulations = {}
+                    count = 10
+                else:
+                    # TODO if this is a folder iterate through all hdf5 files
+                    tmp_simulations = {}
+                    store = pd.HDFStore(str(p))
+                    keysplit = []
+                    for k in store.keys():
+                        keysplit.append(k.split("/"))
+                    store.close()
+                    if verbose:
+                        print(p, keysplit)
+                    dataset_types = ["sim", "summary", "params"]
+                    tmp_simulations.update(
+                        {f"{e[1]}/{e[2]}": {d: None for d in dataset_types} for e in keysplit}
+                    )
+                    for simulation, dtype in tmp_simulations.items():
+                        for dst in dataset_types:
+                            tmp_simulations[simulation][dst] = pd.read_hdf(
+                                p, key=f"{simulation}/{dst}"
+                            )
+                    simulations.update(tmp_simulations)
+                    if verbose:
+                        for keys in tmp_simulations.keys():
+                            print(keys)
+                    count -= 1
+            yield simulations
 
 
 all_pairs = list(itertools.product(SKALow.baselines, SKALow.stations))
@@ -133,11 +148,12 @@ def get_observation_plan_size(df):
     return counts
 
 
-def collate_simulation_results(result_path: Path, simulations: dict):
+def collate_simulation_results(parent_dir: Path, simulations: dict):
     # TODO consider applying timesteps to everything here so we don't have to later
     df_total = pd.DataFrame()
     processed = []
     for simulation, dtype in simulations.items():
+        logging.info("Collating simulation results for %s", simulation)
         df = dtype["summary"]
         df_tel = df[(df["actor"] == "instrument")]
         obs_durations = []
@@ -159,7 +175,6 @@ def collate_simulation_results(result_path: Path, simulations: dict):
         if cfg_path in processed:
             continue
         # cfg_path = cfg_path.parent / str(cfg_path.parent / 'processed' / cfg_path.name)
-        parent_dir = result_path.parent
         cfg_path = parent_dir / cfg_path.name
         with open(cfg_path, "r", encoding="utf-8") as fp:
             cfg = json.load(fp)
@@ -189,8 +204,8 @@ def collate_simulation_results(result_path: Path, simulations: dict):
         parameters["max_running_tasks"] = df_sim[
             "running_tasks"].max()  # Can multiply each entry by 5 to get the time step to report on
         parameters["min_running_tasks"] = df_sim["running_tasks"].min()
-        parameters["mean_running_tasks"] = df_sim["running_tasks"].mean()
-        parameters["mean_ingest_demand"] = df_sim["ingest_resources"].mean()
+        parameters["mean_running_tasks"] = df_sim["running_tasks"].sum() / parameters['schedule_length'].iloc[0]
+        parameters["mean_ingest_demand"] = df_sim["ingest_resources"].sum() / parameters['schedule_length'].iloc[0]
         parameters["max_ingest_demand"] = df_sim["ingest_resources"].max()
         # TODO it's really inefficient having so many tables with the same number. consider a lookup table with these sorts
         # of global parameters per-config (Did I just invent a type of database???)
@@ -259,7 +274,7 @@ def calculate_total_computing_time(simulation_df, timestep):
     return sum([end - start for start, end in merged])
 
 
-def process_workflow_stats(cfg_path: Path, df_total: pd.DataFrame):
+def process_workflow_stats(base_dir: str, df_total: pd.DataFrame):
     """
     Go through each workflow config file related to the directory, and get summary
     information from them to describe the compute requirements for a given config.
@@ -280,10 +295,11 @@ def process_workflow_stats(cfg_path: Path, df_total: pd.DataFrame):
     total_compute = 0
     total_duration = 0
     max_compute = 0
+    peak_compute = 0
     for index, row in df_total.iterrows():
         duration = row["duration"]
         total_duration += duration
-        wf_path = Path(cfg_path).parent / (row["workflow"])
+        wf_path = Path(base_dir) / (row["workflow"])
         with wf_path.open() as fp:
             jdict = json.load(fp)
             baseline = jdict["header"]["parameters"]["baseline"]
@@ -612,7 +628,7 @@ def calculate_demand_percentage(subset_df: pd.DataFrame, telescope: str = 'low')
     return x1  # sum(used) / potential
 
 
-def produce_summary_dataframe(df_total, results_path: Path, verbose=True):
+def produce_summary_dataframe(df_total, base_dir: Path, verbose=True):
     """
     Determine the resource usage of the telescope across the entire observation plan,
     as a fraction of the maximum possible value.
@@ -654,7 +670,7 @@ def produce_summary_dataframe(df_total, results_path: Path, verbose=True):
         curr_total = df_total[(df_total["sim_cfg"] == cfg) & (df_total["simulation_run"] == sim_run)]
         plan_demand = calculate_demand_percentage(curr_total, "low")
         plan_channels = g["channels"].astype(int).sum()
-        plan_total_compute, plan_peak_compute, baseline = process_workflow_stats(results_path, g)
+        plan_total_compute, plan_peak_compute, baseline = process_workflow_stats(base_dir, g)
 
         if plan_total_compute == 0:
             continue
@@ -733,6 +749,47 @@ def setup_axes(axes: list):
 
 import matplotlib
 
+def plot_box_axis(usage: pd.DataFrame,
+                      ax: matplotlib.axes,
+                      xaxis: str = "computing_to_observation_length_ratio",
+                      yaxis: str = "plan_average_compute_from_flops", use_legend=False, **kwargs):
+    algorithms = kwargs.get('algorithms')
+    markers = kwargs.get("markers", {'heft': 'o'})
+    colors = kwargs.get('colors', {})
+    labels = kwargs.get('labels', {'':''})
+    positions = kwargs.get('positions', {'heft':1})
+    data=[]
+    labels = labels.keys()
+    color = []
+    pos = []
+    for alg in algorithms:
+        # data_points = len(usage[usage["planning"] == planning])
+        result = usage[(usage["planning"] == alg)]
+        data.append(result[yaxis].to_numpy())
+        color.append(colors[alg])
+        pos.append(positions[alg])
+    # y = np.stack(data, axis=-1)
+    sc = ax.boxplot(
+        data,
+        tick_labels=list(algorithms.values()),
+        positions=pos,
+        patch_artist=True,
+        label=list(labels)[0]
+    )
+
+    for patch, c in zip(sc['boxes'], color):
+        if c:
+            patch.set_facecolor(c)
+        else:
+            patch.set_facecolor('none')
+
+
+    for median in sc['medians']:
+        median.set_color('black')
+
+    return ax, sc
+
+
 
 def plot_scatter_axis(usage: pd.DataFrame,
                       ax: matplotlib.axes,
@@ -794,8 +851,9 @@ def plot_scatter_axis(usage: pd.DataFrame,
 
 def plot_ternary_axis(usage: pd.DataFrame,
                       ax: matplotlib.axes,
-                      xaxis: str = "computing_to_observation_length_ratio",
-                      yaxis: str = "plan_average_compute_from_flops", use_legend=False, **kwargs):
+                      gs, fig,
+                      difference: bool = True,
+                      zvalue: str = "computing_to_observation_length_ratio", use_legend=False, **kwargs):
 
     algorithms = kwargs.get('algorithms')
     markers = kwargs.get("markers", {'default': 'o'})
@@ -812,12 +870,20 @@ def plot_ternary_axis(usage: pd.DataFrame,
 
     io_idx = 0
     contour = True
+
+    # top left
+    ax1 = fig.add_subplot(gs[0:1, 0:1])
+    # bottom left
+    ax2 = fig.add_subplot(gs[1:2, 0:1])
+    # Right
+    ax3 = fig.add_subplot(gs[0:2,1:2])
+    axes = [ax1, ax2, ax3]
     from scipy.interpolate import griddata
-    if contour:
-        x_min = usage["small"].min()
-        x_max = usage["small"].max()
-        y_min = usage["medium"].min()
-        y_max = usage["medium"].max()
+    if contour and difference:
+        x_min = usage["small"].min()*100
+        x_max = usage["small"].max()*100
+        y_min = usage["medium"].min()*100
+        y_max = usage["medium"].max()*100
 
         grid_x, grid_y = np.meshgrid(
             np.linspace(x_min, x_max, 100),
@@ -828,8 +894,8 @@ def plot_ternary_axis(usage: pd.DataFrame,
         for planning in algorithms:
             result = usage[usage["planning"] == planning]
             grid_z = griddata(
-                (result["small"], result["medium"]),
-                result[yaxis],
+                (result["small"]*100, result["medium"]*100),
+                result[zvalue],
                 (grid_x, grid_y),
                 method='linear'
             )
@@ -844,35 +910,77 @@ def plot_ternary_axis(usage: pd.DataFrame,
         diff_grid = grid1 - grid2
 
         # Set symmetric color scale around zero
-        max_abs = np.nanmax(np.abs(diff_grid))
+        max_abs = np.nanmax(np.abs(grid1))
+        # max2 = np.nanmax(np.abs(grid2))
+        # max_abs = max(max1, max2)
 
-        sc = ax.imshow(
+
+        sc = ax3.imshow(
             diff_grid,
             origin="lower",
             extent=[x_min, x_max, y_min, y_max],
-            cmap="viridis",
+            cmap="plasma",
             vmin=0,
-            vmax=max_abs,
-            aspect="auto"
+            vmax=4,
+            aspect="auto",
+            label=planning_keys[0]
         )
 
-        x, y = np.meshgrid(np.linspace(x_min, x_max, 10),
-            np.linspace(y_min, y_max, 10))
+        sc = ax2.imshow(
+            grid2,
+            origin="lower",
+            extent=[x_min, x_max, y_min, y_max],
+            cmap="plasma",
+            vmin=0,
+            vmax=4,
+            aspect="auto",
+            label=planning_keys[1]
+        )
 
-        x = np.linspace(0, 1, 21)
-        y = np.linspace(0, 1, 21)
+        sc = ax1.imshow(
+            grid1,
+            origin="lower",
+            extent=[x_min, x_max, y_min, y_max],
+            cmap="plasma",
+            vmin=0,
+            vmax=4,
+            aspect="auto",
+            label=planning_keys[1]
+        )
+
+
+        # Plot the 10% large line
+        x, y = np.meshgrid(np.linspace(x_min, x_max, 10),
+        np.linspace(y_min, y_max, 10))
+
+        x = np.linspace(0, 100, 21)
+        y = np.linspace(0, 100, 21)
         X, Y = np.meshgrid(x, y)
-        Z = 1 - (X + Y)
-        mask = (Z<=0.11) & (Z>=0.9)
-        mask =  (Z > 0.06) & (Z <0.1)
-        ax.plot(X[mask], Y[mask], color='black') # , s=10)
-        for (xi, yi, zi) in zip(X[mask], Y[mask], Z[mask]):
-            ax.text(xi + 0.01, yi + 0.01, f"{zi:.2f}", fontsize=4)
+        Z = 100 - (X + Y)
+        mask = (Z<=21) & (Z>=19)
+        # mask =  (Z > 0.06) & (Z <0.1)
+        ax3.plot(X[mask], Y[mask], color='black', linewidth=0.25, linestyle='--') # , s=10)
+
+        for i, (xi, yi, zi) in enumerate(zip(X[mask], Y[mask], Z[mask])):
+            if i == 9:
+                ax1.text(xi + 0.00, yi + 0.00, f"{int(zi)}%", fontsize=4)
+
+        mask = (Z <= 11) & (Z >= 9)
+        ax3.plot(X[mask], Y[mask], color='black', linewidth=0.25, linestyle='--')  # , s=10)
+
+        for i, (xi, yi, zi) in enumerate(zip(X[mask], Y[mask], Z[mask])):
+            if i == 8:
+                ax1.text(xi + 0.00, yi + 0.00, f"{int(zi)}%", fontsize=4)
+
+
     else:
+
+        # Create two plot that plots the actual values.
+
         for planning in algorithms:
             result = usage[(usage["planning"] == planning)]
             sc = ax.scatter(
-                result["small"], result["medium"], c=result[yaxis],
+                result["small"], result["medium"], c=result[zvalue],
                 s=20,
                 marker=markers[planning],
                 # color=colors[planning],
@@ -889,7 +997,7 @@ def plot_ternary_axis(usage: pd.DataFrame,
             if text.get_text() in ['Algorithms', 'I/O']:
                 text.set_weight('bold')
         #         text.set_ha("left")
-    return ax, sc
+    return axes, sc
 
 
 
@@ -903,15 +1011,17 @@ def plot_histogram_axis(usage, ax, xaxis, **kwargs):
     for i, planning in enumerate(algorithms):
         res = usage[(usage["planning"] == planning)]
         # plot_data.append(np.array(sorted(res[xaxis]), dtype='float').T)
+        data = np.array(sorted(res[xaxis]), dtype='float').T
         sc = ax.hist(
-            np.array(sorted(res[xaxis]), dtype='float').T,
-            bins=np.arange(0.5, 4, 0.25),
+            data,
+            bins=np.arange(0.0, 4, 0.25),
             hatch=labels['hatch'][i],
             facecolor=labels['color'][i],
             label=labels['labels'][i],
             edgecolor='black',
             zorder=zorder[i],
             linewidth=linewidth[i],
+            weights=np.ones(len(data)) / len(data),
             # edgecolor=labels['color'][i],
             # stacked=False,
             # fill=False,
@@ -947,12 +1057,12 @@ def histogram_with_dataframe(usage, fig=None, gs=None, axis=None,
         fig, gs = create_figure(rows, columns, twocolumn=two_column)
 
 
-def scatter_plot_with_dataframe(usage, fig=None, gs=None, axis=None,
-                                use_task_data=True,
-                                use_edge_data=False,
-                                xaxis="computing_to_observation_length_ratio",
-                                yaxis="plan_average_compute_from_flops",
-                                plot_type="hist", **kwargs):
+def plot_with_dataframe(usage, fig=None, gs=None, axis=None,
+                        use_task_data=True,
+                        use_edge_data=False,
+                        xaxis="computing_to_observation_length_ratio",
+                        yaxis="plan_average_compute_from_flops",
+                        plot_type="hist", **kwargs):
     """
     :param usage:
     :return:
@@ -971,13 +1081,12 @@ def scatter_plot_with_dataframe(usage, fig=None, gs=None, axis=None,
     if axis:
         ax = axis
     else:
-        # if plot_type == "ternary":
-        #     import mpltern
-        #     ax = fig.add_subplot(projection="ternary")
         if k:
             num_cols = row + 1
             offset = (k - num_cols) // 2
             ax = fig.add_subplot(gs[row, col])
+        if plot_type == "ternary":
+            ax = None
         else:
             ax = fig.add_subplot(gs[*gs_position])
     if plot_type == "hist":
@@ -987,18 +1096,21 @@ def scatter_plot_with_dataframe(usage, fig=None, gs=None, axis=None,
         # markers = kwargs.get("markers", 'o')
         ax, sc = plot_scatter_axis(usage, ax, xaxis, yaxis, **kwargs)
     if plot_type == "ternary":
-        ax, sc = plot_ternary_axis(usage, ax, xaxis, yaxis, **kwargs)
+        ax, sc = plot_ternary_axis(usage, ax, gs=gs, fig=fig, **kwargs)
 
+    if plot_type == "box":
+        ax, sc = plot_box_axis(usage, ax, xaxis, yaxis, **kwargs)
 
-    ax.set_axisbelow(True)
-    ax.grid(True, "major", "both", ls="--", color="black")
-    # ax.grid(True, "minor", "both", ls="--")
+    if not isinstance(ax, list):
+        ax.set_axisbelow(True)
+        ax.grid(True, "major", "both", ls="--", color="grey")
+        # ax.grid(True, "minor", "both", ls="--")
 
-    ax.set_xlabel(xaxis)
-    if plot_type == "hist":
-        pass
-    if plot_type == "scatter":
-        ax.set_ylabel(f"{yaxis}")
+        ax.set_xlabel(xaxis)
+        if plot_type == "hist":
+            pass
+        if plot_type == "scatter":
+            ax.set_ylabel(f"{yaxis}")
 
     # Select data points from data.
 
@@ -1263,10 +1375,14 @@ def select_n_configs_by_key(usage_summary: pd.DataFrame, key: str, value: object
 def setup_parser():
     import argparse
     parser = argparse.ArgumentParser(Path(__file__).name)
-    parser.add_argument("--result_dir")
-    parser.add_argument("--csv_path")
-    parser.add_argument("--summary_csv")
-    parser.add_argument("--reprocess", default=False, action="store_true")
+    parser.add_argument("base_dir", help="The directories in which simulation HDF5 files are stored relative to base_dir.")
+    parser.add_argument("--result_dirs", nargs="+", required=True, help="The directories in which simulation HDF5 files are stored relative to base_dir.")
+    parser.add_argument("--total", help="(Path) Complete results stored in .csv file. If not provided, filename is generated.")
+    parser.add_argument("--summary", help="(Path) Summary data and statistics based on --total .csv. If not provided, filename is generated.")
+    parser.add_argument("--reprocess", default=False, action="store_true", help="Reprocess results into total or summary files.")
+    parser.add_argument("--append", default=False, action="store_true",
+                        help="Append results into total or summary files.")
+    parser.add_argument("--algorithms", nargs='+', required=True, help="The algorithms for which we want to keep results data.")
     return parser.parse_args()
 
 
@@ -1283,46 +1399,60 @@ def gridspec_experiment():
     ax4.set_xlabel("BottomRight")
 
 
-def generate_total_dataframe(df_total_path: Path, result_path: Path, reprocess: bool):
+def generate_total_dataframe(
+        df_total_path: Path,
+        result_paths: list[Path],
+        base_dir: Path,
+        algorithms: list,
+        reprocess: bool,
+        append: bool,
+        debug=False):
     """
     Produce the full result data frame
 
     :param df_total_path:
-    :param result_path:
+    :param result_paths:
     :param reprocess:
     :return:
     """
     df_total = None
     simulation_summaries = {}
     fetch_summaries_only = False  # Make this a CLI option
-    if not df_total_path.exists() or reprocess:
-        df_total_path.unlink(missing_ok=True)
-        for simulation_batch in extract_simulations_from_hdf5(result_path, verbose=True):
-            # if len(simulation_batch.keys()) > 10:
-            #     break
+    if not df_total_path.exists() or reprocess or debug or append:
+        # df_total_path.unlink(missing_ok=True)
+        for simulation_batch in extract_simulations_from_hdf5(result_paths, verbose=True):
             if not simulation_batch:
-                # exit(1)
-                print(f"No simulation batch for {result_path}")
+                print(f"No simulation batch for {result_paths}")
                 continue
             for simulation, dtype in simulation_batch.items():
                 cfg = dtype['sim']['config'].iloc[0]
                 simulation_summaries[cfg] = dtype["summary"].to_csv()
             if fetch_summaries_only:
                 continue
-            df_total = collate_simulation_results(result_path, simulation_batch)
+            df_total = collate_simulation_results(base_dir, simulation_batch)
             df_total = convert_categorical_ints_to_str(df_total)
-            if df_total_path.exists():
-                try:
-                    with df_total_path.open("a") as fp:
-                        df_total.to_csv(fp, mode='a', header=False)
-                except pd.errors.ParserError:
-                    print(f"Simulation batch caused issues writing to file: {simulation_batch}")
+            sbef = len(df_total)
+            logging.info("Filtering data with the following algorithms: %s", algorithms)
+            logging.info("Size of data frame before filtering: %d", len(df_total))
+            df_total = df_total[df_total['planning'].isin(algorithms)]
+            saft = len(df_total)
+            perc_diff = ((sbef-saft)/sbef*100)
+            logging.info("Size of data frame after filtering: %d (%d %% reduction)", saft, perc_diff)
+            if debug:
+                continue
             else:
-                try:
-                    with df_total_path.open("w") as fp:
-                        df_total.to_csv(fp)
-                except pd.errors.ParserError:
-                    print(f"Simulation batch caused issues writing to file: {simulation_batch}")
+                if df_total_path.exists():
+                    try:
+                        with df_total_path.open("a") as fp:
+                            df_total.to_csv(fp, mode='a', header=False)
+                    except pd.errors.ParserError:
+                        print(f"Simulation batch caused issues writing to file: {simulation_batch}")
+                else:
+                    try:
+                        with df_total_path.open("w") as fp:
+                            df_total.to_csv(fp)
+                    except pd.errors.ParserError:
+                        print(f"Simulation batch caused issues writing to file: {simulation_batch}")
             simulation_batch = {}  # "Memory management" in Python
         with open("simulation_summaries.json", 'w') as fp:
             json.dump(simulation_summaries, fp, indent=2)
@@ -1331,50 +1461,58 @@ def generate_total_dataframe(df_total_path: Path, result_path: Path, reprocess: 
 
 
 def plot_flops_vs_demand_low(usage_summary_dataframe, algorithm):
+
+    # TODO Modify this so that we produce boxplots of achieved plots.
     node_flops, memory_bandwidth = get_compute_node_statisics(json.loads(df_total["nodes"].iloc[0]))
 
     usage_summary_dataframe["average_plus_ingest"] = usage_summary_dataframe["plan_average_compute_from_nodes"] + (
             (node_flops * LOW_REALTIME_RESOURCES) / 1e15)
-    fig, gs, ax, sc = scatter_plot_with_dataframe(usage=usage_summary_dataframe, use_task_data=False, use_edge_data=False,
-                                                  plot_type="scatter",
-                                                  xaxis="demand_ratio",
-                                                  yaxis="average_plus_ingest",
-                                                  title="demonstrate averate compute from nodes",
-                                                  algorithms={algorithm: algorithm.upper()},
-                                                  colors={'heft': 'blue'},
-                                                  labels={"Ave. FLOPS": "blue"}, twocolumn=True)
+
+    # TODO compare HEFT and BatcH
+    fig, gs, ax, sc = plot_with_dataframe(usage=usage_summary_dataframe, use_task_data=False, use_edge_data=False,
+                                          plot_type="box",
+                                          xaxis="algorithm",
+                                          yaxis="average_plus_ingest",
+                                          title="demonstrate averate compute from nodes",
+                                          algorithms={'batch': 'Batch', 'heft': 'HEFT'},
+                                          colors={'heft': 'lightblue', 'batch':'lightblue'},
+                                          labels={"Ave. FLOPS": "lightblue"}, twocolumn=True, positions={'heft': 1,'batch': 2})
+
     usage_summary_dataframe["peak_plus_ingest"] = usage_summary_dataframe["plan_peak_compute_from_nodes"] + (
                 (node_flops * LOW_REALTIME_RESOURCES) / 1e15)
-    fig, gs, ax, sc = scatter_plot_with_dataframe(usage=usage_summary_dataframe,
-                                                  axis=ax, fig=fig, gs=gs,
-                                                  use_task_data=False, use_edge_data=False, plot_type="scatter",
-                                                  xaxis="demand_ratio",
-                                                  yaxis="peak_plus_ingest", title="demonstrate averate compute from nodes",
-                                                  algorithms={algorithm: algorithm.upper()},
-                                                  colors={'heft': 'red'},
-                                                  labels={"Max. FLOPS": "red"}, twocolumn=True)
-    fig, gs, ax, sc = scatter_plot_with_dataframe(usage=usage_summary_dataframe,
-                                                  axis=ax, fig=fig, gs=gs,
-                                                  use_task_data=False, use_edge_data=False, plot_type="scatter",
-                                                  xaxis="demand_ratio",
-                                                  yaxis="mean_ingest_flops", title="demonstrate averate compute from nodes",
-                                                  algorithms={algorithm: algorithm.upper()},
-                                                  colors={'heft': 'blue'},
-                                                  labels={"Ave. Ingest FLOPS": "blue"}, markers={'heft':'x'}, twocolumn=True)
-    fig, gs, ax, sc = scatter_plot_with_dataframe(usage=usage_summary_dataframe,
-                                                  axis=ax, fig=fig, gs=gs,
-                                                  use_task_data=False, use_edge_data=False, plot_type="scatter",
-                                                  xaxis="demand_ratio",
-                                                  yaxis="max_ingest_flops", title="demonstrate averate compute from nodes",
-                                                  algorithms={algorithm: algorithm.upper()},
-                                                  colors={'heft': 'red'},
-                                                  labels={"Max Ingest FLOPS": "red"}, markers={'heft':'x'}, twocolumn=True)
+    fig, gs, ax, sc = plot_with_dataframe(usage=usage_summary_dataframe,
+                                          axis=ax, fig=fig, gs=gs,
+                                          use_task_data=False, use_edge_data=False, plot_type="box",
+                                          xaxis="demand_ratio",
+                                          yaxis="peak_plus_ingest", title="demonstrate averate compute from nodes",
+                                          algorithms={'batch': 'Batch', 'heft': 'HEFT'},
+                                          colors={'heft': 'red', 'batch':'red'},
+                                          labels={"Max. FLOPS": "red"}, twocolumn=True, positions={'heft': 1,'batch': 2})
+    # fig, gs, ax, sc = plot_with_dataframe(usage=usage_summary_dataframe,
+    #                                       axis=ax, fig=fig, gs=gs,
+    #                                       use_task_data=False, use_edge_data=False, plot_type="box",
+    #                                       xaxis="demand_ratio",
+    #                                       yaxis="mean_ingest_flops", title="demonstrate averate compute from nodes",
+    #                                       algorithms={'batch': 'Batch', 'heft': 'HEFT'},
+    #                                       colors={'heft': 'blue', 'batch': 'red'},
+    #                                       markers={'heft':'x'}, twocolumn=True,
+    #                                       positions={'heft': 1,'batch': 2})
+    fig, gs, ax, sc = plot_with_dataframe(usage=usage_summary_dataframe,
+                                          axis=ax, fig=fig, gs=gs,
+                                          use_task_data=False, use_edge_data=False, plot_type="box",
+                                          xaxis="demand_ratio",
+                                          yaxis="max_ingest_flops", title="demonstrate averate compute from nodes",
+                                          algorithms={'batch': 'Batch', 'heft': 'HEFT'},
+                                          colors={'heft': 'pink', 'batch': 'pink'},
+                                          markers={'heft':'x'}, twocolumn=True,
+                                          positions={'heft': 1,'batch': 2},
+                                          labels={"Max ingest FLOPS": "lightblue"})
     ax.legend(title="Per-Observing plan:", bbox_to_anchor=(1, 0.7))
     ax.set_ylim((0, 11))
     ax.set_ylabel("PetaFLOPs 'acheived'")
-    ax.set_xlabel("Demand Ratio")  # \n(# stations used across the observing plan / Total possible number of stations)")
-    ax.set_xlim((0.0, 0.4))
-    ax.plot([0.0, 5.0], [LOW_SDP_AVERAGE_COMPUTE_FLOPS_UPDATED, LOW_SDP_AVERAGE_COMPUTE_FLOPS_UPDATED],
+    # ax.set_xlabel("Demand Ratio")  # \n(# stations used across the observing plan / Total possible number of stations)")
+    ax.set_xlim((0.0, 3))
+    ax.plot([0.0, 5], [LOW_SDP_AVERAGE_COMPUTE_FLOPS_UPDATED, LOW_SDP_AVERAGE_COMPUTE_FLOPS_UPDATED],
             color="red", linestyle='--', linewidth=3, zorder=-1)  # , text="Updated estimated for SDP maximum compute")
     from matplotlib.patches import FancyArrowPatch
     arr = FancyArrowPatch((.4, 11), (.3, 10),
@@ -1382,9 +1520,9 @@ def plot_flops_vs_demand_low(usage_summary_dataframe, algorithm):
     # ax.add_patch(arr)
     fig.text(0.72, .73, "SDP Total Compute \n Adjusted Estimates\n")
     reserved_ingest = ((node_flops * LOW_REALTIME_RESOURCES) / 1e15)
-    ax.plot([0.0, 5.0], [reserved_ingest, reserved_ingest],
+    ax.plot([0.0, 5], [reserved_ingest, reserved_ingest],
             color="grey", linestyle='--', linewidth=3, zorder=-1)
-    ax.fill_between((0, 0.5), y1=0, y2=reserved_ingest, color='grey', alpha=0.3, zorder=-1)
+    ax.fill_between([0, 3], y1=0, y2=reserved_ingest, color='grey', alpha=0.3, zorder=-1)
     fig.text(0.72, .2, "SDP Ingest\n Adjusted Estimates\n")
     fig.text(0.29, .16, "Ingest   reserved  resources\n")
     if SAVE_PLOTS:
@@ -1393,33 +1531,33 @@ def plot_flops_vs_demand_low(usage_summary_dataframe, algorithm):
 
 def plot_histogram_observing_computing_ratio(usage_summary_dataframe):
     category_counts = usage_summary_dataframe['cfg'].value_counts()
-    categories_to_remove = category_counts[category_counts < 5].index
+    categories_to_remove = category_counts[category_counts < 6].index
     # Filter the DataFrame to keep only rows where the 'category' is NOT in the list of categories to remove
     usage_summary_dataframe = usage_summary_dataframe[~usage_summary_dataframe['cfg'].isin(categories_to_remove)]
 
-    fig, gs, ax1, sc = scatter_plot_with_dataframe(usage=usage_summary_dataframe, use_task_data=False, use_edge_data=False,
-                                               plot_type="hist",
-                                               algorithms=['batch', 'heft'],
-                                               labels={'labels': ['Batch', 'HEFT'], 'hatch': ['x', ''],
+    fig, gs, ax1, sc = plot_with_dataframe(usage=usage_summary_dataframe, use_task_data=False, use_edge_data=False,
+                                           plot_type="hist",
+                                           algorithms=['batch', 'heft'],
+                                           labels={'labels': ['Batch', 'HEFT'], 'hatch': ['x', ''],
                                                        'color': ['silver', 'slateblue']}, rows=3, columns=1,
-                                               gs_position=(0, 0))
+                                           gs_position=(0, 0))
     ax1.set_xlabel("")
     ax1.legend()
-    fig, gs2, ax2, sc = scatter_plot_with_dataframe(usage=usage_summary_dataframe, fig=fig, gs=gs, use_task_data=True,
-                                                    use_edge_data=False, plot_type="hist",
-                                                algorithms=['batch', 'heft'],
-                                                labels={'labels': ['Batch', 'HEFT'], 'hatch': ['x', ''],
+    fig, gs2, ax2, sc = plot_with_dataframe(usage=usage_summary_dataframe, fig=fig, gs=gs, use_task_data=True,
+                                            use_edge_data=False, plot_type="hist",
+                                            algorithms=['batch', 'heft'],
+                                            labels={'labels': ['Batch', 'HEFT'], 'hatch': ['x', ''],
                                                         'color': ['silver', 'slateblue']}, rows=3, columns=1,
-                                                gs_position=(1, 0))
+                                            gs_position=(1, 0))
     ax2.set_xlabel("")
     # ax1.set_title("Without edge data")
 
-    fig, gs, ax3, sc = scatter_plot_with_dataframe(usage=usage_summary_dataframe, fig=fig, gs=gs2, use_task_data=True,
-                                                   use_edge_data=True, plot_type="hist",
-                                               algorithms=['batch', 'heft'],
-                                               labels={'labels': ['Batch', 'HEFT'], 'hatch': ['x', ''],
+    fig, gs, ax3, sc = plot_with_dataframe(usage=usage_summary_dataframe, fig=fig, gs=gs2, use_task_data=True,
+                                           use_edge_data=True, plot_type="hist",
+                                           algorithms=['batch', 'heft'],
+                                           labels={'labels': ['Batch', 'HEFT'], 'hatch': ['x', ''],
                                                        'color': ['silver', 'slateblue']}, rows=3, columns=1,
-                                               gs_position=(2, 0))
+                                           gs_position=(2, 0))
     # ax2.set_title("With edge data")
     ax3.set_xlabel("")
 
@@ -1429,6 +1567,7 @@ def plot_histogram_observing_computing_ratio(usage_summary_dataframe):
         handles.extend(h)
         labels.extend(l)
     from collections import OrderedDict
+
     unique = OrderedDict(zip(labels, handles))
 
     # Establish limits based on maximum of two axes
@@ -1436,14 +1575,19 @@ def plot_histogram_observing_computing_ratio(usage_summary_dataframe):
     ax2_lim = ax2.get_ylim()
     ax3_lim = ax3.get_ylim()
     lim = max([ax1_lim[1], ax2_lim[1], ax3_lim[1]])
-
+    from matplotlib.ticker import PercentFormatter
+    ax1.yaxis.set_major_formatter(PercentFormatter(1))
+    ax2.yaxis.set_major_formatter(PercentFormatter(1))
+    ax3.yaxis.set_major_formatter(PercentFormatter(1))
+    ax1.tick_params(labelbottom=False)
+    ax2.tick_params(labelbottom=False)
     ax1.set_ylim([0, lim])
     ax2.set_ylim([0, lim])
-
+    #
     ax3.set_ylim([0, lim])
-    ax1.set_xlim([0, 5])
-    ax2.set_xlim([0, 5])
-    ax3.set_xlim([0, 5])
+    ax1.set_xlim([0, 4])
+    ax2.set_xlim([0, 4])
+    ax3.set_xlim([0, 4])
 
     fig.supylabel("# of Simulations", fontsize=8)
     fig.supxlabel("Computing time to observing time ratio", fontsize=8)
@@ -1464,7 +1608,7 @@ def plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe):
     # k = math.ceil((-1 + math.sqrt(1 + 8 * nbaselines)) / 2)
 
     fig = plt.figure(figsize=(6, 4), dpi=300)
-    gs = GridSpec(1, 1, figure=fig, hspace=0.5, wspace=0.2, bottom=0.10, right=0.85, left=0.1, )
+    gs = GridSpec(2, 2, figure=fig, hspace=0.5, wspace=0.2, bottom=0.10, right=0.85, left=0.1, )
     # )  # k rows, k columns to be safe
     plot_index = 0
     handles = []
@@ -1479,68 +1623,87 @@ def plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe):
         # baselines = unique_baselines[plot_index]
         # usage = usage_summary_dataframe[usage_summary_dataframe["observation_plan_size"] == baselines]
         usage = usage_summary_dataframe
-        fig, gs, ax, sc = scatter_plot_with_dataframe(
+        fig, gs, ax, sc = plot_with_dataframe(
             usage=usage, fig=fig, gs=gs, use_task_data=True, use_edge_data=True, plot_type="ternary",
             xaxis="demand_ratio", yaxis='computing_to_observation_length_ratio',
             algorithms={'batch': "Batch", 'heft': "HEFT"}, colors={'batch': 'red', 'heft': 'blue'},
             # , 2.0: 'slateblue', 5.0: 'lightsalmon' },
             markers={"batch": 'v', "heft": 'o'}, fill=False, gs_position=(row, 0)
         )
-        # ax.tick_params(labelbottom=False)
-        # ax.set_title(f"{baselines}", fontsize=8)
-        ax.set_ylim([0.0, 0.6])
-        ax.set_xlim([0.4, 1.0])
-        # ax.xaxis.label.set_visible(False)
-        # ax.yaxis.label.set_visible(False)
-        ax.set_xlabel("Small")
-        ax.set_ylabel("Medium")
-        # ax.set_tlabel("Small")
-        # ax.set_llabel("Medium")
-        # ax.set_rlabel("Large")
+    labels = ['Batch', "HEFT", f"Δ (Batch − HEFT)"]
+    for i,a in enumerate(ax):
+        a.set_ylim([0.0, 100.0])
+        a.set_xlim([0.0, 100.0])
 
-
+        a.set_title(labels[i])
         plot_index += 1
         if not handles_labels_collected:
-            handles, labels = ax.get_legend_handles_labels()
+            handles, l = a.get_legend_handles_labels()
             handles_labels_collected = True
-    fig.colorbar(sc, ax=ax, label=f"Δ (Batch − HEFT)")
+
+    # fig.colorbar(sc, ax=ax[0:2])
+    fig.colorbar(sc, ax=ax[2], label='Computing to observing time ratio')# , label=labels[2])
+
+    fig.supxlabel("% Small")
+    fig.supylabel("% Medium")
+
     if SAVE_PLOTS:
         fig.savefig("scatter-ratio-multibaseline.png", dpi=fig.dpi)
 
 
-SAVE_PLOTS = False
+SAVE_PLOTS = True
 
 if __name__ == "__main__":
     pd.set_option("display.max_columns", None)
     pd.set_option("display.width", 1000)
 
     args = setup_parser()
-    result_path = Path(args.result_dir) if args.result_dir else None
-    df_total_path = Path(args.csv_path)
-    if not (result_path and df_total_path):
-        print(df_total_path, result_path)
-        print("No result given, exiting now...")
-        sys.exit()
-    print(df_total_path, result_path)
 
-    _, simulation_summaries = generate_total_dataframe(df_total_path, result_path, args.reprocess)
+    # Construct paths for processing
+    base_dir = Path(args.base_dir)
+    LOGGER.info("Result base directory: %s", base_dir)
+    result_paths = []
+    for rd in args.result_dirs:
+        tmp = base_dir / rd
+        if not tmp.exists():
+            LOGGER.info("%s/%s does not exist!", base_dir, rd)
+        else:
+            LOGGER.info("Adding %s/%s to result paths", base_dir, rd)
+
+        result_paths.append(tmp)
+
+    fdate = datetime.date.today().strftime("%Y-%m-%d")
+    if args.total:
+        df_total_path = Path(args.total)
+    else:
+        df_total_path = Path(f"total_{fdate}.csv")
+    LOGGER.info("Storing total results data in %s ", df_total_path)
+
+    if args.summary:
+        df_summary = Path(args.summary)
+    else:
+        df_summary = Path(f"summary_{fdate}.csv")
+    LOGGER.info("Storing summary results data in %s ", df_summary)
+
+    _, simulation_summaries = generate_total_dataframe(df_total_path,
+                                                       result_paths,
+                                                       base_dir,
+                                                       algorithms=args.algorithms,
+                                                       reprocess=args.reprocess,
+                                                       append=args.append,
+                                                       debug=False)
     # if df_total is None:
     df_total = pd.read_csv(df_total_path)
     if not simulation_summaries:
         with open("simulation_summaries.json") as fp:
             simulation_summaries = json.load(fp)
 
-    fdate = datetime.date.today().strftime("%Y-%m-%d")
-    if args.summary_csv:
-        summary_pathname = Path(args.summary_csv)
-    else:
-        summary_pathname = Path(f"usage_summary_{fdate}.csv")
-    if not summary_pathname.exists():
-        usage_summary_dataframe = produce_summary_dataframe(df_total, result_path)
-        with summary_pathname.open("w") as fp:
+    if not df_summary.exists():
+        usage_summary_dataframe = produce_summary_dataframe(df_total, base_dir)
+        with df_summary.open("w") as fp:
             usage_summary_dataframe.to_csv(fp)
     else:
-        usage_summary_dataframe = pd.read_csv(summary_pathname)
+        usage_summary_dataframe = pd.read_csv(df_summary)
 
     ################################################################################
     ######                          MAKE PLOTS

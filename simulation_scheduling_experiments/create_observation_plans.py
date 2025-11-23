@@ -39,26 +39,6 @@ low_observation_defaults = load_observation_defaults("skalow")
 
 mid_observations_defaults = load_observation_defaults("skamid")
 
-RATIOS = [
-    [
-        {64: 1},
-        {64: 0.75, 128: 0.25},
-        {64: 0.5, 128: 0.25, 256: 0.25},
-        {64: 0.5, 128: 0.25, 256: 0.2, 512: 0.05}
-    ],
-    [
-        {64: 0.9, 128: 0.1},
-        {64: 0.5, 128: 0.5},
-        {64: 0.5, 128: 0.30, 256: 0.20},
-        {64: 0.5, 128: 0.20, 256: 0.20, 512: 0.10}
-    ],
-    [
-        {64: 0.8, 128: 0.2},
-        {64: 0.4, 128: 0.6},
-        {64: 0.4, 128: 0.2, 256: 0.2},
-        {64: 0.25, 128: 0.25, 256: 0.25, 512: 0.25}
-    ],
-]
 
 import itertools
 # Based on heatmap of pairs comparing PFLOPs of observations
@@ -77,6 +57,7 @@ def values_to_nparray(value_map, key):
     return np.fromiter((y[key] for x, y in value_map.items()), int)
 
 def create_baseline_sample(num_observations, alpha, baseline_limit):
+
     values = [b for b in SKALow.baselines if b <=baseline_limit]
 
     def compute_weights(values, alpha):
@@ -88,18 +69,7 @@ def create_baseline_sample(num_observations, alpha, baseline_limit):
 
     weights = list(reversed(compute_weights(values, alpha)))
     return random.choices(list(values), weights=list(weights), k=num_observations)
-    # experiments.append({
-    #         'experiment': i + 1,
-    #         'alpha': round(alpha, 2),
-    #         'weights': weights,
-    #         'sample': sample
-    #     })
-    #
-    # for exp in experiments:
-    #     print(f"Experiment {exp['experiment']} (alpha={exp['alpha']}):")
-    #     print(f"  Weights: {[round(w, 3) for w in exp['weights']]}")
-    #     print(f"  Sample: {exp['sample']}")
-    #     print()
+
 
 def spread_observations_across_demand(number_obs, demand_pool, pairs, baseline_limit, seed=None):
     """
@@ -118,13 +88,10 @@ def spread_observations_across_demand(number_obs, demand_pool, pairs, baseline_l
     if seed is not None:
         random.seed(seed)
 
-    # bl_weights = create_baseline_sample(number_obs)
-
     fraction = demand_pool.get('ratio', {})
-    # baselines = list(demand_pool.get('baseline', {}).keys())
 
-    if not fraction: #or not baselines:
-        raise ValueError("both 'ratio' and 'baseline' must be provided and non-empty.")
+    if not fraction:
+        raise ValueError("'fraction' must be provided and be non-empty.")
 
     station_types = list(fraction.keys())
     station_counts = {}
@@ -143,8 +110,6 @@ def spread_observations_across_demand(number_obs, demand_pool, pairs, baseline_l
     grouped = {}
     for station, num_obs in station_counts.items():
         acceptable_pairs = [(y,x) for (x, y) in pairs if y == station]
-        # acceptable_baselines = list({x for (x, y) in acceptable_stations})
-        # sample = create_baseline_sample(num_obs, alpha, baseline_limit)
         sample = random.choices(acceptable_pairs, k=num_obs)
         for key in sample:
             # key = (station, baseline)
@@ -165,9 +130,8 @@ def spread_observations_across_demand(number_obs, demand_pool, pairs, baseline_l
 
     return result
 
-
 def calc_demand_ratio(hpso_demand, telescope):
-    # todo re-calculate this using the new approach
+    # TODO Deprecate this officially when transitioning mid to new lattice approach
     total_obs = sum([sum(x.values()) for x in hpso_demand.values()])
     total_demand = total_obs * telescope.max_stations
     cumulative_demand = 0
@@ -177,7 +141,7 @@ def calc_demand_ratio(hpso_demand, telescope):
 
     return cumulative_demand / total_demand
 
-def make_lattice_tagged(N: int, step: int = 1, maximum_large: float = 1.0) -> pd.DataFrame:
+def make_ternary_experiment(N: int, step: int = 1, maximum_large: float = 1.0) -> pd.DataFrame:
     """
     Create ternary-style sequence of experiments with set-maximum value for the
     number of "large" observations.
@@ -219,7 +183,7 @@ def permute_low_observation_plans(n=1):
         tmp = d['observing_ratio']*n
         observation_amounts[hpso] = tmp
         total_obs+=tmp
-    lattice = make_lattice_tagged(N=total_obs, step=5, maximum_large=0.25)
+    lattice = make_ternary_experiment(N=total_obs, step=5, maximum_large=0.25)
     experiments = lattice[lattice['status']=='valid']
     excluded = ["hpso04a", "hpso05a"]
     final_d = {}
