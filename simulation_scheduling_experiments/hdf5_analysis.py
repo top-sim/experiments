@@ -26,7 +26,7 @@ from skaworkflows.common import SKALow, Telescope
 ###########################################################
 
 # Setup all the visualisation nicities
-rcParams["text.usetex"] = False
+rcParams["text.usetex"] = True
 rcParams["font.family"] = "serif"
 # rcParams['font.serif'] = "computer modern roman"
 rcParams["font.size"] = 9.0
@@ -741,8 +741,8 @@ def setup_axes(axes: list):
     """
     for ax in axes:
         ax.set_axisbelow(True)
-        ax.grid(True, "major", "both", ls="-", color="black")
-        ax.grid(True, "minor", "both", ls="--")
+        ax.grid(False, "major", "both", ls="-", color="black")
+        ax.grid(False, "minor", "both", ls="--")
 
     return axes
 
@@ -963,14 +963,14 @@ def plot_ternary_axis(usage: pd.DataFrame,
 
         for i, (xi, yi, zi) in enumerate(zip(X[mask], Y[mask], Z[mask])):
             if i == 9:
-                ax1.text(xi + 0.00, yi + 0.00, f"{int(zi)}%", fontsize=4)
+                ax3.text(xi + 0.00, yi + 0.00, f"{int(zi)}%", fontsize=4,)
 
         mask = (Z <= 11) & (Z >= 9)
         ax3.plot(X[mask], Y[mask], color='black', linewidth=0.25, linestyle='--')  # , s=10)
 
         for i, (xi, yi, zi) in enumerate(zip(X[mask], Y[mask], Z[mask])):
             if i == 8:
-                ax1.text(xi + 0.00, yi + 0.00, f"{int(zi)}%", fontsize=4)
+                ax3.text(xi + 0.00, yi + 0.00, f"{int(zi)}%", fontsize=4)
 
 
     else:
@@ -1031,15 +1031,22 @@ def plot_histogram_axis(usage, ax, xaxis, **kwargs):
     return ax, sc
 
 
-def create_figure(nrows, ncols, twocolumn=False, ):
+def create_figure(nrows, ncols, twocolumn=False, large_legend=False):
     if twocolumn:
         fig = plt.figure(figsize=(6, 4), dpi=300)
     else:
         fig = plt.figure(figsize=(10 / 3, 3), dpi=300)
-    right = 0.7 if twocolumn else 0.85
-    gs = GridSpec(
-        nrows, ncols, figure=fig, hspace=0.0, bottom=0.15, right=right, left=0.15,
-    )  # , wspace=0.25) # , left=0.05, right=0.1, wspace=0.05)
+    if large_legend:
+        right = 0.55 #if twocolumn else 0.85
+        gs = GridSpec(
+            nrows, ncols, figure=fig, hspace=0.0, bottom=0.1, right=right,
+            left=0.15,
+        )  # , wspace=0.25) # , left=0.05, right=0.1, wspace=0.05
+    else:
+        right = 0.7 if twocolumn else 0.85
+        gs = GridSpec(
+            nrows, ncols, figure=fig, hspace=0.0, bottom=0.15, right=right, left=0.15,
+        )  # , wspace=0.25) # , left=0.05, right=0.1, wspace=0.05)
     return fig, gs
 
 
@@ -1076,8 +1083,10 @@ def plot_with_dataframe(usage, fig=None, gs=None, axis=None,
     col = kwargs.get('col')
     row = kwargs.get('row')
     two_column = kwargs.get('twocolumn', False)
+    large_legend = kwargs.get('large_legend', False)
     if not fig:
-        fig, gs = create_figure(rows, columns, twocolumn=two_column)
+        fig, gs = create_figure(rows, columns, twocolumn=two_column,
+                                large_legend=large_legend)
     if axis:
         ax = axis
     else:
@@ -1103,7 +1112,7 @@ def plot_with_dataframe(usage, fig=None, gs=None, axis=None,
 
     if not isinstance(ax, list):
         ax.set_axisbelow(True)
-        ax.grid(True, "major", "both", ls="--", color="grey")
+        # ax.grid(False, "major", "both", ls="--", color="grey")
         # ax.grid(True, "minor", "both", ls="--")
 
         ax.set_xlabel(xaxis)
@@ -1111,6 +1120,9 @@ def plot_with_dataframe(usage, fig=None, gs=None, axis=None,
             pass
         if plot_type == "scatter":
             ax.set_ylabel(f"{yaxis}")
+    # else:
+    #     for a in ax:
+    #         # a.grid(False, "major", "both", ls="--", color="grey")
 
     # Select data points from data.
 
@@ -1476,7 +1488,11 @@ def plot_flops_vs_demand_low(usage_summary_dataframe, algorithm):
                                           title="demonstrate averate compute from nodes",
                                           algorithms={'batch': 'Batch', 'heft': 'HEFT'},
                                           colors={'heft': 'lightblue', 'batch':'lightblue'},
-                                          labels={"Ave. FLOPS": "lightblue"}, twocolumn=True, positions={'heft': 1,'batch': 2})
+                                          labels={"$\\overline{F}$":
+                                                      "lightblue"},
+                                          positions={'heft': 1,'batch': 2},
+                                          two_column=True,
+                                          large_legend=True)
 
     usage_summary_dataframe["peak_plus_ingest"] = usage_summary_dataframe["plan_peak_compute_from_nodes"] + (
                 (node_flops * LOW_REALTIME_RESOURCES) / 1e15)
@@ -1487,7 +1503,8 @@ def plot_flops_vs_demand_low(usage_summary_dataframe, algorithm):
                                           yaxis="peak_plus_ingest", title="demonstrate averate compute from nodes",
                                           algorithms={'batch': 'Batch', 'heft': 'HEFT'},
                                           colors={'heft': 'red', 'batch':'red'},
-                                          labels={"Max. FLOPS": "red"}, twocolumn=True, positions={'heft': 1,'batch': 2})
+                                          labels={"$max(F)$": "red"},
+                                          positions={'heft': 1,'batch': 2})
     # fig, gs, ax, sc = plot_with_dataframe(usage=usage_summary_dataframe,
     #                                       axis=ax, fig=fig, gs=gs,
     #                                       use_task_data=False, use_edge_data=False, plot_type="box",
@@ -1504,27 +1521,29 @@ def plot_flops_vs_demand_low(usage_summary_dataframe, algorithm):
                                           yaxis="max_ingest_flops", title="demonstrate averate compute from nodes",
                                           algorithms={'batch': 'Batch', 'heft': 'HEFT'},
                                           colors={'heft': 'pink', 'batch': 'pink'},
-                                          markers={'heft':'x'}, twocolumn=True,
+                                          markers={'heft':'x'},
                                           positions={'heft': 1,'batch': 2},
-                                          labels={"Max ingest FLOPS": "lightblue"})
-    ax.legend(title="Per-Observing plan:", bbox_to_anchor=(1, 0.7))
+                                          labels={"$max(F_I)$": "lightblue"})
+    ax.legend(title="Observing plan", bbox_to_anchor=(1.1, 0.7))
     ax.set_ylim((0, 11))
     ax.set_ylabel("PetaFLOPs 'acheived'")
+    ax.set_xlabel("")
     # ax.set_xlabel("Demand Ratio")  # \n(# stations used across the observing plan / Total possible number of stations)")
     ax.set_xlim((0.0, 3))
     ax.plot([0.0, 5], [LOW_SDP_AVERAGE_COMPUTE_FLOPS_UPDATED, LOW_SDP_AVERAGE_COMPUTE_FLOPS_UPDATED],
-            color="red", linestyle='--', linewidth=3, zorder=-1)  # , text="Updated estimated for SDP maximum compute")
-    from matplotlib.patches import FancyArrowPatch
-    arr = FancyArrowPatch((.4, 11), (.3, 10),
-                          arrowstyle='->,head_width=.15', mutation_scale=20)
+            color="red", linestyle='-', linewidth=1, zorder=-1)  # ,
+    # text="Updated estimated for SDP maximum compute")
+    # from matplotlib.patches import FancyArrowPatch
+    # arr = FancyArrowPatch((.4, 11), (.3, 10),
+    #                       arrowstyle='->,head_width=.15', mutation_scale=20)
     # ax.add_patch(arr)
-    fig.text(0.72, .73, "SDP Total Compute \n Adjusted Estimates\n")
+    fig.text(0.6, .70, "Max. SDP\n Ave. Compute \n (Adjusted Estimates)\n")
     reserved_ingest = ((node_flops * LOW_REALTIME_RESOURCES) / 1e15)
     ax.plot([0.0, 5], [reserved_ingest, reserved_ingest],
-            color="grey", linestyle='--', linewidth=3, zorder=-1)
+            color="grey", linestyle='--', linewidth=1, zorder=-1)
     ax.fill_between([0, 3], y1=0, y2=reserved_ingest, color='grey', alpha=0.3, zorder=-1)
-    fig.text(0.72, .2, "SDP Ingest\n Adjusted Estimates\n")
-    fig.text(0.29, .16, "Ingest   reserved  resources\n")
+    fig.text(0.6, .15, "SDP Ingest\n (Adjusted Estimates)\n")
+    fig.text(0.2, .12, "Ingest   reserved\n")
     if SAVE_PLOTS:
         plt.savefig("FLOPS.png", dpi=fig.dpi)
 
@@ -1709,8 +1728,8 @@ if __name__ == "__main__":
     ######                          MAKE PLOTS
     #################################################################################
 
-    plot_histogram_observing_computing_ratio(usage_summary_dataframe)
-    plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe)
+    # plot_histogram_observing_computing_ratio(usage_summary_dataframe)
+    # plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe)
     plot_flops_vs_demand_low(usage_summary_dataframe, 'heft')
 
     # observation_plans = get_observation_plans(df_total=df_total,
