@@ -1,0 +1,1 @@
+topsim experiment -i test/data/config/heft_single_observation_simulation_IO.json -p topsim.user.plan.static_planning.SHADOWPlanning -s topsim.user.schedule.dynamic_plan.DynamicSchedulingFromPlan -d nodata -d taskdata -d taskedgedata -o extest -p topsim.user.plan.batch_planning.BatchPlanning -s topsim.user.schedule.batch_allocation.BatchProcessing scheduler-options describe run
