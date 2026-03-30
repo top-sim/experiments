@@ -10,4 +10,4 @@
 
 source /home/rbunney/github/topsim/.venv/bin/activate
 
-srun python ../github/experiments/simulation_scheduling_experiments/create_observation_plans.py /home/rbunney/new_observation_plan_creation/ low prototype
+srun python ../github/experiments/simulation_scheduling_experiments/create_observation_plans.py /home/rbunney/new_observation_plan_creation/ low prototype --concurrent 64

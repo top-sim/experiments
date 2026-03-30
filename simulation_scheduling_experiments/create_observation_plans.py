@@ -518,6 +518,7 @@ if __name__ == "__main__":
     parser.add_argument("graph_type", help="prototype, parallel")
     parser.add_argument("--test", default=False, action="store_true")
     parser.add_argument("--tables", default=False, action="store_true", help='Generate tables and do not run config generation')
+    parser.add_argument("--concurrent", default=False, type=int)
 
     # parser.add_argument() # todo num_observation_repeats, seed
     args = parser.parse_args()
@@ -545,44 +546,20 @@ if __name__ == "__main__":
 
         sys.exit(0)
 
-    all_params = create_week_plan(args.telescope)
     if args.tables:
         sys.exit(0)
+    
+    concurrent = 0 
+    if args.concurrent:
+        concurrent=args.concurrent
 
     low_path = Path(args.path) / args.telescope
-
-    print("creating config")
-    # sys.exit()
-    print(f"total plans: {len(all_params)}")
-    # for ap in all_params:
-        # sorted_keys = sorted(ap)
-    # for multiplier in [1, 2, 5]:
-    for name, plan in all_params.items():
-        print(f"creating plan with demand: {name}")
-        create_config(
-            plan,
-            low_path,
-            workflow_type_map,
-            timestep=5,
-            data=False,
-            data_distribution="standard",
-            multiple_plans=False,
-        )
-        create_config(
-            plan,
-            low_path,
-            workflow_type_map,
-            timestep=5,
-            data=True,
-            data_distribution="standard",
-            multiple_plans=False,
-        )
-        create_config(
-            plan,
-            low_path,
-            workflow_type_map,
-            timestep=5,
-            data=True,
-            data_distribution="edges",
-            multiple_plans=False,
-        )
+    create_config(
+        days=7,
+        output_dir=low_path,
+        imaging_graph_base='prototype',
+        timestep=5,
+        num_of_plans=40,
+        num_shuffled_plans=5,
+        concurrent_demand=concurrent,
+    )
