@@ -3,7 +3,7 @@ import os
 import json
 import logging
 from pathlib import Path
-
+import datetime
 import numpy as np
 
 # import seaborn as sns
@@ -21,7 +21,6 @@ SKA_MID = Telescope('mid')
 #     LOW_OBSERVATIONS,
 #     MID_OBSERVATIONS,
 # )
-
 
 
 LOGGER = logging.getLogger(__name__)
@@ -272,20 +271,6 @@ def calc_transfer_time(df: pd.DataFrame, telescope_specs: dict):
     return  np.ceil(df.apply(adjust_value, axis=1))
 
 
-def retrieve_workflow_stats(wf_params: dict):
-    """
-    For a workflow, get the stats
-
-    Returns
-    -------
-
-    """
-
-
-def calculate_relative_compute():
-    pass
-
-
 def create_computation_dataframe(df, telescope_specs: dict):
     """
     Generate a dataframe with compute costs
@@ -358,22 +343,6 @@ def calculate_comp_to_data_ratio(df_comp, df_data):
     df_data.dropna(inplace=True)
     return df_comp, df_data
 
-
-def save_processed_workflow_data(workflow_data: pd.DataFrame, source_dir: str):
-    """
-    Save the processed data frame as a .csv file.
-
-    To reduce the potential of accidentally re-rprocessing, we use the source_dir of the
-    data as the root of a hash that forms the file name "processed_<hash>".
-
-    Parameters
-    ----------
-    workflow_data
-
-    Returns
-    -------
-
-    """
 
 
 def calculate_total_cost_with_data(
@@ -525,7 +494,7 @@ def plot_product_cost_variation(df: pd.DataFrame, telescope_specs: dict, twocolu
         ax.vlines(1, 0, 13, linestyle="dashed", color="grey", zorder=-1)
         ax.set_xbound(1e-3, 100)
         ax.set_title(f"{hpso.upper()}")
-        ax.set_xlabel("Time (s)")
+        ax.set_xlabel("Time Ratio")
         ax.set_ylabel("Algorithm")
         h, l = ax.get_legend_handles_labels()
         by_label = dict(zip(l, h))
@@ -692,6 +661,14 @@ def plot_scheduling_comparisons(method:str):
             df[(df["data_distribution"] == "edges") & (df["data"] == True)],
         )
     )
+
+    label_replacement = {
+        "False + standard": "No data",
+        "True + standard": "Task data",
+        "True + edges": "Task data + edge data"
+    }
+    # label = f"{data} + {distribution}",
+
     for g in groups:
         type, group_df = g
         distribution, data = type
@@ -729,24 +706,27 @@ def plot_scheduling_comparisons(method:str):
                 x=x + offset,
                 height=par,
                 width=width,
-                label=f"Par Model",
+                label=f"Parametric Model",
                 facecolor=colors[i],
                 edgecolor="black",
             )
             i += 1
         offset = width * i
+
+
+
         ax.bar(
             x=x + offset,
             height=y,
             width=width,
-            label=f"{data} + {distribution}",
+            label=label_replacement[f"{data} + {distribution}"],
             facecolor=colors[i],
             edgecolor="black",
         )
         ax.set_xticks(x + width, obs)
         ax.set_ylabel("Final Schedule (s): Parametric Estimate (s)")
         ax.set_xlabel("HPSO")
-        ax.legend()
+        ax.legend(loc="upper center")
 
         i += 1
     ax.set_ylim(0, 8)
@@ -805,7 +785,7 @@ if __name__ == "__main__":
     # Can colour data too? Red is data-intensive, Blue is compute intensive?
     # Use diverging colourscheme
 
-    # plot_product_cost_variation(all_workflows, telescope_specs)
+    plot_product_cost_variation(all_workflows, telescope_specs)
     # plot_supporting_data_variation(all_workflows, telescope_specs)
     # plot_scheduling_comparisons('fcfs')
     # plot_scheduling_comparisons('heft')
