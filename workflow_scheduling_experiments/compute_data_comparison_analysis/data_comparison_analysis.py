@@ -5,7 +5,6 @@ import logging
 from pathlib import Path
 import datetime
 import numpy as np
-
 # import seaborn as sns
 import pandas as pd
 from matplotlib import rcParams
@@ -13,6 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 from skaworkflows.common import Telescope
+from sympy.printing.pretty.pretty_symbology import line_width
 
 SKA_LOW = Telescope('low')
 SKA_MID = Telescope('mid')
@@ -21,6 +21,7 @@ SKA_MID = Telescope('mid')
 #     LOW_OBSERVATIONS,
 #     MID_OBSERVATIONS,
 # )
+DATE = datetime.datetime.now().strftime("%Y-%m-%d")
 
 
 LOGGER = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ rcParams["xtick.direction"] = "in"
 rcParams["xtick.minor.visible"] = True
 # Y-axis
 rcParams["ytick.direction"] = "in"
-rcParams["ytick.minor.visible"] = True
+rcParams["ytick.minor.visible"] = False
 
 pd.set_option("display.max_columns", None)
 pd.set_option("display.width", 1000)
@@ -428,6 +429,11 @@ def plot_product_cost_variation(df: pd.DataFrame, telescope_specs: dict, twocolu
 
     css_colors = list(mcolors.CSS4_COLORS.keys())
     workflows = ["DPrepA", "DPrepB", "DPrepC", "DPrepD", "ICAL"]
+    workflow_label_map = {"DPrepA":"Continuum imaging",
+                          "DPrepB":"Coarse continuum imaging",
+                          "DPrepC": "Spectral resolution imaging",
+                          "DPrepD": "Averaging/Calibration",
+                          "ICAL": "Image Calibration"}
 
     _legend = workflows
     incr = len(mcolors.CSS4_COLORS) % len(workflows)
@@ -440,13 +446,29 @@ def plot_product_cost_variation(df: pd.DataFrame, telescope_specs: dict, twocolu
 
     count = 0
 
+
     gs = GridSpec(
-        2, 4, right=0.875, hspace=0.4, wspace=0.2
-    )  # , hspace=0.5, top=0.9, wspace=0, right=0.85)  # , width_ratios=[0.1,0.85]
+        4, 4, right=0.875, hspace=0.5, wspace=0.2, top=0.95,
+        height_ratios=[0.05, 1, 0.25, 1]
+    )
+
+    for gs_row, label in zip([0, 2], ["SKA-Low", "SKA-Mid"]):
+        heading_ax = fig.add_subplot(gs[gs_row, :])
+        heading_ax.axis("off")
+        # if gs_row == 2:
+        #     heading_ax.axhline(0.70, xmin=0.01, xmax=0.99, color='grey', linewidth=0.8)
+        heading_ax.text(0.5, 0.2, label, transform=heading_ax.transAxes,
+                        ha="center", va="center", fontweight="bold")
+
+    low_groups = [(h, g) for h, g in comp_df.groupby("observation") if SKA_LOW.is_hpso_for_telescope(h)]
+    mid_groups = [(h, g) for h, g in comp_df.groupby("observation") if not SKA_LOW.is_hpso_for_telescope(h)]
+    n_low = len(low_groups)
+
     curr_handles = {}
-    for hpso in comp_df.groupby("observation"):
-        hpso, group_df = hpso
-        ax = fig.add_subplot(gs[count])
+    for hpso, group_df in low_groups + mid_groups:
+        gs_row = 1 if count < n_low else 3
+        gs_col = count if count < n_low else count - n_low
+        ax = fig.add_subplot(gs[gs_row, gs_col])
 
         results = {}
         for group, sub_df in group_df.groupby(["workflow_type", "product"]):
@@ -472,9 +494,6 @@ def plot_product_cost_variation(df: pd.DataFrame, telescope_specs: dict, twocolu
             # Unpack into sorted y and x values
             y = [k for k, v in sorted_items]
             x = [v[0] for k, v in sorted_items]
-            # for i, _y in enumerate(y_sorted):
-            #     x = x_sorted[i]
-            #     y = [_y]*len(x)
             x.reverse()
             y.reverse()
             ax.scatter(
@@ -487,14 +506,18 @@ def plot_product_cost_variation(df: pd.DataFrame, telescope_specs: dict, twocolu
                 s=15,
             )
 
-        if count % 4 > 0:
+        if gs_col > 0:
             ax.get_yaxis().set_visible(False)
 
         ax.set_xscale("log")
-        ax.vlines(1, 0, 13, linestyle="dashed", color="grey", zorder=-1)
-        ax.set_xbound(1e-3, 100)
+        ax.vlines(1, 0, 13, linestyle="dashed", color="black", zorder=-1, linewidth=1)
+
+        ax.axvspan(1, 1000, color='red', alpha=0.2, zorder=-2, label="Data > Comp", linewidth=0)
+
+        ax.set_xbound(1e-3, 1000)
         ax.set_title(f"{hpso.upper()}")
-        ax.set_xlabel("Time Ratio")
+        ax.set_xlabel("$\\tau_{Bytes}$ : $\\tau_{FLOPs}$")
+
         ax.set_ylabel("Algorithm")
         h, l = ax.get_legend_handles_labels()
         by_label = dict(zip(l, h))
@@ -502,23 +525,16 @@ def plot_product_cost_variation(df: pd.DataFrame, telescope_specs: dict, twocolu
             curr_handles = by_label
 
         count += 1
-        if count == 3:
-            count+=1
-        # ax.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
 
-    plt.legend(
+    legend_ax = fig.add_subplot(gs[1, 3])
+    legend_ax.axis("off")
+    legend_ax.legend(
         curr_handles.values(),
         curr_handles.keys(),
         title='Workflow',
-        # fontsize="small",
-        bbox_to_anchor=(0.8, 2.0),
+        loc='center',
     )
-    # handles, labels = plt.gca().get_legend_handles_labels()
-
-    # fig.tight_layout()
-    # fig.colorbar(res, ax=ax)
-
-    plt.savefig("product_cost_var.png")
+    fig.savefig(f"product-cost-var-{DATE}.png", dpi=fig.dpi)
 
 
 def plot_supporting_data_variation(df: pd.DataFrame, telescope_specs, twocolumn=False):
@@ -787,8 +803,8 @@ if __name__ == "__main__":
 
     plot_product_cost_variation(all_workflows, telescope_specs)
     # plot_supporting_data_variation(all_workflows, telescope_specs)
-    # plot_scheduling_comparisons('fcfs')
+    plot_scheduling_comparisons('fcfs')
     # plot_scheduling_comparisons('heft')
     # calculate_total_cost_with_data(all_workflows, telescope_specs)
     compare_methods()
-    # plt.show()
+    plt.show()

@@ -59,7 +59,9 @@ LOW_HPSO_DURATION_YEARS = 2.8
 MAXIMAL_OBSERVATION_COMPUTE_FLOPS = 1.5e21
 SDP_AVERAGE_COMPUTE_FLOPS = 13.8e15
 LOW_SDP_AVERAGE_COMPUTE_FLOPS_UPDATED = 9.623
-LOW_REALTIME_RESOURCES = 164
+LOW_MAX_PARALLELISM = 512
+LOW_REALTIME_RESOURCES = 59 # Maximum realtime resources ever allocated within the simulations.
+MAX_TOTAL_TASKS = 571
 MID_REALTIME_RESOURCES = 281
 
 # ICAL = 'ICAL'                 # Produce calibration solutions using iterative self-calibration
@@ -1095,7 +1097,7 @@ def plot_histogram_axis(usage, ax, xaxis, **kwargs):
     return ax, sc
 
 
-def create_figure(nrows, ncols, twocolumn=False, large_legend=False, split_plot=False):
+def create_figure(nrows, ncols, twocolumn=False, large_legend=False, split_plot=False, small=False):
     if twocolumn:
         fig = plt.figure(figsize=(6, 4), dpi=300)
     else:
@@ -1115,7 +1117,7 @@ def create_figure(nrows, ncols, twocolumn=False, large_legend=False, split_plot=
             nrows, ncols, figure=fig, hspace=0.30, bottom=0.15, right=right, left=0.15,
         )  # , wspace=0.25) # , left=0.05, right=0.1, wspace=0.05)
     else:
-        right = 0.7 if twocolumn else 0.90
+        right = 0.7 if twocolumn else 0.9
         gs = GridSpec(
             nrows, ncols, figure=fig, hspace=0.0, bottom=0.15, right=right, left=0.15,
         )  # , wspace=0.25) # , left=0.05, right=0.1, wspace=0.05)
@@ -1584,7 +1586,7 @@ def plot_diff(usage, experiment_type):
     alg_list=['batch', 'heft']
 
     alg1, alg2 = alg_list[0], alg_list[1]
-    xaxis = "plan_total_compute_flops"
+    xaxis = "plan_total_compute"
     yaxis = "computing_to_observation_length_ratio"
     df1 = usage[usage["planning"] == alg1]
     df2 = usage[usage["planning"] == alg2]
@@ -1608,36 +1610,34 @@ def plot_diff(usage, experiment_type):
     x_common = merged[xaxis].to_numpy()
     diff = merged["diff"].to_numpy()
 
-    fig, gs = create_figure(1,1,twocolumn=False)
-    ax_diff = fig.add_subplot()
+    fig, gs = create_figure(1,1,twocolumn=False, small=True)
+    ax_diff = fig.add_subplot(gs[0, 0])
 
     ax_diff.scatter(
         x_common,
         diff,
-        color="black",
+        color="darksalmon",
+        edgecolors='black'
         # linewidth=2,
-        label=f"{alg1} - {alg2}"
     )
 
     # ax_diff.axhline(-1, color="grey", linestyle="--", linewidth=1)
-    ax_diff.set_ylabel("Diff-Y")
+    ax_diff.set_xlabel("Total plan PFLOPs", fontsize=8)
+    ax_diff.set_ylabel("Batch - HEFT ($\sigma$ ($\\tau_{Computing} : {\\tau}_{Observing}$)", fontsize=8)
+    ax_diff.set_ylim(0, 0.7)
+    ax_diff.set_xlim(0, 1.7e6)
+    # ax.tick_params(axis='y', pad=-10)
+    plt.title(f"{experiment_type.title()}")
+    # ax_diff.legend(loc='upper left')
+    if SAVE_PLOTS:
+        fig.savefig(f"scatter-diff-{experiment_type}-{DATE}.png", dpi=fig.dpi)
 
 def plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe, experiment_type):
 
-    plot_index = 0
-    handles = []
-    labels = []
-    handles_labels_collected = False  # Flag to only collect once
-    usage_summary_dataframe['plan_total_compute_flops'] = usage_summary_dataframe['plan_total_compute']*1e15
-    fig1, gs1, ax1, sc1, sc_diff1 = plot_with_dataframe(
-        usage=usage_summary_dataframe, use_task_data=True, use_edge_data=True, plot_type="scatter",
-        xaxis="plan_weighting", yaxis='computing_to_observation_length_ratio',
-        algorithms={'batch': "Batch", 'heft': "HEFT"}, colors={'batch': 'red', 'heft': 'blue'},
-        markers={"batch": 'v', "heft": 'o'}, fill=False,
-    )
+    # usage_summary_dataframe['plan_total_compute_flops'] = usage_summary_dataframe['plan_total_compute']*1e15
     fig2, gs2, ax2, sc2, sc_diff2 = plot_with_dataframe(
         usage=usage_summary_dataframe, use_task_data=True, use_edge_data=True, plot_type="scatter",
-        xaxis="plan_total_compute_flops", yaxis='computing_to_observation_length_ratio',
+        xaxis="plan_total_compute", yaxis='computing_to_observation_length_ratio',
         algorithms={'batch': "Batch", 'heft': "HEFT"}, colors={'batch': 'red', 'heft': 'blue'},
         markers={"batch": 'v', "heft": 'o'}, fill=False
     )
@@ -1649,35 +1649,17 @@ def plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe, experiment
     )
 
 
-    # labels = ['Batch', "HEFT", f"(Batch − HEFT)"]
-    ax1.set_ylim(0,2.6)
     ax2.set_ylim(0, 2.6)
+    ax2.set_xlim(0, 1.8e11)
     ax3.set_ylim(0, 2.6)
-    ax1.set_xlim(0, 10)
     ax3.set_xlim(0, 1.8e11)
-    fig1.suptitle(f"{experiment_type.title()}")
     fig2.suptitle(f"{experiment_type.title()}")
     fig3.suptitle(f"{experiment_type.title()}")# for i, a in enumerate(ax):
-    #     a.set_ylim([0.0, 100.0])
-    #     a.set_xlim([0.0, 100.0])
-    #
-    #     a.set_title(labels[i])
-    #     plot_index += 1
-    #     if not handles_labels_collected:
-    #         handles, l = a.get_legend_handles_labels()
-    #         handles_labels_collected = True
-    cbar1 = fig1.colorbar(sc1, ax=ax1)
-    cbar1.ax.set_ylabel("\% Large observations")
-    # cbar1.set_label('% Large observations')
     cbar2 = fig2.colorbar(sc2, ax=ax2)
     cbar2.ax.set_ylabel("\% Large observations")
     cbar3 = fig2.colorbar(sc3, ax=ax3)
     cbar3.ax.set_ylabel("\% Large observations")
-    # cbar2.set_label('% Large observations')
-    #
-    ax1.set_xlabel("Plan composition weighting")
-    ax1.set_ylabel("Computing-to-observation weighting")
-    ax2.set_xlabel("Total plan FLOPs")
+    ax2.set_xlabel("Total plan PFLOPs")
     ax2.set_ylabel("Computing-to-observation weighting")
     ax3.set_xlabel("Total plan bytes")
     ax3.set_ylabel("Computing-to-observation weighting")
@@ -1694,417 +1676,106 @@ def plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe, experiment
         )
 
     if SAVE_PLOTS:
-        fig1.savefig(f"scatter-ratio-weight-{experiment_type}-{DATE}.png", dpi=fig1.dpi)
+        fig3.savefig(f"scatter-ratio-data-{experiment_type}-{DATE}.png", dpi=fig3.dpi)
         fig2.savefig(f"scatter-ratio-compute-{experiment_type}-{DATE}.png", dpi=fig2.dpi)
 
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from scipy import stats
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-
-def variance_decomposition_single_figure(
-    df,
-    x1="plan_total_compute",
-    x2="plan_weighting",
-    y="computing_to_observation_length_ratio",
-    bin_width=0.25e6
-):
-    df = df.copy()
-    df=df[df['planning'] == 'heft']
-
-    # ----------------------------
-    # 1. BIN X1 (fixed width)
-    # ----------------------------
-    min_edge = np.floor(df[x1].min() / bin_width) * bin_width
-    max_edge = np.ceil(df[x1].max() / bin_width) * bin_width
-    edges = np.arange(min_edge, max_edge + bin_width, bin_width)
-
-    df["X1_bin"] = pd.cut(df[x1], bins=edges)
-    df["X1_bin_str"] = df["X1_bin"].apply(lambda z: f"{z.left/1e6:.2f}-{z.right/1e6:.2f}M")
-
-    # ----------------------------
-    # 2. ANOVA (global structure)
-    # ----------------------------
-    groups = [g[y].values for _, g in df.groupby("X1_bin")]
-    F, p = stats.f_oneway(*groups)
-
-    # ----------------------------
-    # 3. eta^2 (X1 effect size)
-    # ----------------------------
-    yvals = df[y].values
-    grand_mean = np.mean(yvals)
-
-    ss_between = 0.0
-    ss_within = 0.0
-
-    for _, g in df.groupby("X1_bin"):
-        yi = g[y].values
-        mi = yi.mean()
-        ss_between += len(yi) * (mi - grand_mean) ** 2
-        ss_within += np.sum((yi - mi) ** 2)
-
-    eta_sq = ss_between / (ss_between + ss_within)
-
-    # ----------------------------
-    # 4. residualize Y by X1 (key step)
-    # ----------------------------
-    df["Y_residual"] = df[y] - df.groupby("X1_bin")[y].transform("mean")
-
-    # ----------------------------
-    # 5. within-bin X2 signal (R^2 proxy)
-    # ----------------------------
-    within_r2 = []
-    for _, g in df.groupby("X1_bin"):
-        if len(g) > 5:
-            x2v = g[x2].values
-            yv = g[y].values
-            if np.std(x2v) > 0 and np.std(yv) > 0:
-                r = np.corrcoef(x2v, yv)[0, 1]
-                if not np.isnan(r):
-                    within_r2.append(r**2)
-
-    within_r2 = np.mean(within_r2) if len(within_r2) > 0 else np.nan
-
-    # ----------------------------
-    # 6. summary for trend line
-    # ----------------------------
-    summary = df.groupby("X1_bin_str")[y].mean().reset_index()
-
-    # ----------------------------
-    # 7. FIGURE
-    # ----------------------------
-    fig, ax = plt.subplots(figsize=(10, 6))
-
-    # ---- MAIN: boxplot (X1 → Y)
-    df.boxplot(
-        column=y,
-        by="X1_bin_str",
-        ax=ax,
-        showfliers=False
-    )
-
-    ax.set_xlabel("plan_total_compute bins")
-    ax.set_ylabel(y)
-    ax.set_title("Structure in Y dominated by X1")
-
-    # ---- trend line
-    ax.plot(
-        range(1, len(summary) + 1),
-        summary[y].values,
-        color="red",
-        marker="o",
-        linewidth=2,
-        label="mean Y"
-    )
-
-    # ----------------------------
-    # 8. INSET: X2 vs residual Y
-    # ----------------------------
-    ax_in = inset_axes(ax, width="40%", height="40%", loc="upper right")
-
-    ax_in.scatter(
-        df[x2],
-        df["Y_residual"],
-        alpha=0.2,
-        s=10
-    )
-
-    ax_in.axhline(0, color="black", linestyle="--", linewidth=1)
-
-    ax_in.set_title("Residual check", fontsize=9)
-    ax_in.set_xlabel("X2", fontsize=8)
-    ax_in.set_ylabel("Y residual", fontsize=8)
-
-    # ----------------------------
-    # 9. TITLE STATS
-    # ----------------------------
-    ax.text(
-        0.02, 0.95,
-        f"eta2(X1) = {eta_sq:.3f}\n"
-        f"within-bin R2(X2) = {within_r2:.4f}\n"
-        f"F = {F:.2f}, p = {p:.2e}",
-        transform=ax.transAxes,
-        fontsize=10,
-        verticalalignment="top",
-        bbox=dict(boxstyle="round", facecolor="white", alpha=0.8)
-    )
-
-    plt.tight_layout()
-    plt.show()
-
-    return {
-        "F": F,
-        "p": p,
-        "eta_sq_X1": eta_sq,
-        "within_bin_R2_X2": within_r2
-    }
-
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from scipy import stats
-
-
-def log_space_variance_analysis(
-    df,
-    x1="plan_total_compute",
-    x2="plan_weighting",
-    y="computing_to_observation_length_ratio"
-):
-    df = df.copy()
-    df=df[df['planning'] == 'heft']
-    # ----------------------------
-    # 1. log transform X1
-    # ----------------------------
-    df["logX1"] = np.log10(df[x1])
-
-    # ----------------------------
-    # 2. fit smooth trend: Y ~ log(X1)
-    # ----------------------------
-    slope, intercept, r, p, _ = stats.linregress(df["logX1"], df[y])
-
-    df["Y_hat_X1"] = intercept + slope * df["logX1"]
-
-    # residual after removing X1 effect
-    df["Y_residual"] = df[y] - df["Y_hat_X1"]
-
-    # ----------------------------
-    # 3. global R^2 (X1 effect)
-    # ----------------------------
-    r2_x1 = r**2
-
-    # ----------------------------
-    # 4. X2 vs residual relationship
-    # ----------------------------
-    r_x2_res = np.corrcoef(df[x2], df["Y_residual"])[0, 1]
-    r2_x2_res = r_x2_res**2
-
-    # ----------------------------
-    # 5. significance test (X2 vs residual)
-    # ----------------------------
-    slope2, intercept2, r2, p2, _ = stats.linregress(df[x2], df["Y_residual"])
-
-    # ----------------------------
-    # 6. PLOT (single figure)
-    # ----------------------------
-    fig, ax = plt.subplots(figsize=(10, 6))
-
-    # ---- main: Y vs logX1 ----
-    ax.scatter(df["logX1"], df[y], alpha=0.25, s=10, label="data")
-
-    x_line = np.linspace(df["logX1"].min(), df["logX1"].max(), 200)
-    y_line = intercept + slope * x_line
-
-    ax.plot(x_line, y_line, color="red", linewidth=2, label="fit: Y ~ logX1")
-
-    ax.set_xlabel("log10(plan_total_compute)")
-    ax.set_ylabel(y)
-    ax.set_title("Log-space scaling model + residual independence test")
-
-    # ---- inset: X2 vs residual ----
-    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-
-    ax_in = inset_axes(ax, width="40%", height="40%", loc="upper left")
-
-    ax_in.scatter(df[x2], df["Y_residual"], alpha=0.2, s=10)
-    ax_in.axhline(0, color="black", linestyle="--")
-
-    ax_in.set_xlabel("X2", fontsize=8)
-    ax_in.set_ylabel("Residual Y", fontsize=8)
-    ax_in.set_title("X2 vs residual", fontsize=9)
-
-    # ----------------------------
-    # 7. annotation
-    # ----------------------------
-    ax.text(
-        0.03, 0.97,
-        f"R2(X1) = {r2_x1:.3f}\n"
-        f"R2(X2 | X1) = {r2_x2_res:.4f}\n"
-        f"p(X2) = {p2:.2e}",
-        transform=ax.transAxes,
-        va="top",
-        bbox=dict(facecolor="white", alpha=0.8)
-    )
-
-    plt.tight_layout()
-    plt.show()
-
-    return {
-        "R2_logX1": r2_x1,
-        "R2_X2_given_X1": r2_x2_res,
-        "p_X2_given_X1": p2,
-        "slope_logX1": slope
-    }
-
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
-
-def trend_stability_plot_with_values(
-        df,
-        x1="plan_total_compute",
-        x2="plan_weighting",
-        y="computing_to_observation_length_ratio",
-            n_bins=10
-    ):
-
-    df = df.copy()
-    df=df[df['planning'] == 'heft']
-    bin_width=0.25e6
-
-    # ----------------------------
-    # 1. BIN X1 (fixed width)
-    # ----------------------------
-    min_edge = np.floor(df[x1].min() / bin_width) * bin_width
-    max_edge = np.ceil(df[x1].max() / bin_width) * bin_width
-    edges = np.arange(min_edge, max_edge + bin_width, bin_width)
-
-    df["X1_bin"] = pd.cut(df[x1], bins=edges)
-
-    # df["X1_bin"] = pd.qcut(df[x1], q=n_bins, duplicates="drop")
-
-    rows = []
-
-    # sort bins in order
-    bins = list(df["X1_bin"].cat.categories)
-
-    prev_mean = None
-
-    for i, b in enumerate(bins):
-
-        sub = df[df["X1_bin"] == b]
-
-        y_vals = sub[y]
-        x2_vals = sub[x2]
-
-        y_mean = y_vals.mean()
-        y_std = y_vals.std()
-        y_range = y_vals.max() - y_vals.min()
-
-        x2_range = x2_vals.max() - x2_vals.min()
-
-        # within-bin relative variation
-        y_rel_var = y_std / (abs(y_mean) + 1e-12)
-
-        # step in Y between X1 bins
-        if prev_mean is None:
-            delta_mean = np.nan
-        else:
-            delta_mean = y_mean - prev_mean
-
-        rows.append({
-            "X1_bin": str(b),
-            "X2_range": x2_range,
-            "Y_mean": y_mean,
-            "Y_std": y_std,
-            "Y_range": y_range,
-            "Y_rel_variation_within_bin": y_rel_var,
-            "Delta_Y_vs_previous_X1_bin": delta_mean,
-            "n": len(sub)
-        })
-
-        prev_mean = y_mean
-
-    df = pd.DataFrame(rows)
-    df = df.copy()
-
-    # avoid division issues
-    ratio = df["Delta_Y_vs_previous_X1_bin"] / (df["Y_rel_variation_within_bin"] + 1e-12)
-
-    plt.figure(figsize=(8,5))
-
-    plt.plot(range(len(ratio)), ratio, marker="o")
-
-    plt.yscale("log")  # critical: spans orders of magnitude
-
-    plt.axhline(1, linestyle="--", color="red", label="Equal influence threshold")
-
-    plt.xlabel("X1 bin index")
-    plt.ylabel("X1 step change / X2 within-bin variation")
-    plt.title("Dominance of X1 over X2 in explaining Y")
-
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
-
-def within_bin_comparisons(df,
+def within_bin_comparisons(df_all,
                            x1="plan_total_compute",
                            x2="plan_weighting",
                            y="computing_to_observation_length_ratio",
                            n_bins=10):
 
-    df = df.copy()
+    df_all = df_all.copy()
     bin_width=0.25e6
-    df=df[df['planning'] == 'batch']
+    fig, gs = create_figure(1,1,twocolumn=False, small=True)
+    ax=fig.subplots()
+    count=0
+    algorithm_text={"batch": "Batch", 'heft': "HEFT"}
+    color=['silver', 'slateblue']
+    for alg in ['batch', 'heft']:
+        df=df_all[df_all['planning'] == alg]
+        min_edge = np.floor(df_all[x1].min() / bin_width) * bin_width
+        max_edge = np.ceil(df_all[x1].max() / bin_width) * bin_width
+        edges = np.arange(min_edge, max_edge + bin_width, bin_width)
 
-    # ----------------------------
-    # 1. BIN X1 (fixed width)
-    # ----------------------------
-    min_edge = np.floor(df[x1].min() / bin_width) * bin_width
-    max_edge = np.ceil(df[x1].max() / bin_width) * bin_width
-    edges = np.arange(min_edge, max_edge + bin_width, bin_width)
+        # ----------------------------
+        df["X1_bin"] = pd.cut(df[x1], bins=edges, include_lowest=True)
 
-    df["X1_bin"] = pd.cut(df[x1], bins=edges)
+        # ----------------------------
+        # BUILD TABLE
+        # ----------------------------
+        rows = []
 
-    # df["X1_bin"] = pd.qcut(df[x1], q=n_bins, duplicates="drop")
+        for b in df["X1_bin"].cat.categories:
 
-    rows = []
+            sub = df[df["X1_bin"] == b]
 
-    for b in df["X1_bin"].cat.categories:
+            if len(sub) == 0:
+                continue
 
-        sub = df[df["X1_bin"] == b]
+            # true bin edges
+            left = b.left
+            right = b.right
 
-        x1_min = sub[x1].min()
-        x1_max = sub[x1].max()
-        x1_center = (x1_min + x1_max) / 2
+            x1_min = sub[x1].min()
+            x1_max = sub[x1].max()
+            x1_center = (x1_min + x1_max) / 2
 
-        y_mean = sub[y].mean()
-        y_std = sub[y].std()
+            # stats
+            y_mean = sub[y].mean()
+            y_std = sub[y].std()
 
-        # within-bin X2 effect proxy = spread in Y
-        y_within = sub[y].std()
+            rows.append({
+                "X1_range": f"{left:.3g} -- {right:.3g}",
+                "X1_center": x1_center,
+                "Y_mean": y_mean,
+                "Y_within_std": y_std,
+                "n": len(sub)
+            })
 
-        rows.append({
-            "X1_center": x1_center,
-            "Y_mean": y_mean,
-            "Y_within_std": y_within,
-            "n": len(sub)
-        })
+        table = pd.DataFrame(rows)
 
-    table = pd.DataFrame(rows).sort_values("X1_center")
-    print(table)
-    # ----------------------------
-    # plot in real units
-    # ----------------------------
-    fig, ax1 = plt.subplots(figsize=(8,6))
+        # sort by numeric left edge (important for correct ordering)
+        table["sort_key"] = table["X1_range"].apply(lambda s: float(s.split("--")[0]))
+        table = table.sort_values("sort_key").drop(columns="sort_key")
 
-    ax1.plot(table["X1_center"], table["Y_mean"], marker="o", label="mean Y vs X1")
-    ax1.set_xlabel("X1 (bin center)")
-    ax1.set_ylabel("mean Y")
 
-    # secondary axis = within-bin variation
-    ax2 = ax1.twinx()
-    ax2.scatter(table["X1_center"], table["Y_within_std"], color="red", marker="x", label="within-bin Y std")
-    ax2.set_ylabel("within-bin Y variation (proxy for X2 + noise)")
+        # ----------------------------
+        # plot in real units
+        # ----------------------------
+        # ax = fig.add_subplot(gs[count])
 
-    plt.title("X1-driven trend vs within-bin X2-induced variation")
+        # ax1.plot(table["X1_center"], table["Y_mean"], marker="o", label="mean Y vs X1")
+        # ax1.set_xlabel("X1 (bin center)")
+        # ax1.set_ylabel("mean Y")
 
-    fig.tight_layout()
+        # secondary axis = within-bin variation
+        # ax2 = ax1.twinx()
+        ax.scatter(table["X1_center"], table["Y_within_std"],
+                   color=color[count],label=algorithm_text[alg], edgecolors='black',
+                   marker="o")
+        # ax.set_ylabel("within-bin Y variation (proxy for X2 + noise)")
+        table=table.drop(columns=['X1_center', 'n'])
+        csv = table.to_csv(
+            f"bin-comparison-{alg}-{experiment_type}-{DATE}.csv",
+            index=False,
+            header=["$X_1$ range", r"$\mu(Y)$", r"$\sigma(Y)$"],
+        )
+        count=+1
+
+    ax.set_xlabel("Total plan PFLOPs", fontsize=8)
+    ax.set_ylabel("$\\sigma$ ($\\tau_{Computing} : {\\tau}_{Observing}$)", fontsize=8)
+    # ax.tick_params(axis='y', pad=-10)
+    plt.title(f"{experiment_type.title()}")
+    ax.legend(loc='upper left')
+    # plt.title("X1-driven trend vs within-bin X2-induced variation")
+
+    plt.subplots_adjust(left=0.15, right=0.9, bottom=0.15, top=0.9)
     plt.show()
+    if SAVE_PLOTS:
+        fig.savefig(f"scatter-bin-weight-distribution-{experiment_type}-{DATE}.png", dpi=fig.dpi)
 
-    return table
 
 
 SAVE_PLOTS = True
@@ -2183,12 +1854,10 @@ if __name__ == "__main__":
         usage_summary_dataframe = usage_summary_dataframe[usage_summary_dataframe['cfg'].isin(keep_groups)]
 
     LOGGER.info("Generating plots...")
-    # plot_histogram_observing_computing_ratio(usage_summary_dataframe, experiment_type)
-    # plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe, experiment_type)
-    # plot_flops_vs_demand_low(usage_summary_dataframe, 'heft', experiment_type)
-    # perform_statistical_analysis(usage_summary_dataframe, experiment_type)
-    # nonlinear_mediation_analysis(usage_summary_dataframe, experiment_type)
-    # plot_diff(usage_summary_dataframe, experiment_type)
+    plot_histogram_observing_computing_ratio(usage_summary_dataframe, experiment_type)
+    plot_demand_vs_observation_ratio_scatter(usage_summary_dataframe, experiment_type)
+    plot_flops_vs_demand_low(usage_summary_dataframe, 'heft', experiment_type)
+    plot_diff(usage_summary_dataframe, experiment_type)
     print(within_bin_comparisons(usage_summary_dataframe))
     # TODO box plots across bins of petaflops categories
     #
